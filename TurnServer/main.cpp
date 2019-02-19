@@ -2001,7 +2001,7 @@ static void print_features(unsigned long mfn)
 
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "\n");
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Default Net Engine version: %d (%s)\n\n=====================================================\n\n", (int)turn_params.net_engine_version, turn_params.net_engine_version_txt[(int)turn_params.net_engine_version]);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Default Net Engine version: %d (%s)\n\n===================================================\n\n", (int)turn_params.net_engine_version, turn_params.net_engine_version_txt[(int)turn_params.net_engine_version]);
 
 }
 
@@ -2283,9 +2283,9 @@ int main(int argc, char **argv)
 			exit(-1);
 		}
 		local_listeners = 1;
-		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=====================================================\n");
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================================\n");
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total: %d 'real' addresses discovered\n", maddrs);
-		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=====================================================\n");
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================================\n");
 	}
 
 	if (!turn_params.relays_number) {
@@ -2307,9 +2307,9 @@ int main(int argc, char **argv)
 			if (make_local_relays_list(0, AF_INET6) < 1) {
 				make_local_relays_list(1, AF_INET6);
 			}
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=====================================================\n");
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================================\n");
 			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total: %d relay addresses discovered\n", (int)turn_params.relays_number);
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=====================================================\n");
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================================\n");
 		}
 
 		if (!turn_params.relays_number) {

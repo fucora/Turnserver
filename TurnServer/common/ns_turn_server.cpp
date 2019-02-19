@@ -261,7 +261,7 @@ static int get_other_address(turn_turnserver *server, ts_ur_super_session *ss, i
 
 static int send_turn_message_to(turn_turnserver *server, ioa_network_buffer_handle nbh, ioa_addr *response_origin, ioa_addr *response_destination)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************send_turn_message_to \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************send_turn_message_to \n", __FUNCTION__, 1);
 	if (is_rfc5780(server) && nbh && response_origin && response_destination) {
 		return server->sm_cb(server->e, nbh, response_origin, response_destination);
 	}
@@ -273,7 +273,7 @@ static int send_turn_message_to(turn_turnserver *server, ioa_network_buffer_hand
 
 static int good_peer_addr(turn_turnserver *server, const char* realm, ioa_addr *peer_addr)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************good_peer_addr \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************good_peer_addr \n", __FUNCTION__, 1);
 #define CHECK_REALM(r) if((r)[0] && realm && realm[0] && strcmp((r),realm)) continue
 
 	if (server && peer_addr) {
@@ -388,7 +388,7 @@ void turn_session_info_clean(struct turn_session_info* tsi) {
 
 void turn_session_info_add_peer(struct turn_session_info* tsi, ioa_addr *peer)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_add_peer \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_add_peer \n", __FUNCTION__, 1);
 	if (tsi && peer) {
 		{
 			size_t i;
@@ -445,7 +445,7 @@ static int turn_session_info_foreachcb(ur_map_key_type key, ur_map_value_type va
 
 int turn_session_info_copy_from(struct turn_session_info* tsi, ts_ur_super_session *ss)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_copy_from \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_copy_from \n", __FUNCTION__, 1);
 	int ret = -1;
 
 	if (tsi && ss) {
@@ -643,7 +643,7 @@ static int mobile_id_to_string(mobile_id_t mid, char *dst, size_t dst_sz)
 
 static mobile_id_t string_to_mobile_id(char* src)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_copy_from \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_copy_from \n", __FUNCTION__, 1);
 	mobile_id_t mid = 0;
 
 	if (src) {
@@ -667,7 +667,7 @@ static mobile_id_t string_to_mobile_id(char* src)
 
 static mobile_id_t get_new_mobile_id(turn_turnserver* server)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_copy_from \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turn_session_info_copy_from \n", __FUNCTION__, 1);
 	mobile_id_t newid = 0;
 
 	if (server && server->mobile_connections_map) {
@@ -713,7 +713,7 @@ static void put_session_into_mobile_map(ts_ur_super_session *ss)
 
 static void put_session_into_map(ts_ur_super_session *ss)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************put_session_into_map \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************put_session_into_map \n", __FUNCTION__, 1);
 	if (ss && ss->server) {
 		turn_turnserver* server = (turn_turnserver*)(ss->server);
 		if (!(ss->id)) {
@@ -728,7 +728,7 @@ static void put_session_into_map(ts_ur_super_session *ss)
 
 static void delete_session_from_mobile_map(ts_ur_super_session *ss)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************delete_session_from_mobile_map \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************delete_session_from_mobile_map \n", __FUNCTION__, 1);
 	if (ss && ss->server && ss->mobile_id) {
 		turn_turnserver* server = (turn_turnserver*)(ss->server);
 		if (server->mobile_connections_map) {
@@ -741,7 +741,7 @@ static void delete_session_from_mobile_map(ts_ur_super_session *ss)
 
 static void delete_session_from_map(ts_ur_super_session *ss)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************delete_session_from_map \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************delete_session_from_map \n", __FUNCTION__, 1);
 	if (ss && ss->server) {
 		turn_turnserver* server = (turn_turnserver*)(ss->server);
 		ur_map_del(server->sessions_map, (ur_map_key_type)(ss->id), NULL);
@@ -751,7 +751,7 @@ static void delete_session_from_map(ts_ur_super_session *ss)
 
 static ts_ur_super_session* get_session_from_map(turn_turnserver* server, turnsession_id sid)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************get_session_from_map \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************get_session_from_map \n", __FUNCTION__, 1);
 	ts_ur_super_session *ss = NULL;
 	if (server) {
 		ur_map_value_type value = 0;
@@ -875,7 +875,7 @@ static void client_ss_perm_timeout_handler(ioa_engine_handle e, void* arg) {
 
 static int update_turn_permission_lifetime(ts_ur_super_session *ss, turn_permission_info *tinfo, turn_time_t time_delta) {
 
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************update_turn_permission_lifetime \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************update_turn_permission_lifetime \n", __FUNCTION__, 1);
 	if (ss && tinfo && tinfo->owner) {
 
 		turn_turnserver *server = (turn_turnserver *)(ss->server);
@@ -906,7 +906,7 @@ static int update_turn_permission_lifetime(ts_ur_super_session *ss, turn_permiss
 
 static int update_channel_lifetime(ts_ur_super_session *ss, ch_info* chn)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************update_channel_lifetime \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************update_channel_lifetime \n", __FUNCTION__, 1);
 	if (chn) {
 
 		turn_permission_info* tinfo = (turn_permission_info*)(chn->owner);
@@ -955,7 +955,7 @@ static int handle_turn_allocate(turn_turnserver *server,
 	ts_ur_super_session *ss, stun_tid *tid, int *resp_constructed,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer, ioa_network_buffer_handle nbh) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_allocate \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_allocate \n", __FUNCTION__, 1);
 
 	int err_code4 = 0;
 	int err_code6 = 0;
@@ -1508,7 +1508,7 @@ static int handle_turn_allocate(turn_turnserver *server,
 }
 
 static void copy_auth_parameters(ts_ur_super_session *orig_ss, ts_ur_super_session *ss) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************copy_auth_parameters \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************copy_auth_parameters \n", __FUNCTION__, 1);
 	if (orig_ss && ss) {
 		dec_quota(ss);
 		ns_bcopy(orig_ss->nonce, ss->nonce, sizeof(ss->nonce));
@@ -1531,7 +1531,7 @@ static int handle_turn_refresh(turn_turnserver *server,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer, ioa_network_buffer_handle nbh,
 	int message_integrity, int *no_response, int can_resume) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_refresh \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_refresh \n", __FUNCTION__, 1);
 	allocation* a = get_allocation_ss(ss);
 	int af4c = 0;
 	int af6c = 0;
@@ -1945,7 +1945,7 @@ static int handle_turn_refresh(turn_turnserver *server,
 
 static void tcp_deliver_delayed_buffer(unsent_buffer *ub, ioa_socket_handle s, ts_ur_super_session *ss)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_deliver_delayed_buffer \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_deliver_delayed_buffer \n", __FUNCTION__, 1);
 	if (ub && s && ub->bufs && ub->sz && ss) {
 		size_t i = 0;
 		do {
@@ -1971,7 +1971,7 @@ static void tcp_deliver_delayed_buffer(unsent_buffer *ub, ioa_socket_handle s, t
 
 static void tcp_peer_input_handler(ioa_socket_handle s, int event_type, ioa_net_data *in_buffer, void *arg, int can_resume)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_peer_input_handler \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_peer_input_handler \n", __FUNCTION__, 1);
 	if (!(event_type & IOA_EV_READ) || !arg)
 		return;
 
@@ -2009,7 +2009,7 @@ static void tcp_peer_input_handler(ioa_socket_handle s, int event_type, ioa_net_
 
 static void tcp_client_input_handler_rfc6062data(ioa_socket_handle s, int event_type, ioa_net_data *in_buffer, void *arg, int can_resume)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_client_input_handler_rfc6062data \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_client_input_handler_rfc6062data \n", __FUNCTION__, 1);
 	if (!(event_type & IOA_EV_READ) || !arg)
 		return;
 
@@ -2057,7 +2057,7 @@ static void tcp_conn_bind_timeout_handler(ioa_engine_handle e, void *arg)
 
 static void tcp_peer_connection_completed_callback(int success, void *arg)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_peer_connection_completed_callback \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_peer_connection_completed_callback \n", __FUNCTION__, 1);
 	if (arg) {
 		tcp_connection *tc = (tcp_connection *)arg;
 		allocation *a = (allocation*)(tc->owner);
@@ -2148,7 +2148,7 @@ static int tcp_start_connection_to_peer(turn_turnserver *server, ts_ur_super_ses
 	allocation *a, ioa_addr *peer_addr,
 	int *err_code, const u08bits **reason)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_start_connection_to_peer \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_start_connection_to_peer \n", __FUNCTION__, 1);
 	FUNCSTART;
 
 	if (!ss) {
@@ -2222,7 +2222,7 @@ static int tcp_start_connection_to_peer(turn_turnserver *server, ts_ur_super_ses
 
 static void tcp_peer_accept_connection(ioa_socket_handle s, void *arg)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_peer_accept_connection \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************tcp_peer_accept_connection \n", __FUNCTION__, 1);
 	if (s) {
 
 		if (!arg) {
@@ -2332,7 +2332,7 @@ static int handle_turn_connect(turn_turnserver *server,
 	ts_ur_super_session *ss, stun_tid *tid,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_connect \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_connect \n", __FUNCTION__, 1);
 	FUNCSTART;
 	ioa_addr peer_addr;
 	int peer_found = 0;
@@ -2418,7 +2418,7 @@ static int handle_turn_connection_bind(turn_turnserver *server,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer, ioa_network_buffer_handle nbh, int message_integrity,
 	int can_resume) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_connection_bind \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_connection_bind \n", __FUNCTION__, 1);
 	allocation* a = get_allocation_ss(ss);
 
 	u16bits method = STUN_METHOD_CONNECTION_BIND;
@@ -2529,7 +2529,7 @@ static int handle_turn_connection_bind(turn_turnserver *server,
 
 int turnserver_accept_tcp_client_data_connection(turn_turnserver *server, tcp_connection_id tcid, stun_tid *tid, ioa_socket_handle s, int message_integrity, ioa_net_data *in_buffer, int can_resume)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turnserver_accept_tcp_client_data_connection \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turnserver_accept_tcp_client_data_connection \n", __FUNCTION__, 1);
 	if (!server)
 		return -1;
 
@@ -2664,7 +2664,7 @@ static int handle_turn_channel_bind(turn_turnserver *server,
 	ts_ur_super_session *ss, stun_tid *tid, int *resp_constructed,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer, ioa_network_buffer_handle nbh) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_channel_bind \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_channel_bind \n", __FUNCTION__, 1);
 	FUNCSTART;
 	u16bits chnum = 0;
 	ioa_addr peer_addr;
@@ -2856,7 +2856,7 @@ static int handle_turn_binding(turn_turnserver *server,
 	int *origin_changed, ioa_addr *response_origin,
 	int *dest_changed, ioa_addr *response_destination,
 	u32bits cookie, int old_stun) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_binding \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_binding \n", __FUNCTION__, 1);
 	FUNCSTART;
 	int change_ip = 0;
 	int change_port = 0;
@@ -3063,7 +3063,7 @@ static int handle_turn_binding(turn_turnserver *server,
 static int handle_turn_send(turn_turnserver *server, ts_ur_super_session *ss,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_send \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_send \n", __FUNCTION__, 1);
 	FUNCSTART;
 
 	ioa_addr peer_addr;
@@ -3171,7 +3171,7 @@ static int handle_turn_send(turn_turnserver *server, ts_ur_super_session *ss,
 }
 
 static int update_permission(ts_ur_super_session *ss, ioa_addr *peer_addr) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************update_permission \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************update_permission \n", __FUNCTION__, 1);
 	if (!ss || !peer_addr)
 		return -1;
 
@@ -3202,7 +3202,7 @@ static int handle_turn_create_permission(turn_turnserver *server,
 	ts_ur_super_session *ss, stun_tid *tid, int *resp_constructed,
 	int *err_code, const u08bits **reason, u16bits *unknown_attrs, u16bits *ua_num,
 	ioa_net_data *in_buffer, ioa_network_buffer_handle nbh) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_create_permission \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_create_permission \n", __FUNCTION__, 1);
 	int ret = -1;
 
 	int addr_found = 0;
@@ -3351,7 +3351,7 @@ static int create_challenge_response(ts_ur_super_session *ss, stun_tid *tid, int
 	ioa_network_buffer_handle nbh,
 	u16bits method)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************create_challenge_response \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************create_challenge_response \n", __FUNCTION__, 1);
 	size_t len = ioa_network_buffer_get_size(nbh);
 	stun_init_error_response_str(method, ioa_network_buffer_data(nbh), &len, *err_code, *reason, tid);
 	*resp_constructed = 1;
@@ -3385,7 +3385,7 @@ static int create_challenge_response(ts_ur_super_session *ss, stun_tid *tid, int
 
 static void resume_processing_after_username_check(int success, int oauth, int max_session_time, hmackey_t hmackey, password_t pwd, turn_turnserver *server, u64bits ctxkey, ioa_net_data *in_buffer, u08bits *realm)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************create_challenge_response \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************create_challenge_response \n", __FUNCTION__, 1);
 	if (server && in_buffer && in_buffer->nbh) {
 
 		ts_ur_super_session *ss = get_session_from_map(server, (turnsession_id)ctxkey);
@@ -3423,7 +3423,7 @@ static int check_stun_auth(turn_turnserver *server,
 	int *postpone_reply,
 	int can_resume)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************check_stun_auth \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************check_stun_auth \n", __FUNCTION__, 1);
 	u08bits usname[STUN_MAX_USERNAME_SIZE + 1];
 	u08bits nonce[STUN_MAX_NONCE_SIZE + 1];
 	u08bits realm[STUN_MAX_REALM_SIZE + 1];
@@ -3655,7 +3655,7 @@ static int check_stun_auth(turn_turnserver *server,
 
 static void set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter, u16bits method, stun_tid *tid, int *resp_constructed, int *err_code, const u08bits **reason, ioa_network_buffer_handle nbh)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************set_alternate_server \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************set_alternate_server \n", __FUNCTION__, 1);
 	if (asl && asl->size && local_addr) {
 
 		size_t i;
@@ -3691,7 +3691,7 @@ static void set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *
 
 static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss, ioa_net_data *in_buffer, ioa_network_buffer_handle nbh, int *resp_constructed, int can_resume)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_command \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_turn_command \n", __FUNCTION__, 1);
 	stun_tid tid;
 	int err_code = 0;
 	const u08bits *reason = NULL;
@@ -4104,7 +4104,7 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
 
 static int handle_old_stun_command(turn_turnserver *server, ts_ur_super_session *ss, ioa_net_data *in_buffer, ioa_network_buffer_handle nbh, int *resp_constructed, u32bits cookie)
 {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_old_stun_command \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************handle_old_stun_command \n", __FUNCTION__, 1);
 	stun_tid tid;
 	int err_code = 0;
 	const u08bits *reason = NULL;
@@ -4241,7 +4241,7 @@ static int handle_old_stun_command(turn_turnserver *server, ts_ur_super_session 
 //////////////////////////////////////////////////////////////////
 
 static int write_to_peerchannel(ts_ur_super_session* ss, u16bits chnum, ioa_net_data *in_buffer) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************write_to_peerchannel \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************write_to_peerchannel \n", __FUNCTION__, 1);
 	int rc = 0;
 
 	if (ss && (in_buffer->recv_ttl != 0)) {
@@ -4281,7 +4281,7 @@ static void peer_input_handler(ioa_socket_handle s, int event_type,
 
 int shutdown_client_connection(turn_turnserver *server, ts_ur_super_session *ss, int force, const char* reason) {
 
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************shutdown_client_connection", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************shutdown_client_connection", __FUNCTION__, 1);
 	FUNCSTART;
 
 	if (!ss)
@@ -4353,7 +4353,7 @@ int shutdown_client_connection(turn_turnserver *server, ts_ur_super_session *ss,
 }
 
 static void client_to_be_allocated_timeout_handler(ioa_engine_handle e,void *arg) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_to_be_allocated_timeout_handler \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_to_be_allocated_timeout_handler \n", __FUNCTION__, 1);
 	if (!arg)
 		return;
 
@@ -4405,7 +4405,7 @@ static void client_to_be_allocated_timeout_handler(ioa_engine_handle e,void *arg
 }
 
 static int write_client_connection(turn_turnserver *server, ts_ur_super_session* ss, ioa_network_buffer_handle nbh, int ttl, int tos) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************write_client_connection \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************write_client_connection \n", __FUNCTION__, 1);
 	FUNCSTART;
 
 	if (!(ss->client_socket)) {
@@ -4434,7 +4434,7 @@ static int write_client_connection(turn_turnserver *server, ts_ur_super_session*
 }
 
 static void client_ss_allocation_timeout_handler(ioa_engine_handle e, void *arg) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_ss_allocation_timeout_handler \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_ss_allocation_timeout_handler \n", __FUNCTION__, 1);
 	UNUSED_ARG(e);
 
 	if (!arg)
@@ -4478,7 +4478,7 @@ static int create_relay_connection(turn_turnserver* server,
 	int even_port, u64bits in_reservation_token, u64bits *out_reservation_token,
 	int *err_code, const u08bits **reason,
 	accept_cb acb) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************create_relay_connection \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************create_relay_connection \n", __FUNCTION__, 1);
 	if (server && ss && ss->client_socket && !ioa_socket_tobeclosed(ss->client_socket)) {
 
 		allocation* a = get_allocation_ss(ss);
@@ -4592,7 +4592,7 @@ static int refresh_relay_connection(turn_turnserver* server,
 	ts_ur_super_session *ss, u32bits lifetime, int even_port,
 	u64bits in_reservation_token, u64bits *out_reservation_token,
 	int *err_code, int family) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************refresh_relay_connection \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************refresh_relay_connection \n", __FUNCTION__, 1);
 	UNUSED_ARG(even_port);
 	UNUSED_ARG(in_reservation_token);
 	UNUSED_ARG(out_reservation_token);
@@ -4620,10 +4620,8 @@ static int refresh_relay_connection(turn_turnserver* server,
 	}
 }
 
-static int read_client_connection(turn_turnserver *server,
-	ts_ur_super_session *ss, ioa_net_data *in_buffer,
-	int can_resume, int count_usage) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************read_client_connection \n", __FUNCTION__, 1);
+static int read_client_connection(turn_turnserver *server,ts_ur_super_session *ss, ioa_net_data *in_buffer,int can_resume, int count_usage) {
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************read_client_connection \n", __FUNCTION__, 1);
 	FUNCSTART;
 
 	if (!server || !ss || !in_buffer || !(ss->client_socket) || ss->to_be_closed || ioa_socket_tobeclosed(ss->client_socket)) {
@@ -4673,11 +4671,9 @@ static int read_client_connection(turn_turnserver *server,
 		//???
 
 	}
-	else if (stun_is_channel_message_str(ioa_network_buffer_data(in_buffer->nbh),
-		&blen,
-		&chnum,
-		is_padding_mandatory)) {
+	else if (stun_is_channel_message_str(ioa_network_buffer_data(in_buffer->nbh), &blen, &chnum, is_padding_mandatory)) {
 
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=================================stun_is_channel_message_str \n", __FUNCTION__, 1);
 		if (ss->is_tcp_relay) {
 			//Forbidden
 			FUNCEND;
@@ -4692,8 +4688,7 @@ static int read_client_connection(turn_turnserver *server,
 		}
 
 		if (eve(server->verbose)) {
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: wrote to peer %d bytes\n",
-				__FUNCTION__, (int)rc);
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: wrote to peer %d bytes\n",__FUNCTION__, (int)rc);
 		}
 
 		FUNCEND;
@@ -4701,7 +4696,7 @@ static int read_client_connection(turn_turnserver *server,
 
 	}
 	else if (stun_is_command_message_full_check_str(ioa_network_buffer_data(in_buffer->nbh), ioa_network_buffer_get_size(in_buffer->nbh), 0, &(ss->enforce_fingerprints))) {
-
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================stun_is_command_message_full_check_str \n", __FUNCTION__, 1);
 		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
 		int resp_constructed = 0;
 
@@ -4719,8 +4714,7 @@ static int read_client_connection(turn_turnserver *server,
 			return 0;
 		}
 
-		if (resp_constructed) {
-
+		if (resp_constructed) { 
 			if ((server->fingerprint) || ss->enforce_fingerprints) {
 				size_t len = ioa_network_buffer_get_size(nbh);
 				if (stun_attr_add_fingerprint_str(ioa_network_buffer_data(nbh), &len) < 0) {
@@ -4729,8 +4723,7 @@ static int read_client_connection(turn_turnserver *server,
 					return -1;
 				}
 				ioa_network_buffer_set_size(nbh, len);
-			}
-
+			} 
 			int ret = write_client_connection(server, ss, nbh, TTL_IGNORE, TOS_IGNORE);
 
 			FUNCEND;
@@ -4739,11 +4732,10 @@ static int read_client_connection(turn_turnserver *server,
 		else {
 			ioa_network_buffer_delete(server->e, nbh);
 			return 0;
-		}
-
+		} 
 	}
 	else if (old_stun_is_command_message_str(ioa_network_buffer_data(in_buffer->nbh), ioa_network_buffer_get_size(in_buffer->nbh), &old_stun_cookie) && !(*(server->no_stun))) {
-
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================old_stun_is_command_message_str \n", __FUNCTION__, 1);
 		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
 		int resp_constructed = 0;
 
@@ -4764,6 +4756,7 @@ static int read_client_connection(turn_turnserver *server,
 	}
 	else {
 		if (server->use_http) {
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================use_http_server \n", __FUNCTION__, 1);
 			SOCKET_TYPE st = get_ioa_socket_type(ss->client_socket);
 			if (is_stream_socket(st)) {
 				if (is_http((char*)ioa_network_buffer_data(in_buffer->nbh), ioa_network_buffer_get_size(in_buffer->nbh))) {
@@ -4803,7 +4796,7 @@ static int read_client_connection(turn_turnserver *server,
 }
 
 static int attach_socket_to_session(turn_turnserver* server, ioa_socket_handle s, ts_ur_super_session* ss) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************attach_socket_to_session \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************attach_socket_to_session \n", __FUNCTION__, 1);
 	int ret = -1;
 	FUNCSTART;
 
@@ -4830,9 +4823,8 @@ static int attach_socket_to_session(turn_turnserver* server, ioa_socket_handle s
 	return ret;
 }
 
-int open_client_connection_session(turn_turnserver* server,
-	struct socket_message *sm) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************open_client_connection_session \n", __FUNCTION__, 1);
+int open_client_connection_session(turn_turnserver* server,struct socket_message *sm) {
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************open_client_connection_session \n", __FUNCTION__, 1);
 	FUNCSTART;
 	if (!server)
 		return -1;
@@ -4874,9 +4866,8 @@ int open_client_connection_session(turn_turnserver* server,
 
 /////////////// io handlers ///////////////////
 
-static void peer_input_handler(ioa_socket_handle s, int event_type,
-	ioa_net_data *in_buffer, void *arg, int can_resume) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************peer_input_handler \n", __FUNCTION__, 1);
+static void peer_input_handler(ioa_socket_handle s, int event_type,ioa_net_data *in_buffer, void *arg, int can_resume) {
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************peer_input_handler \n", __FUNCTION__, 1);
 	if (!(event_type & IOA_EV_READ) || !arg) return;
 
 	if (in_buffer->recv_ttl == 0) return;
@@ -4904,8 +4895,7 @@ static void peer_input_handler(ioa_socket_handle s, int event_type,
 
 	int offset = STUN_CHANNEL_HEADER_LENGTH;
 
-	int ilen = min((int)ioa_network_buffer_get_size(in_buffer->nbh),
-		(int)(ioa_network_buffer_get_capacity_udp() - offset));
+	int ilen = min((int)ioa_network_buffer_get_size(in_buffer->nbh),(int)(ioa_network_buffer_get_capacity_udp() - offset));
 
 	if (ilen >= 0) {
 
@@ -4916,8 +4906,7 @@ static void peer_input_handler(ioa_socket_handle s, int event_type,
 
 			ioa_network_buffer_handle nbh = NULL;
 
-			turn_permission_info* tinfo = allocation_get_permission(a,
-				&(in_buffer->src_addr));
+			turn_permission_info* tinfo = allocation_get_permission(a,&(in_buffer->src_addr));
 			if (tinfo) {
 				chnum = get_turn_channel_number(tinfo, &(in_buffer->src_addr));
 			}
@@ -4988,9 +4977,8 @@ static void peer_input_handler(ioa_socket_handle s, int event_type,
 	}
 }
 
-static void client_input_handler(ioa_socket_handle s, int event_type,
-	ioa_net_data *data, void *arg, int can_resume) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_input_handler \n", __FUNCTION__, 1);
+static void client_input_handler(ioa_socket_handle s, int event_type,ioa_net_data *data, void *arg, int can_resume) {
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_input_handler \n", __FUNCTION__, 1);
 	if (!arg)
 		return;
 
@@ -5054,7 +5042,7 @@ void init_turn_server(turn_turnserver* server,
 	const char* oauth_server_name,
 	int use_http,
 	int keep_address_family) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************init_turn_server \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************init_turn_server \n", __FUNCTION__, 1);
 	if (!server)
 		return;
 

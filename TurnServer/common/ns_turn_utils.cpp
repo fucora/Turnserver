@@ -160,6 +160,10 @@ void set_no_stdout_log(int val)
 
 void turn_log_func_default(TURN_LOG_LEVEL level, const s08bits* format, ...)
 {
+	/*if (level == TURN_LOG_LEVEL_INFO) {
+		return;
+	}
+*/
 #if !defined(TURN_LOG_FUNC_IMPL)
 	{
 		va_list args;
@@ -227,7 +231,7 @@ void addr_debug_print(int verbose, const ioa_addr *addr, const s08bits* s)
 	}
 }
 
-/*************************************/
+/*********************************/
 
 #define FILE_STR_LEN (1025)
 
@@ -778,12 +782,12 @@ extern "C" void debug_ptr_del_func(void *ptr, const char* function, int line) {
 extern "C" void tm_print_func(void);
 void tm_print_func(void) {
   pthread_mutex_lock(&tm);
-  printf("=============================================\n");
+  printf("===========================================\n");
   for(str_to_ptrs_t::const_iterator iter=str_to_ptrs.begin();iter != str_to_ptrs.end();++iter) {
 	  if(iter->second.size())
 		  printf("%s: %s: %d\n",__FUNCTION__,iter->first.c_str(),(int)(iter->second.size()));
   }
-  printf("=============================================\n");
+  printf("===========================================\n");
   pthread_mutex_unlock(&tm);
 } 
 
