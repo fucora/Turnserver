@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="common">
+      <UniqueIdentifier>{58d618e5-9937-4665-8a6d-aa15c42fdc0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="client">
+      <UniqueIdentifier>{1763165f-3fbe-4d5d-a637-ceed6a4489a6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common\ns_turn_allocation.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_ioaddr.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_ioalib.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_khash.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_maps.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_maps_rtcp.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_msg.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_msg_addr.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_msg_defs.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_msg_defs_experimental.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_openssl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_server.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_session.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_turn_utils.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\stun_buffer.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\apputils.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\hiredis_libevent2.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\ns_ioalib_impl.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="client\ns_turn_msg_defs_experimental.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="client\ns_turn_ioaddr.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="client\ns_turn_msg.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="client\ns_turn_msg_addr.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="client\ns_turn_msg_defs.h">
+      <Filter>client</Filter>
+    </ClInclude>
+    <ClInclude Include="uclient.h" />
+    <ClInclude Include="ns_turn_defs.h" />
+    <ClInclude Include="session.h" />
+    <ClInclude Include="startuclient.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="common\ns_turn_ioaddr.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_maps.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_maps_rtcp.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_msg.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_msg_addr.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_server.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_utils.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\stun_buffer.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\apputils.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\hiredis_libevent2.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\ns_turn_allocation.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="client\ns_turn_ioaddr.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="client\ns_turn_msg.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="client\ns_turn_msg_addr.c">
+      <Filter>client</Filter>
+    </ClCompile>
+    <ClCompile Include="mainuclient.c" />
+    <ClCompile Include="startuclient.c" />
+    <ClCompile Include="uclient.c" />
+  </ItemGroup>
+</Project>

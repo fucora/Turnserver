@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConsoleApplication1", "Cons
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TurnServer", "TurnServer\TurnServer.vcxproj", "{FE8064DE-791D-4C9B-84D2-8681DF76D20B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TurnserverTest", "TurnserverTest\TurnserverTest.vcxproj", "{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,23 +65,33 @@ Global
 		{FE8064DE-791D-4C9B-84D2-8681DF76D20B}.Release|x64.Build.0 = Release|x64
 		{FE8064DE-791D-4C9B-84D2-8681DF76D20B}.Release|x86.ActiveCfg = Release|x86
 		{FE8064DE-791D-4C9B-84D2-8681DF76D20B}.Release|x86.Build.0 = Release|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|ARM.ActiveCfg = Debug|ARM
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|ARM.Build.0 = Debug|ARM
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|ARM64.Build.0 = Debug|ARM64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|x64.ActiveCfg = Debug|x64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|x64.Build.0 = Debug|x64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|x86.ActiveCfg = Debug|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Debug|x86.Build.0 = Debug|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|Any CPU.ActiveCfg = Release|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|ARM.ActiveCfg = Release|ARM
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|ARM.Build.0 = Release|ARM
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|ARM64.ActiveCfg = Release|ARM64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|ARM64.Build.0 = Release|ARM64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|Mixed Platforms.Build.0 = Release|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|x64.ActiveCfg = Release|x64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|x64.Build.0 = Release|x64
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|x86.ActiveCfg = Release|x86
+		{0DE1CC65-31D9-4BF8-8E89-C071F55F739B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DF956824-46F2-48D0-9082-451A89B5148A}
-	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 3
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://lylprojects.visualstudio.com/
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = ConsoleApplication1\\ConsoleApplication1.vcxproj
-		SccProjectName1 = ConsoleApplication1
-		SccLocalPath1 = ConsoleApplication1
-		SccProjectUniqueName2 = TurnServer\\TurnServer.vcxproj
-		SccProjectName2 = TurnServer
-		SccLocalPath2 = TurnServer
 	EndGlobalSection
 EndGlobal

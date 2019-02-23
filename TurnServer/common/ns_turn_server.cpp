@@ -4621,7 +4621,7 @@ static int refresh_relay_connection(turn_turnserver* server,
 }
 
 static int read_client_connection(turn_turnserver *server,ts_ur_super_session *ss, ioa_net_data *in_buffer,int can_resume, int count_usage) {
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************read_client_connection \n", __FUNCTION__, 1);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************%s \n", __FUNCTION__);
 	FUNCSTART;
 
 	if (!server || !ss || !in_buffer || !(ss->client_socket) || ss->to_be_closed || ioa_socket_tobeclosed(ss->client_socket)) {
@@ -4673,7 +4673,7 @@ static int read_client_connection(turn_turnserver *server,ts_ur_super_session *s
 	}
 	else if (stun_is_channel_message_str(ioa_network_buffer_data(in_buffer->nbh), &blen, &chnum, is_padding_mandatory)) {
 
-		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=================================stun_is_channel_message_str \n", __FUNCTION__, 1);
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=================================stun_is_channel_message_str\n", __FUNCTION__);
 		if (ss->is_tcp_relay) {
 			//Forbidden
 			FUNCEND;

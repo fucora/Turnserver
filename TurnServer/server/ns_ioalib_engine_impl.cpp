@@ -3121,14 +3121,14 @@ int udp_send(ioa_socket_handle s, const ioa_addr* dest_addr, const s08bits* buff
 
 	return rc;
 }
- 
+
 int send_data_from_ioa_socket_nbh(ioa_socket_handle s, ioa_addr* dest_addr, ioa_network_buffer_handle nbh, int ttl, int tos, int *skip)
 {
-	char loginfo[] = "*********************************send_data_from_ioa_socket_nbh,socketType,socketType:----";
+	char loginfo[] = "*********************************%s,socketType,socketType:----";
 
 	switch (s->st)
 	{
-	case TCP_SOCKET:strcat(loginfo,  "TCP_SOCKET"); break;
+	case TCP_SOCKET:strcat(loginfo, "TCP_SOCKET"); break;
 	case UNKNOWN_SOCKET:strcat(loginfo, "UNKNOWN_SOCKET"); break;
 	case UDP_SOCKET:strcat(loginfo, "UDP_SOCKET"); break;
 	case TLS_SOCKET:strcat(loginfo, "TLS_SOCKET"); break;
@@ -3141,11 +3141,11 @@ int send_data_from_ioa_socket_nbh(ioa_socket_handle s, ioa_addr* dest_addr, ioa_
 	}
 
 	strcat(loginfo, "\n");
- 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_CONTROL, loginfo, __FUNCTION__, 1);
-	 
+
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_CONTROL, loginfo, __FUNCTION__);
+
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: data.buffer=0x%lx, data.len=%ld\n", __FUNCTION__, (long)ioa_network_buffer_data(nbh), (long)ioa_network_buffer_get_size(nbh));
- 
+
 
 	int ret = -1;
 
@@ -3185,10 +3185,10 @@ int send_data_from_ioa_socket_nbh(ioa_socket_handle s, ioa_addr* dest_addr, ioa_
 								ret = 0;
 							}
 #endif
-						} 
+						}
 						if (!(s->tobeclosed)) {
 							ret = (int)ioa_network_buffer_get_size(nbh);
-						
+
 							if (!tcp_congestion_control || is_socket_writeable(s, (size_t)ret, __FUNCTION__, 2)) {
 								s->in_write = 1;
 								//--//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "************************ioa_network_buffer_data \n", __FUNCTION__, 1); 
@@ -3515,7 +3515,7 @@ void ioa_network_buffer_header_init(ioa_network_buffer_handle nbh)
 
 u08bits *ioa_network_buffer_data(ioa_network_buffer_handle nbh)
 {
-	stun_buffer_list_elem *buf_elem = (stun_buffer_list_elem *)nbh;
+	stun_buffer_list_elem *buf_elem = (stun_buffer_list_elem *)nbh;  
 	return buf_elem->buf.buf + buf_elem->buf.offset - buf_elem->buf.coffset;
 }
 
