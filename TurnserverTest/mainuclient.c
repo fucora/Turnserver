@@ -162,6 +162,16 @@ static char Usage[] =
 
 int main(int argc, char **argv)
 {
+	argc = 8;
+    argv[0] = "-v";
+	argv[1] = "-t";
+	argv[2] = "-T";
+	argv[3] = "-u";
+	argv[4] = "password";
+	argv[5] = "-w";
+	argv[6] = "username";
+	argv[7] = "192.168.100.141";
+
 	int port = 0;
 	int messagenumber = 5;
 	char local_addr[256];
