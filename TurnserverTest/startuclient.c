@@ -344,11 +344,7 @@ void add_origin(stun_buffer *message)
 	}
 }
 
-static int clnet_allocate(int verbose,
-		app_ur_conn_info *clnet_info,
-		ioa_addr *relay_addr,
-		int af,
-		char *turn_addr, u16bits *turn_port) {
+static int clnet_allocate(int verbose, app_ur_conn_info *clnet_info, ioa_addr *relay_addr, int af, char *turn_addr, u16bits *turn_port) {
 
 	int af_cycle = 0;
 	int reopen_socket = 0;
@@ -416,7 +412,7 @@ static int clnet_allocate(int verbose,
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!allocate_sent) {
-
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to....allocate_client,buffer.length is %d  \n", clnet_info->key, request_message.len);
 			int len = send_buffer(clnet_info, &request_message,0,0);
 
 			if (len > 0) {
@@ -578,8 +574,7 @@ static int clnet_allocate(int verbose,
 	if(rare_event()) return 0;
 
 	if(!allocate_finished) {
-	  TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR,
-			"Cannot complete Allocation\n");
+	  TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "Cannot complete Allocation\n");
 	  exit(-1);
 	}
 
@@ -669,7 +664,7 @@ static int clnet_allocate(int verbose,
 			stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 			while (!refresh_sent) {
-
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to....STUN_METHOD_REFRESH,buffer.length is %d  \n", clnet_info->key, request_message.len);
 				int len = send_buffer(clnet_info, &request_message, 0,0);
 
 				if (len > 0) {
@@ -680,6 +675,7 @@ static int clnet_allocate(int verbose,
 
 					if(clnet_info->s_mobile_id[0]) {
 						usleep(10000);
+						TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to....mobile_STUN_METHOD_REFRESH,buffer.length is %d  \n", clnet_info->key, request_message.len);
 						send_buffer(clnet_info, &request_message, 0,0);
 					}
 				} else {
@@ -742,8 +738,7 @@ static int clnet_allocate(int verbose,
 	return 0;
 }
 
-static int turn_channel_bind(int verbose, uint16_t *chn,
-		app_ur_conn_info *clnet_info, ioa_addr *peer_addr) {
+static int turn_channel_bind(int verbose, uint16_t *chn, app_ur_conn_info *clnet_info, ioa_addr *peer_addr) {
 
 	stun_buffer request_message, response_message;
 
@@ -765,6 +760,7 @@ static int turn_channel_bind(int verbose, uint16_t *chn,
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!cb_sent) {
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...channel_bind,buffer.length is %d  \n", clnet_info->key, request_message.len);
 
 			int len = send_buffer(clnet_info, &request_message, 0,0);
 			if (len > 0) {
@@ -869,7 +865,7 @@ static int turn_create_permission(int verbose, app_ur_conn_info *clnet_info,
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!cp_sent) {
-
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CREATE_PERMISSION,buffer.length is %d  \n", clnet_info->key, request_message.len); 
 			int len = send_buffer(clnet_info, &request_message, 0,0);
 
 			if (len > 0) {
@@ -1394,6 +1390,7 @@ int turn_tcp_connect(int verbose, app_ur_conn_info *clnet_info, ioa_addr *peer_a
 		stun_attr_add_fingerprint_str(message.buf,(size_t*)&(message.len));
 
 		while (!cp_sent) {
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CONNECT,buffer.length is %d  \n", clnet_info->key, message.len);
 
 			int len = send_buffer(clnet_info, &message, 0,0);
 
@@ -1436,6 +1433,7 @@ static int turn_tcp_connection_bind(int verbose, app_ur_conn_info *clnet_info, a
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!cb_sent) {
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CONNECTION_BIND,buffer.length is %d  \n", clnet_info->key, request_message.len);
 
 			int len = send_buffer(clnet_info, &request_message, 1, atc);
 

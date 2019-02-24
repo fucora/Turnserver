@@ -189,8 +189,7 @@ static int remove_all_from_ss(app_ur_session* ss)
 ///////////////////////////////////////////////////////////////////////////////
 
 int send_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int data_connection, app_tcp_conn_info *atc)
-{
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "******************************%s*send_buffer \n", clnet_info->ifname);
+{ 
 	int rc = 0;
 	int ret = -1;
 
@@ -425,6 +424,8 @@ recv_again:
 			if (serc < 0) {
 				return -1;
 			}
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...while recv_buffer,buffer.length is %d  \n", clnet_info->key, request_message->len);
+
 			if (send_buffer(clnet_info, request_message, data_connection, atc) <= 0)
 				return -1;
 			++cycle;
@@ -959,6 +960,7 @@ static int client_write(app_ur_session *elem) {
 		if (clnet_verbose && verbose_packets) {
 			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "before write ...\n");
 		}
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...METHOD_SEND,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 
 		int rc = send_buffer(&(elem->pinfo), &(elem->out_buffer), 1, atc);
 
@@ -1293,6 +1295,9 @@ static int refresh_channel(app_ur_session* elem, u16bits method, uint32_t lt)
 		if (add_integrity(clnet_info, &message) < 0) return -1;
 		if (use_fingerprints)
 			stun_attr_add_fingerprint_str(message.buf, (size_t*) &(message.len));
+
+
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...refresh_channel,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 		send_buffer(clnet_info, &message, 0, 0);
 	}
 
@@ -1306,6 +1311,8 @@ static int refresh_channel(app_ur_session* elem, u16bits method, uint32_t lt)
 				if (add_integrity(clnet_info, &message) < 0) return -1;
 				if (use_fingerprints)
 					stun_attr_add_fingerprint_str(message.buf, (size_t*) &(message.len));
+
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CREATE_PERMISSION,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 				send_buffer(&(elem->pinfo), &message, 0, 0);
 			}
 		}
@@ -1317,6 +1324,8 @@ static int refresh_channel(app_ur_session* elem, u16bits method, uint32_t lt)
 				if (add_integrity(clnet_info, &message) < 0) return -1;
 				if (use_fingerprints)
 					stun_attr_add_fingerprint_str(message.buf, (size_t*) &(message.len));
+
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CHANNEL_BIND,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len); 
 				send_buffer(&(elem->pinfo), &message, 1, 0);
 			}
 		}
