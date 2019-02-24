@@ -957,8 +957,7 @@ int start_connection(uint16_t clnet_remote_port0,
 
 	/* Probe: */
 
-	if (clnet_connect(clnet_remote_port0, remote_address0, ifname, local_address,
-			verbose, clnet_info_probe) < 0) {
+	if (clnet_connect(clnet_remote_port0, remote_address0, ifname, local_address,verbose, clnet_info_probe) < 0) {
 		exit(-1);
 	}
 
@@ -973,8 +972,7 @@ int start_connection(uint16_t clnet_remote_port0,
 	*chn = 0;
 	if(chn_rtcp) *chn_rtcp=0;
 
-	if (clnet_connect(clnet_remote_port, remote_address, ifname, local_address,
-			verbose, clnet_info) < 0) {
+	if (clnet_connect(clnet_remote_port, remote_address, ifname, local_address, verbose, clnet_info) < 0) {
 	  exit(-1);
 	}
 
@@ -1049,8 +1047,7 @@ int start_connection(uint16_t clnet_remote_port0,
 			}
 
 			if (!no_rtcp) {
-				if (turn_channel_bind(verbose, chn_rtcp, clnet_info_rtcp,
-						&peer_addr_rtcp) < 0) {
+				if (turn_channel_bind(verbose, chn_rtcp, clnet_info_rtcp, &peer_addr_rtcp) < 0) {
 					exit(-1);
 				}
 			}
@@ -1126,8 +1123,7 @@ int start_connection(uint16_t clnet_remote_port0,
 			}
 
 			if (!no_rtcp) {
-				if (turn_create_permission(verbose, clnet_info_rtcp,
-						&peer_addr_rtcp, 1) < 0) {
+				if (turn_create_permission(verbose, clnet_info_rtcp, &peer_addr_rtcp, 1) < 0) {
 					exit(-1);
 				}
 				if(rare_event()) return 0;

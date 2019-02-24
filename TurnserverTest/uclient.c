@@ -190,7 +190,7 @@ static int remove_all_from_ss(app_ur_session* ss)
 
 int send_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int data_connection, app_tcp_conn_info *atc)
 {
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************send_buffer \n");
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "******************************%s*send_buffer \n", clnet_info->ifname);
 	int rc = 0;
 	int ret = -1;
 
@@ -364,8 +364,37 @@ static int wait_fd(int fd, unsigned int cycle) {
 	}
 }
 
+
+
+
+
+void convertUnCharToStr(char* str, unsigned  char* UnChar, int ucLen)
+{
+	int i = 0;
+	for (i = 0; i < ucLen; i++)
+	{
+		//格式化输str,每unsigned char 转换字符占两位置%x写输%X写输  
+		sprintf(str + i * 2, "%02x", UnChar[i]);
+	}
+}
 int recv_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int sync, int data_connection, app_tcp_conn_info *atc, stun_buffer* request_message) {
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************recv_buffer \n");
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "***************************%s****recv_buffer:\n", (char*)clnet_info->key);
+	//TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "from_clientId:%d \n", clnet_info->fd);
+	//if (request_message) {
+	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Message_Length:%d \n", request_message->len);
+
+	//	/*char requestMessages[sizeof(request_message->buf)];
+	//	convertUnCharToStr(requestMessages, request_message->buf, sizeof(request_message->buf));
+	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Message:%s \n", requestMessages);*/
+	//}
+
+	//if (message) {
+	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Data_Length:%d \n", message->len);
+	///*	char requestData[sizeof(message->buf)];
+	//	convertUnCharToStr(requestData, message->buf, sizeof(message->buf));
+	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Data:%s \n", requestData);*/
+	//}
+
 	int rc = 0;
 
 	stun_tid tid;
@@ -721,10 +750,7 @@ static int client_read(app_ur_session *elem, int is_tcp_data, app_tcp_conn_info 
 				return rc;
 			}
 			else if (method != STUN_METHOD_DATA) {
-				TURN_LOG_FUNC(
-					TURN_LOG_LEVEL_INFO,
-					"ERROR: received indication message has wrong method: 0x%x\n",
-					(int)method);
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "ERROR: received indication message has wrong method: 0x%x\n", (int)method);
 				return rc;
 			}
 			else {
@@ -789,19 +815,14 @@ static int client_read(app_ur_session *elem, int is_tcp_data, app_tcp_conn_info 
 		}
 		else if (stun_is_channel_message(&(elem->in_buffer), &chnumber, use_tcp)) {
 			if (elem->chnum != chnumber) {
-				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-					"ERROR: received message has wrong channel: %d\n",
-					(int)chnumber);
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "ERROR: received message has wrong channel: %d\n", (int)chnumber);
 				return rc;
 			}
 
 			if (elem->in_buffer.len >= 4) {
 				if (((int)(elem->in_buffer.len - 4) < clmessage_length) ||
 					((int)(elem->in_buffer.len - 4) > clmessage_length + 3)) {
-					TURN_LOG_FUNC(
-						TURN_LOG_LEVEL_INFO,
-						"ERROR: received buffer have wrong length: %d, must be %d, len=%d\n",
-						rc, clmessage_length + 4, (int)elem->in_buffer.len);
+					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "ERROR: received buffer have wrong length: %d, must be %d, len=%d\n", rc, clmessage_length + 4, (int)elem->in_buffer.len);
 					return rc;
 				}
 
@@ -810,8 +831,7 @@ static int client_read(app_ur_session *elem, int is_tcp_data, app_tcp_conn_info 
 			}
 		}
 		else {
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-				"ERROR: Unknown message received of size: %d\n", (int)(elem->in_buffer.len));
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "ERROR: Unknown message received of size: %d\n", (int)(elem->in_buffer.len));
 			return rc;
 		}
 
@@ -1043,12 +1063,7 @@ static int start_client(const char *remote_address, int port,
 	uint16_t chnum = 0;
 	uint16_t chnum_rtcp = 0;
 
-	start_connection(port, remote_address,
-		ifname, local_address,
-		clnet_verbose,
-		&clnet_info_probe,
-		clnet_info, &chnum,
-		clnet_info_rtcp, &chnum_rtcp);
+	start_connection(port, remote_address, ifname, local_address, clnet_verbose, &clnet_info_probe, clnet_info, &chnum, clnet_info_rtcp, &chnum_rtcp);
 
 	if (clnet_info_probe.ssl) {
 		SSL_FREE(clnet_info_probe.ssl);
@@ -1064,18 +1079,14 @@ static int start_client(const char *remote_address, int port,
 	if (!no_rtcp)
 		socket_set_nonblocking(clnet_info_rtcp->fd);
 
-	struct event* ev = event_new(client_event_base, clnet_info->fd,
-		EV_READ | EV_PERSIST, client_input_handler,
-		ss);
+	struct event* ev = event_new(client_event_base, clnet_info->fd, EV_READ | EV_PERSIST, client_input_handler, ss);
 
 	event_add(ev, NULL);
 
 	struct event* ev_rtcp = NULL;
 
 	if (!no_rtcp) {
-		ev_rtcp = event_new(client_event_base, clnet_info_rtcp->fd,
-			EV_READ | EV_PERSIST, client_input_handler,
-			ss_rtcp);
+		ev_rtcp = event_new(client_event_base, clnet_info_rtcp->fd, EV_READ | EV_PERSIST, client_input_handler, ss_rtcp);
 
 		event_add(ev_rtcp, NULL);
 	}
@@ -1131,12 +1142,14 @@ static int start_c2c(const char *remote_address, int port,
 
 	app_ur_conn_info *clnet_info1 = &(ss1->pinfo);
 	app_ur_conn_info *clnet_info1_rtcp = NULL;
+	strcpy(clnet_info1->key, "client1");
 
 	if (!no_rtcp)
 		clnet_info1_rtcp = &(ss1_rtcp->pinfo);
 
 	app_ur_conn_info *clnet_info2 = &(ss2->pinfo);
 	app_ur_conn_info *clnet_info2_rtcp = NULL;
+	strcpy(clnet_info2->key, "client2");
 
 	if (!no_rtcp)
 		clnet_info2_rtcp = &(ss2_rtcp->pinfo);
@@ -1458,8 +1471,7 @@ void start_mclient(const char *remote_address, int port,
 		if (!no_rtcp)
 			for (i = 0; i < (mclient >> 1); i++) {
 				if (!dos) usleep(SLEEP_INTERVAL);
-				if (start_client(remote_address, port, ifname, local_address,
-					messagenumber, i << 1) < 0) {
+				if (start_client(remote_address, port, ifname, local_address, messagenumber, i << 1) < 0) {
 					exit(-1);
 				}
 				tot_clients += 2;
@@ -1467,8 +1479,7 @@ void start_mclient(const char *remote_address, int port,
 		else
 			for (i = 0; i < mclient; i++) {
 				if (!dos) usleep(SLEEP_INTERVAL);
-				if (start_client(remote_address, port, ifname, local_address,
-					messagenumber, i) < 0) {
+				if (start_client(remote_address, port, ifname, local_address, messagenumber, i) < 0) {
 					exit(-1);
 				}
 				tot_clients++;
