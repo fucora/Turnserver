@@ -884,7 +884,7 @@ static int client_shutdown(app_ur_session *elem) {
 }
 
 static int client_write(app_ur_session *elem) {
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_write \n");
+	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_write \n");
 	if (!elem) return -1;
 
 	if (elem->state != UR_STATE_READY) return -1;
@@ -942,7 +942,7 @@ static int client_write(app_ur_session *elem) {
 		if (clnet_verbose && verbose_packets) {
 			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "before write ...\n");
 		}
-		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...METHOD_SEND,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....client_write,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 
 		int rc = send_buffer(&(elem->pinfo), &(elem->out_buffer), 1, atc);
 
@@ -1279,7 +1279,7 @@ static int refresh_channel(app_ur_session* elem, u16bits method, uint32_t lt)
 			stun_attr_add_fingerprint_str(message.buf, (size_t*) &(message.len));
 
 
-		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...refresh_channel,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....refresh_channel,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 		send_buffer(clnet_info, &message, 0, 0);
 	}
 

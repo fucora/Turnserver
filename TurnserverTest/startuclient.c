@@ -412,7 +412,7 @@ static int clnet_allocate(int verbose, app_ur_conn_info *clnet_info, ioa_addr *r
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!allocate_sent) {
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to....allocate_client,buffer.length is %d  \n", clnet_info->key, request_message.len);
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....allocate_client,buffer.length is %d  \n", clnet_info->key, request_message.len);
 			int len = send_buffer(clnet_info, &request_message,0,0);
 
 			if (len > 0) {
@@ -662,7 +662,7 @@ static int clnet_allocate(int verbose, app_ur_conn_info *clnet_info, ioa_addr *r
 			stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 			while (!refresh_sent) {
-				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to....STUN_METHOD_REFRESH,buffer.length is %d  \n", clnet_info->key, request_message.len);
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....STUN_METHOD_REFRESH,buffer.length is %d  \n", clnet_info->key, request_message.len);
 				int len = send_buffer(clnet_info, &request_message, 0,0);
 
 				if (len > 0) {
@@ -865,7 +865,7 @@ static int turn_create_permission(int verbose, app_ur_conn_info *clnet_info,
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!cp_sent) {
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CREATE_PERMISSION,buffer.length is %d  \n", clnet_info->key, request_message.len); 
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....CREATE_PERMISSION,buffer.length is %d  \n", clnet_info->key, request_message.len); 
 			int len = send_buffer(clnet_info, &request_message, 0,0);
 
 			if (len > 0) {
@@ -1433,7 +1433,7 @@ static int turn_tcp_connection_bind(int verbose, app_ur_conn_info *clnet_info, a
 		stun_attr_add_fingerprint_str(request_message.buf,(size_t*)&(request_message.len));
 
 		while (!cb_sent) {
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CONNECTION_BIND,buffer.length is %d  \n", clnet_info->key, request_message.len);
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....CONNECTION_BIND,buffer.length is %d  \n", clnet_info->key, request_message.len);
 
 			int len = send_buffer(clnet_info, &request_message, 1, atc);
 
