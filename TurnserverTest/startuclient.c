@@ -434,13 +434,12 @@ static int clnet_allocate(int verbose, app_ur_conn_info *clnet_info, ioa_addr *r
 		{
 			int allocate_received = 0;
 			while (!allocate_received) {
-
+			
 				int len = recv_buffer(clnet_info, &response_message, 1, 0, NULL, &request_message);
-
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....allocate_client,buffer.length is %d  \n", clnet_info->key, request_message.len);
 				if (len > 0) {
 					if (verbose) {
-						TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-								"allocate response received: \n");
+						TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,"allocate response received: \n");
 					}
 					response_message.len = len;
 					int err_code = 0;
@@ -628,8 +627,7 @@ static int clnet_allocate(int verbose, app_ur_conn_info *clnet_info, ioa_addr *r
 		beg_refresh:
 
 	  if(af_cycle++>32) {
-	    TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR,
-			  "Cannot complete Refresh\n");
+	    TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "Cannot complete Refresh\n");
 	    exit(-1);
 	  }
 
@@ -691,11 +689,12 @@ static int clnet_allocate(int verbose, app_ur_conn_info *clnet_info, ioa_addr *r
 		{
 			int refresh_received = 0;
 			while (!refresh_received) {
-
+			
 				int len = recv_buffer(clnet_info, &response_message, 1, 0, NULL, &request_message);
-
-				if(clnet_info->s_mobile_id[0]) {
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....STUN_METHOD_REFRESH,buffer.length is %d  \n", clnet_info->key, request_message.len);
+				if(clnet_info->s_mobile_id[0]) { 
 					len = recv_buffer(clnet_info, &response_message, 1, 0, NULL, &request_message);
+					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....mobile_STUN_METHOD_REFRESH,buffer.length is %d  \n", clnet_info->key, request_message.len);
 				}
 
 				if (len > 0) {
@@ -784,8 +783,9 @@ static int turn_channel_bind(int verbose, uint16_t *chn, app_ur_conn_info *clnet
 	{
 		int cb_received = 0;
 		while (!cb_received) {
-
+		
 			int len = recv_buffer(clnet_info, &response_message, 1, 0, NULL, &request_message);
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....channel_bind,buffer.length is %d  \n", clnet_info->key, request_message.len);
 			if (len > 0) {
 				if (verbose) {
 					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
@@ -889,12 +889,12 @@ static int turn_create_permission(int verbose, app_ur_conn_info *clnet_info,
 	{
 		int cp_received = 0;
 		while (!cp_received) {
-
+			
 			int len = recv_buffer(clnet_info, &response_message, 1, 0, NULL, &request_message);
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....CREATE_PERMISSION,buffer.length is %d  \n", clnet_info->key, request_message.len);
 			if (len > 0) {
 				if (verbose) {
-					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-							"cp response received: \n");
+					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "cp response received: \n");
 				}
 				int err_code = 0;
 				u08bits err_msg[129];
@@ -1455,17 +1455,16 @@ static int turn_tcp_connection_bind(int verbose, app_ur_conn_info *clnet_info, a
 
 	if(not_rare_event()) return 0;
 
-	////////connection bind response==>>
-
+	////////connection bind response==>> 
 	{
 		int cb_received = 0;
 		while (!cb_received) {
-
+			
 			int len = recv_buffer(clnet_info, &response_message, 1, 1, atc, &request_message);
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....CONNECTION_BIND,buffer.length is %d  \n", clnet_info->key, request_message.len);
 			if (len > 0) {
 				if (verbose) {
-					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-							"connect bind response received: \n");
+					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "connect bind response received: \n");
 				}
 				int err_code = 0;
 				u08bits err_msg[129];

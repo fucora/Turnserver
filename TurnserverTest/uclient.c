@@ -189,7 +189,7 @@ static int remove_all_from_ss(app_ur_session* ss)
 ///////////////////////////////////////////////////////////////////////////////
 
 int send_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int data_connection, app_tcp_conn_info *atc)
-{ 
+{
 	int rc = 0;
 	int ret = -1;
 
@@ -363,10 +363,7 @@ static int wait_fd(int fd, unsigned int cycle) {
 	}
 }
 
-
-
-
-
+ 
 void convertUnCharToStr(char* str, unsigned  char* UnChar, int ucLen)
 {
 	int i = 0;
@@ -377,23 +374,7 @@ void convertUnCharToStr(char* str, unsigned  char* UnChar, int ucLen)
 	}
 }
 int recv_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int sync, int data_connection, app_tcp_conn_info *atc, stun_buffer* request_message) {
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "***************************%s****recv_buffer:\n", (char*)clnet_info->key);
-	//TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "from_clientId:%d \n", clnet_info->fd);
-	//if (request_message) {
-	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Message_Length:%d \n", request_message->len);
-
-	//	/*char requestMessages[sizeof(request_message->buf)];
-	//	convertUnCharToStr(requestMessages, request_message->buf, sizeof(request_message->buf));
-	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Message:%s \n", requestMessages);*/
-	//}
-
-	//if (message) {
-	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Data_Length:%d \n", message->len);
-	///*	char requestData[sizeof(message->buf)];
-	//	convertUnCharToStr(requestData, message->buf, sizeof(message->buf));
-	//	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "request_Data:%s \n", requestData);*/
-	//}
-
+	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "***************************%s****recv_buffer:\n", (char*)clnet_info->key); 
 	int rc = 0;
 
 	stun_tid tid;
@@ -686,7 +667,7 @@ recv_again:
 }
 
 static int client_read(app_ur_session *elem, int is_tcp_data, app_tcp_conn_info *atc) {
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_read \n", (long)elem);
+	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_read \n", (long)elem);
 	if (!elem)
 		return -1;
 
@@ -704,8 +685,9 @@ static int client_read(app_ur_session *elem, int is_tcp_data, app_tcp_conn_info 
 	if (clnet_verbose && verbose_packets) {
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "before read ...\n");
 	}
-
+	
 	rc = recv_buffer(clnet_info, &(elem->in_buffer), 0, is_tcp_data, atc, NULL);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....client_read,buffer.length is %d  \n", clnet_info->key, elem->in_buffer.len);
 
 	if (clnet_verbose && verbose_packets) {
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "read %d bytes\n", (int)rc);
@@ -982,9 +964,9 @@ static int client_write(app_ur_session *elem) {
 	return 0;
 }
 
-void client_input_handler(evutil_socket_t fd, short what, void* arg) {
+void client_input_handler(evutil_socket_t fd, short what, void* arg) { 
+	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_input_handler \n");
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_input_handler \n");
 	if (!(what&EV_READ) || !arg) return;
 
 	UNUSED_ARG(fd);
@@ -1312,7 +1294,7 @@ static int refresh_channel(app_ur_session* elem, u16bits method, uint32_t lt)
 				if (use_fingerprints)
 					stun_attr_add_fingerprint_str(message.buf, (size_t*) &(message.len));
 
-				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CREATE_PERMISSION,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....CREATE_PERMISSION,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 				send_buffer(&(elem->pinfo), &message, 0, 0);
 			}
 		}
@@ -1325,7 +1307,7 @@ static int refresh_channel(app_ur_session* elem, u16bits method, uint32_t lt)
 				if (use_fingerprints)
 					stun_attr_add_fingerprint_str(message.buf, (size_t*) &(message.len));
 
-				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to...CHANNEL_BIND,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len); 
+				TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....CHANNEL_BIND,buffer.length is %d  \n", elem->pinfo.key, elem->out_buffer.len);
 				send_buffer(&(elem->pinfo), &message, 1, 0);
 			}
 		}
