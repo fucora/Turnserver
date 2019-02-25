@@ -966,7 +966,6 @@ static int client_write(app_ur_session *elem) {
 
 void client_input_handler(evutil_socket_t fd, short what, void* arg) { 
 	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_input_handler \n");
-
 	if (!(what&EV_READ) || !arg) return;
 
 	UNUSED_ARG(fd);
@@ -1023,11 +1022,7 @@ static void run_events(int short_burst)
 
 ////////////////////// main method /////////////////
 
-static int start_client(const char *remote_address, int port,
-	const unsigned char* ifname, const char *local_address,
-	int messagenumber,
-	int i) {
-
+static int start_client(const char *remote_address, int port,const unsigned char* ifname, const char *local_address,int messagenumber,int i) {
 	app_ur_session* ss = create_new_ss();
 	app_ur_session* ss_rtcp = NULL;
 
@@ -1404,9 +1399,7 @@ static void timer_handler(evutil_socket_t fd, short event, void *arg)
 	}
 }
 
-void start_mclient(const char *remote_address, int port,
-	const unsigned char* ifname, const char *local_address,
-	int messagenumber, int mclient) {
+void start_mclient(const char *remote_address, int port,const unsigned char* ifname, const char *local_address,int messagenumber, int mclient) {
 
 	if (mclient < 1)
 		mclient = 1;
@@ -1571,9 +1564,7 @@ void start_mclient(const char *remote_address, int port,
 	start_full_timer = 1;
 
 	while (1) {
-
 		run_events(1);
-
 		int msz = (int)current_clients_number;
 		if (msz < 1) {
 			break;
@@ -1590,17 +1581,9 @@ void start_mclient(const char *remote_address, int port,
 		}
 	}
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-		"%s: tot_send_msgs=%lu, tot_recv_msgs=%lu\n",
-		__FUNCTION__,
-		(unsigned long)tot_send_messages,
-		(unsigned long)tot_recv_messages);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: tot_send_msgs=%lu, tot_recv_msgs=%lu\n", __FUNCTION__, (unsigned long)tot_send_messages, (unsigned long)tot_recv_messages);
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO,
-		"%s: tot_send_bytes ~ %lu, tot_recv_bytes ~ %lu\n",
-		__FUNCTION__,
-		(unsigned long)tot_send_bytes,
-		(unsigned long)tot_recv_bytes);
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: tot_send_bytes ~ %lu, tot_recv_bytes ~ %lu\n", __FUNCTION__, (unsigned long)tot_send_bytes, (unsigned long)tot_recv_bytes);
 
 	if (client_event_base)
 		event_base_free(client_event_base);
