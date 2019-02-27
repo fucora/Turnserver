@@ -1508,8 +1508,7 @@ void start_mclient(const char *remote_address, int port,const unsigned char* ifn
 
 	__turn_getMSTime();
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total connect time is %u\n",
-		((unsigned int)(current_time - stime)));
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total connect time is %u\n",((unsigned int)(current_time - stime)));
 
 	stime = current_time;
 
@@ -1593,8 +1592,8 @@ void start_mclient(const char *remote_address, int port,const unsigned char* ifn
 
 	total_loss = tot_send_messages - tot_recv_messages;
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total transmit time is %u\n",
-		((unsigned int)(current_time - stime)));
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total transmit time is %u\n", ((unsigned int)(current_time - stime)));
+
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total lost packets %llu (%f%c), total send dropped %llu (%f%c)\n",
 		(unsigned long long)total_loss, (((double)total_loss / (double)tot_send_messages)*100.00), '%',
 		(unsigned long long)tot_send_dropped, (((double)tot_send_dropped / (double)(tot_send_messages + tot_send_dropped))*100.00), '%');
