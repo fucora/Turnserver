@@ -155,6 +155,12 @@
     <IncludePath>$(ProjectDir)common\;$(ProjectDir)client\;$(ProjectDir)server\;$(ProjectDir)dbdriver\;$(ProjectDir);$(IncludePath)</IncludePath>
     <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <IncludePath>$(ProjectDir)client;$(ProjectDir)dbdriver;$(ProjectDir)server;$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <IncludePath>$(ProjectDir)client;$(ProjectDir)dbdriver;$(ProjectDir)server;$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Link>
       <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;%(AdditionalDependencies)</AdditionalDependencies>
