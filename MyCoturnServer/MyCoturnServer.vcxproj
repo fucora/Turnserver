@@ -76,10 +76,23 @@
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="socketListener.cpp" />
+    <ClCompile Include="socketManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="socketListener.h" />
+    <ClInclude Include="socketManager.h" />
   </ItemGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <Link>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <Link>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>
