@@ -4978,6 +4978,7 @@ static void peer_input_handler(ioa_socket_handle s, int event_type,ioa_net_data 
 }
 
 static void client_input_handler(ioa_socket_handle s, int event_type,ioa_net_data *data, void *arg, int can_resume) {
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "--------------------------------------------------------------------------------------------------------------\n", __FUNCTION__, 1);
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_input_handler \n", __FUNCTION__, 1);
 	if (!arg)
 		return;

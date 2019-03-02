@@ -4,10 +4,10 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <RemoteTarget>1807701939;192.168.100.141 (username=, port=22, authentication=Password)</RemoteTarget>
+    <RemoteTarget>1514298932;192.168.100.142 (username=, port=22, authentication=Password)</RemoteTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <RemoteTarget>1807701939;192.168.100.141 (username=, port=22, authentication=Password)</RemoteTarget>
+    <RemoteTarget>1514298932;192.168.100.142 (username=, port=22, authentication=Password)</RemoteTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <RemoteTarget>1807701939;192.168.100.141 (username=, port=22, authentication=Password)</RemoteTarget>

@@ -190,6 +190,8 @@ static int remove_all_from_ss(app_ur_session* ss)
 
 int send_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int data_connection, app_tcp_conn_info *atc)
 {
+	addr_debug_print(1, &clnet_info->relay_addr, "client relay address");
+	addr_debug_print(1, &clnet_info->peer_addr, "client peer address");
 	int rc = 0;
 	int ret = -1;
 
@@ -364,17 +366,9 @@ static int wait_fd(int fd, unsigned int cycle) {
 }
 
  
-void convertUnCharToStr(char* str, unsigned  char* UnChar, int ucLen)
-{
-	int i = 0;
-	for (i = 0; i < ucLen; i++)
-	{
-		//格式化输str,每unsigned char 转换字符占两位置%x写输%X写输  
-		sprintf(str + i * 2, "%02x", UnChar[i]);
-	}
-}
 int recv_buffer(app_ur_conn_info *clnet_info, stun_buffer* message, int sync, int data_connection, app_tcp_conn_info *atc, stun_buffer* request_message) {
-	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "***************************%s****recv_buffer:\n", (char*)clnet_info->key); 
+	addr_debug_print(1, &clnet_info->relay_addr, "client relay address");
+	addr_debug_print(1, &clnet_info->peer_addr, "client peer address");
 	int rc = 0;
 
 	stun_tid tid;
@@ -685,7 +679,7 @@ static int client_read(app_ur_session *elem, int is_tcp_data, app_tcp_conn_info 
 	if (clnet_verbose && verbose_packets) {
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "before read ...\n");
 	}
-	
+
 	rc = recv_buffer(clnet_info, &(elem->in_buffer), 0, is_tcp_data, atc, NULL);
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "=============%s=================recv_buffer.....to.....client_read,buffer.length is %d  \n", clnet_info->key, elem->in_buffer.len);
 
@@ -964,7 +958,7 @@ static int client_write(app_ur_session *elem) {
 	return 0;
 }
 
-void client_input_handler(evutil_socket_t fd, short what, void* arg) { 
+void client_input_handler(evutil_socket_t fd, short what, void* arg) {
 	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*******************************client_input_handler \n");
 	if (!(what&EV_READ) || !arg) return;
 
@@ -1022,7 +1016,7 @@ static void run_events(int short_burst)
 
 ////////////////////// main method /////////////////
 
-static int start_client(const char *remote_address, int port,const unsigned char* ifname, const char *local_address,int messagenumber,int i) {
+static int start_client(const char *remote_address, int port, const unsigned char* ifname, const char *local_address, int messagenumber, int i) {
 	app_ur_session* ss = create_new_ss();
 	app_ur_session* ss_rtcp = NULL;
 
@@ -1399,7 +1393,7 @@ static void timer_handler(evutil_socket_t fd, short event, void *arg)
 	}
 }
 
-void start_mclient(const char *remote_address, int port,const unsigned char* ifname, const char *local_address,int messagenumber, int mclient) {
+void start_mclient(const char *remote_address, int port, const unsigned char* ifname, const char *local_address, int messagenumber, int mclient) {
 
 	if (mclient < 1)
 		mclient = 1;
@@ -1508,7 +1502,7 @@ void start_mclient(const char *remote_address, int port,const unsigned char* ifn
 
 	__turn_getMSTime();
 
-	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total connect time is %u\n",((unsigned int)(current_time - stime)));
+	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Total connect time is %u\n", ((unsigned int)(current_time - stime)));
 
 	stime = current_time;
 

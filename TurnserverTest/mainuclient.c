@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 	argv[4] = "password";
 	argv[5] = "-w";
 	argv[6] = "username";
-	argv[7] = "192.168.100.141";
+	argv[7] = "192.168.100.142";
 
 	int port = 0;
 	int messagenumber = 5;

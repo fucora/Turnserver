@@ -58,10 +58,8 @@ struct tls_listener_relay_server_info
 
 /////////////// io handlers ///////////////////
 
-static void server_input_handler(struct evconnlistener *l, evutil_socket_t fd,
-				struct sockaddr *sa, int socklen, void *arg)
-{
-
+static void server_input_handler(struct evconnlistener *l, evutil_socket_t fd, struct sockaddr *sa, int socklen, void *arg)
+{ 
 	UNUSED_ARG(l);
 
 	tls_listener_relay_server_type * server = (tls_listener_relay_server_type*) arg;
@@ -87,8 +85,7 @@ static void server_input_handler(struct evconnlistener *l, evutil_socket_t fd,
 	else if(turn_params.no_tcp)
 		st = TLS_SOCKET;
 
-	ioa_socket_handle ioas =
-				create_ioa_socket_from_fd(
+	ioa_socket_handle ioas = create_ioa_socket_from_fd(
 							server->e,
 							fd,
 							NULL,

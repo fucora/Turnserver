@@ -1207,11 +1207,10 @@ int start_c2c_connection(uint16_t clnet_remote_port0,
 	uint16_t clnet_remote_port = clnet_remote_port0;
 	char remote_address[1025];
 	STRCPY(remote_address, remote_address0);
-
+	 
 	clnet_allocate(verbose, clnet_info_probe, &relay_addr1, default_address_family, remote_address, &clnet_remote_port);
-
+	addr_debug_print(1, &relay_addr1, "server allocate client relay address");
 	if (rare_event()) return 0;
-
 	/* Real: */
 
 	if (clnet_connect(clnet_remote_port, remote_address, ifname, local_address, verbose, clnet_info1) < 0) {
