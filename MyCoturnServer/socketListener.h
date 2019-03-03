@@ -32,21 +32,21 @@ public:
 
 	void accept_handler(const boost::system::error_code & ec, sock_ptr sock);
 
-	void write_handler(const boost::system::error_code & ec);
+	void tcp_write_handler(const boost::system::error_code & ec);
 
-	void read_handler(const boost::system::error_code & ec, sock_ptr sock);
+ 
 
  
 	 
 
+	void tcp_read_handler(const boost::system::error_code & ec, sock_ptr sock);
+
 	void accept_udp();
 
-	void hand_receive(const boost::system::error_code & error, std::size_t size);
+	void udp_hand_receive(const boost::system::error_code & error, std::size_t size);
 
-	void hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error & error, std::size_t size);
-
- 
-
+	void udp_hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error & error, std::size_t size);
+	  
 	
 
 };

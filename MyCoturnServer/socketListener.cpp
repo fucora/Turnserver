@@ -35,7 +35,7 @@ void socketListener::StartSocketListen() {
 	m_io.run();
 }
 
-
+//********************************TCP listen****************************************************************************************
 void socketListener::accept_tcp()
 {
 	sock_ptr tcp_dataInfo(new tcp_socket(m_io));
@@ -54,7 +54,7 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 		sock.get()->async_read_some(
 			boost::asio::buffer(tcp_buffer),
 			boost::bind(
-				&socketListener::read_handler, this,
+				&socketListener::tcp_read_handler, this,
 				boost::asio::placeholders::error,
 				sock
 			)
@@ -69,29 +69,28 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 	accept_tcp();
 }
 
-void socketListener::write_handler(const boost::system::error_code&ec)
+void socketListener::tcp_write_handler(const boost::system::error_code&ec)
 {
 	cout << "send msg complete" << endl;
 }
 
-void socketListener::read_handler(const boost::system::error_code&ec, sock_ptr sock)
-{
-	cout << "send msg complete" << endl;
+void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock)
+{ 
 	sock.get()->async_read_some(
 		boost::asio::buffer(tcp_buffer),
 		boost::bind(
-			&socketListener::read_handler, this,
+			&socketListener::tcp_read_handler, this,
 			boost::asio::placeholders::error,
 			sock
 		)
 	);
 }
-//---------------------------------------------------------------------------------------------------------------------
+//********************************UDP listen****************************************************************************************
 void socketListener::accept_udp()
 {
-	udp_listener->async_receive_from(boost::asio::buffer(udp_buffer), remot_endpoint_, boost::bind(&socketListener::hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	udp_listener->async_receive_from(boost::asio::buffer(udp_buffer), remot_endpoint_, boost::bind(&socketListener::udp_hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
-void socketListener::hand_receive(const boost::system::error_code& error, std::size_t size)
+void socketListener::udp_hand_receive(const boost::system::error_code& error, std::size_t size)
 {
 	if (error) {
 		return;
@@ -109,7 +108,7 @@ void socketListener::hand_receive(const boost::system::error_code& error, std::s
 
 }
 
-void socketListener::hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error& error, std::size_t size)
+void socketListener::udp_hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error& error, std::size_t size)
 {
 
 }
