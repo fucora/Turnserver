@@ -83,14 +83,17 @@
     <ClInclude Include="socketListener.h" />
     <ClInclude Include="socketManager.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="readme.txt" />
+  </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;/usr/lib/i386-linux-gnu/libmysqlclient.so;/usr/lib/i386-linux-gnu/libssl.so;/usr/lib/i386-linux-gnu/libevent_openssl.so;/usr/lib/i386-linux-gnu/libhiredis.so;/usr/lib/i386-linux-gnu/libevent.so;/usr/lib/i386-linux-gnu/libevent_pthreads.so;/usr/lib/i386-linux-gnu/libpthread.so;/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

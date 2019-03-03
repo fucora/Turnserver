@@ -1,39 +1,39 @@
 #pragma once
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <ctype.h>
-#include <arpa/inet.h>
-#include <signal.h>
-#include <errno.h>
-#include <sys/wait.h>
-#include <event2/event.h>
-#include <event2/bufferevent.h>
-#include <event2/listener.h>
+#include <iostream>
+#include <memory>
+#include <array>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/asio.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/bind/bind.hpp>
+
+using namespace boost::asio;
+using namespace std;
+ 
+typedef ip::tcp::socket socket_type;
+typedef ip::address address_type;
+typedef boost::shared_ptr<socket_type> sock_ptr;
 
 class socketListener
 {
 
 public:
-	socketListener();
+	socketListener();	
 	~socketListener();
-
 	void StartSocketListen();
-	void _startloop(sockaddr_in * addr);
+
+	void accept();
+
+	void accept_handler(const boost::system::error_code & ec, sock_ptr sock);
+
+	void write_handler(const boost::system::error_code & ec);
+
+ 
+
 	
 
 };
 
-
-
-void accept_cb(evconnlistener * listener, evutil_socket_t clientfd, sockaddr * addr, int len, void * arg);
-
-void _read_buf_cb(bufferevent * bev, void * cbarg);
-
-void _write_buf_cb(bufferevent * bev, void * cbarg);
-
-void _event_cb(bufferevent * bev, short event, void * cbarg);
+ 
