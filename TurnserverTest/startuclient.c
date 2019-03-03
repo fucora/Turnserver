@@ -422,8 +422,7 @@ beg_allocate:
 
 		while (!allocate_sent) {
 			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*************%s*****************send_buffer.....to.....allocate_client,buffer.length is %d  \n", clnet_info->key, request_message.len);
-			int len = send_buffer(clnet_info, &request_message, 0, 0);
-
+			int len = send_buffer(clnet_info, &request_message, 0, 0); 
 			if (len > 0) {
 				if (verbose) {
 					TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "allocate sent\n");
