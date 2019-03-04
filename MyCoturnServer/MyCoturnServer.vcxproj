@@ -79,6 +79,7 @@
     <ClCompile Include="socketListener.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="main.h" />
     <ClInclude Include="socketListener.h" />
   </ItemGroup>
   <ItemGroup>

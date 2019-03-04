@@ -15,6 +15,7 @@
     <ClInclude Include="socketListener.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="main.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

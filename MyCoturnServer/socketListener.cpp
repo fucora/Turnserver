@@ -13,12 +13,12 @@ ip::tcp::acceptor* tcp_listener;
 char tcp_buffer[4096];
 
 udp_socket* udp_listener;
-ip::udp::endpoint udp_remot_endpoint;
+udp_endpoint udp_remot_endpoint;
 char udp_buffer[4096];
 
-boost::signal<void(ip::tcp::endpoint*)> _tcpconnectCallback;
-boost::signal<void(char[], ip::tcp::endpoint*)> _tcpReciveDataCallback;; 
-boost::signal<void(char[], ip::udp::endpoint*)> _udpReciveDataCallback;;
+boost::signal<void(tcp_endpoint*)> _tcpconnectCallback;
+boost::signal<void(char[], tcp_endpoint*)> _tcpReciveDataCallback;
+boost::signal<void(char[], udp_endpoint*)> _udpReciveDataCallback;
 
 socketListener::socketListener(int port)
 {
@@ -29,16 +29,7 @@ socketListener::socketListener(int port)
 socketListener::~socketListener()
 {
 }
-
-void socketListener::StartSocketListen() {
-	tcp_listener = new ip::tcp::acceptor(m_io, ip::tcp::endpoint(ip::tcp::v4(), serverport));
-	udp_listener = new ip::udp::socket(m_io, ip::udp::endpoint(ip::udp::v4(), serverport));
  
-	accept_tcp();
-	accept_udp();
-	m_io.run();
-}
-
 //********************************TCP listen****************************************************************************************
 void socketListener::accept_tcp()
 {
@@ -55,7 +46,7 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 
 	try
 	{
-		_tcpconnectCallback(sock.get()->remote_endpoint);
+		_tcpconnectCallback(&sock->remote_endpoint());
 	}
 	catch (const std::exception&)
 	{ 
@@ -90,7 +81,7 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 { 
 	try
 	{
-		_tcpReciveDataCallback(tcp_buffer, sock.get()->remote_endpoint);
+		_tcpReciveDataCallback(tcp_buffer, &sock->remote_endpoint());
 	}
 	catch (const std::exception&)
 	{
@@ -132,3 +123,24 @@ void socketListener::udp_hand_send(boost::shared_ptr<std::string> message, const
 {
 
 }
+//***********************************public method*******************************************************
+void socketListener::StartSocketListen() {
+	tcp_listener = new ip::tcp::acceptor(m_io, tcp_endpoint(ip::tcp::v4(), serverport));
+	udp_listener = new ip::udp::socket(m_io, udp_endpoint(ip::udp::v4(), serverport));
+
+	accept_tcp();
+	accept_udp();
+	m_io.run();
+}
+
+void socketListener::WhileTcpConnect(void (*func)(tcp_endpoint*)) {
+	_tcpconnectCallback.connect(_tcpconnectCallback.num_slots(), func);
+}
+void socketListener::WhileTcpMessage(void(*func)(char[], tcp_endpoint*)) {
+	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(),func);
+} 
+
+void socketListener::WhileUdpMessage(void(*func)(char[], udp_endpoint*)) {
+	_udpReciveDataCallback.connect(_udpReciveDataCallback.num_slots(), func);
+}
+
