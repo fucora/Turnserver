@@ -9,10 +9,11 @@
 #include <boost/system/error_code.hpp>
 #include <boost/bind/bind.hpp> 
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/signal.hpp>
 
 using namespace boost::asio;
-using namespace std;
- 
+using namespace std; 
+
 typedef ip::tcp::socket tcp_socket;
 typedef ip::udp::socket udp_socket;
 
@@ -24,7 +25,8 @@ class socketListener
 {
 
 public:
-	socketListener();	
+ 
+	socketListener(int port);
 	~socketListener();
 	void StartSocketListen();
 

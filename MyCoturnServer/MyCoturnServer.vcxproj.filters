@@ -2,9 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="socketManager.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="socketListener.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -15,9 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="socketManager.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="socketListener.h">
       <Filter>common</Filter>
     </ClInclude>

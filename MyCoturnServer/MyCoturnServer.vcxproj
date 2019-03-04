@@ -77,11 +77,9 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="socketListener.cpp" />
-    <ClCompile Include="socketManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="socketListener.h" />
-    <ClInclude Include="socketManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	argv[6] = "username";
 	argv[7] = "192.168.100.142";
 
-	int port = 8888;
+	int port = 3478;
 	int messagenumber = 5;
 	char local_addr[256];
 	int c;

@@ -10,15 +10,19 @@ int serverport = 8888;
 
 io_service m_io;
 ip::tcp::acceptor* tcp_listener;
-char   tcp_buffer[4096];
+char tcp_buffer[4096];
 
-
-ip::udp::socket* udp_listener;
-ip::udp::endpoint remot_endpoint_;
+udp_socket* udp_listener;
+ip::udp::endpoint udp_remot_endpoint;
 char udp_buffer[4096];
 
-socketListener::socketListener()
+boost::signal<void(ip::tcp::endpoint*)> _tcpconnectCallback;
+boost::signal<void(char[], ip::tcp::endpoint*)> _tcpReciveDataCallback;; 
+boost::signal<void(char[], ip::udp::endpoint*)> _udpReciveDataCallback;;
+
+socketListener::socketListener(int port)
 {
+	serverport = port;
 }
 
 
@@ -29,7 +33,7 @@ socketListener::~socketListener()
 void socketListener::StartSocketListen() {
 	tcp_listener = new ip::tcp::acceptor(m_io, ip::tcp::endpoint(ip::tcp::v4(), serverport));
 	udp_listener = new ip::udp::socket(m_io, ip::udp::endpoint(ip::udp::v4(), serverport));
-
+ 
 	accept_tcp();
 	accept_udp();
 	m_io.run();
@@ -48,6 +52,15 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 	{
 		return;
 	}
+
+	try
+	{
+		_tcpconnectCallback(sock.get()->remote_endpoint);
+	}
+	catch (const std::exception&)
+	{ 
+	}
+
 	try
 	{ 
 		//sock.get()->async_read_some(boost::asio::buffer(tcp_buffer),);
@@ -61,8 +74,7 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 		);
 	}
 	catch (const std::exception&)
-	{
-
+	{ 
 	}
 
 	// 发送完毕后继续监听，否则io_service将认为没有事件处理而结束运行
@@ -76,6 +88,14 @@ void socketListener::tcp_write_handler(const boost::system::error_code&ec)
 
 void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock)
 { 
+	try
+	{
+		_tcpReciveDataCallback(tcp_buffer, sock.get()->remote_endpoint);
+	}
+	catch (const std::exception&)
+	{
+
+	}
 	sock.get()->async_read_some(
 		boost::asio::buffer(tcp_buffer),
 		boost::bind(
@@ -88,7 +108,7 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 //********************************UDP listen****************************************************************************************
 void socketListener::accept_udp()
 {
-	udp_listener->async_receive_from(boost::asio::buffer(udp_buffer), remot_endpoint_, boost::bind(&socketListener::udp_hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	udp_listener->async_receive_from(boost::asio::buffer(udp_buffer), udp_remot_endpoint, boost::bind(&socketListener::udp_hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 void socketListener::udp_hand_receive(const boost::system::error_code& error, std::size_t size)
 {
@@ -97,8 +117,8 @@ void socketListener::udp_hand_receive(const boost::system::error_code& error, st
 	}
 	try
 	{
-		//数据
-		auto data = udp_buffer;
+		_udpReciveDataCallback(udp_buffer, &udp_remot_endpoint);
+ 
 	}
 	catch (const std::exception&)
 	{
