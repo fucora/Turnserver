@@ -21,12 +21,12 @@ void onTcpConnect(sock_ptr* remote_socket) {
 	printf("收到tcp连接");
 }
 
-void onTcpMessage(sihnalbuffer  data, sock_ptr* remote_socket) {
- 
+void onTcpMessage(buffer_type  data, int lenth, sock_ptr* remote_socket) {
+	 
 	printf("收到tcp消息");
 }
 
-void onUdpMessage(sihnalbuffer  data, udp_endpoint* remote_endpoint) {
+void onUdpMessage(buffer_type  data, int lenth, udp_endpoint* remote_endpoint) {
 	auto x = remote_endpoint->data()->sa_data;
 	printf("收到udp消息");
 }

@@ -13,10 +13,7 @@
 
 using namespace boost::asio;
 using namespace std;
-
-#ifndef BLOCK_SIZE
-#define BLOCK_SIZE 4096;
-#endif // !BLOCK_SIZE
+ 
 
 typedef  char buffer_type[4096];
 
@@ -27,8 +24,7 @@ typedef ip::udp::endpoint udp_endpoint;
 
 typedef ip::address address_type;
 typedef boost::shared_ptr<tcp_socket> sock_ptr; 
-
-typedef boost::shared_ptr<char[4096]> sihnalbuffer;
+ 
 
 class socketListener
 {
@@ -66,9 +62,9 @@ public:  	void StartSocketListen();
 
 			void WhileTcpConnect(void(*func)(sock_ptr *));
 
-			void WhileTcpMessage(void(*func)(sihnalbuffer, sock_ptr *));
+			void WhileTcpMessage(void(*func)(buffer_type, int, sock_ptr *));
 
-			void WhileUdpMessage(void(*func)(sihnalbuffer, udp_endpoint *));
+			void WhileUdpMessage(void(*func)(buffer_type, int, udp_endpoint *));
 
 
 

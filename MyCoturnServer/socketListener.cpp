@@ -12,8 +12,8 @@ udp_endpoint udp_remot_endpoint;
 buffer_type udp_buffer;
 
 boost::signals2::signal<void(sock_ptr*)> _tcpconnectCallback;
-boost::signals2::signal<void(sihnalbuffer, sock_ptr*)> _tcpReciveDataCallback;
-boost::signals2::signal<void(sihnalbuffer, udp_endpoint*)> _udpReciveDataCallback;
+boost::signals2::signal<void(buffer_type, int, sock_ptr*)> _tcpReciveDataCallback;
+boost::signals2::signal<void(buffer_type, int, udp_endpoint*)> _udpReciveDataCallback;
 
 socketListener::socketListener(int port)
 {
@@ -80,9 +80,8 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 {
 	try
 	{
-		sihnalbuffer bufferx(tcp_buffer);
-		auto x = bufferx.get()[1];
-		_tcpReciveDataCallback(bufferx, &sock);
+		_tcpReciveDataCallback(tcp_buffer,sizeof(tcp_buffer), &sock);
+		 
 	}
 	catch (const std::exception&)
 	{
@@ -102,9 +101,7 @@ void socketListener::udp_hand_receive(const boost::system::error_code& error, st
 	}
 	try
 	{
-		sihnalbuffer bufferx(udp_buffer);
-		auto x = bufferx.get()[1];
-		_udpReciveDataCallback(bufferx, &udp_remot_endpoint);
+		_udpReciveDataCallback(udp_buffer, sizeof(udp_buffer), &udp_remot_endpoint);
 
 	}
 	catch (const std::exception&)
@@ -132,11 +129,11 @@ void socketListener::StartSocketListen() {
 void socketListener::WhileTcpConnect(void(*func)(sock_ptr*)) {
 	_tcpconnectCallback.connect(_tcpconnectCallback.num_slots(), func);
 }
-void socketListener::WhileTcpMessage(void(*func)(sihnalbuffer, sock_ptr*)) {
+void socketListener::WhileTcpMessage(void(*func)(buffer_type, int, sock_ptr*)) {
 	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(), func);
 }
 
-void socketListener::WhileUdpMessage(void(*func)(sihnalbuffer, udp_endpoint*)) {
+void socketListener::WhileUdpMessage(void(*func)(buffer_type, int, udp_endpoint*)) {
 	_udpReciveDataCallback.connect(_udpReciveDataCallback.num_slots(), func);
 }
 
