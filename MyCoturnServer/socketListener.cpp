@@ -1,9 +1,6 @@
 ﻿#include "socketListener.h"
 
 
-
-
-
 int serverport = 8888;
 
 io_service m_io;
@@ -12,11 +9,11 @@ buffer_type tcp_buffer;
 
 udp_socket* udp_listener;
 udp_endpoint udp_remot_endpoint;
-buffer_type udp_buffer ;
+buffer_type udp_buffer;
 
 boost::signals2::signal<void(sock_ptr*)> _tcpconnectCallback;
-boost::signals2::signal<void(buffer_type, sock_ptr*)> _tcpReciveDataCallback;
-boost::signals2::signal<void(buffer_type, udp_endpoint*)> _udpReciveDataCallback;
+boost::signals2::signal<void(sihnalbuffer, sock_ptr*)> _tcpReciveDataCallback;
+boost::signals2::signal<void(sihnalbuffer, udp_endpoint*)> _udpReciveDataCallback;
 
 socketListener::socketListener(int port)
 {
@@ -27,12 +24,24 @@ socketListener::socketListener(int port)
 socketListener::~socketListener()
 {
 }
- 
+
 //********************************TCP listen****************************************************************************************
 void socketListener::accept_tcp()
 {
 	sock_ptr tcp_dataInfo(new tcp_socket(m_io));
 	tcp_listener->async_accept(*tcp_dataInfo, boost::bind(&socketListener::accept_handler, this, boost::asio::placeholders::error, tcp_dataInfo));
+}
+
+void socketListener::read_tcp(sock_ptr sock)
+{
+	sock.get()->async_read_some(
+		buffer(tcp_buffer),
+		boost::bind(
+			&socketListener::tcp_read_handler, this,
+			boost::asio::placeholders::error,
+			sock
+		)
+	);
 }
 
 void socketListener::accept_handler(const boost::system::error_code& ec, sock_ptr sock)
@@ -47,22 +56,15 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 		_tcpconnectCallback(&sock);
 	}
 	catch (const std::exception&)
-	{ 
+	{
 	}
 
 	try
-	{  
-		sock.get()->async_read_some(
-			boost::asio::buffer(tcp_buffer),
-			boost::bind(
-				&socketListener::tcp_read_handler, this,
-				boost::asio::placeholders::error,
-				sock
-			)
-		);
+	{
+		read_tcp(sock);
 	}
 	catch (const std::exception&)
-	{ 
+	{
 	}
 
 	// 发送完毕后继续监听，否则io_service将认为没有事件处理而结束运行
@@ -75,30 +77,23 @@ void socketListener::tcp_write_handler(const boost::system::error_code&ec)
 }
 
 void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock)
-{ 
+{
 	try
 	{
-		buffer_type data;
-		strncpy(data, tcp_buffer, 4096);
-		_tcpReciveDataCallback(data, &sock);
+		sihnalbuffer bufferx(tcp_buffer);
+		auto x = bufferx.get()[1];
+		_tcpReciveDataCallback(bufferx, &sock);
 	}
 	catch (const std::exception&)
 	{
 
 	}
-	sock.get()->async_read_some(
-		boost::asio::buffer(tcp_buffer),
-		boost::bind(
-			&socketListener::tcp_read_handler, this,
-			boost::asio::placeholders::error,
-			sock
-		)
-	);
+	read_tcp(sock);
 }
 //********************************UDP listen****************************************************************************************
 void socketListener::accept_udp()
 {
-	udp_listener->async_receive_from(boost::asio::buffer(udp_buffer), udp_remot_endpoint, boost::bind(&socketListener::udp_hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	udp_listener->async_receive_from(buffer(udp_buffer), udp_remot_endpoint, boost::bind(&socketListener::udp_hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 void socketListener::udp_hand_receive(const boost::system::error_code& error, std::size_t size)
 {
@@ -107,10 +102,10 @@ void socketListener::udp_hand_receive(const boost::system::error_code& error, st
 	}
 	try
 	{
-		buffer_type data;
-		strncpy(data, udp_buffer, 4096);
-		_udpReciveDataCallback(data, &udp_remot_endpoint);
- 
+		sihnalbuffer bufferx(udp_buffer);
+		auto x = bufferx.get()[1];
+		_udpReciveDataCallback(bufferx, &udp_remot_endpoint);
+
 	}
 	catch (const std::exception&)
 	{
@@ -134,14 +129,14 @@ void socketListener::StartSocketListen() {
 	m_io.run();
 }
 
-void socketListener::WhileTcpConnect(void (*func)(sock_ptr*)) {
+void socketListener::WhileTcpConnect(void(*func)(sock_ptr*)) {
 	_tcpconnectCallback.connect(_tcpconnectCallback.num_slots(), func);
 }
-void socketListener::WhileTcpMessage(void(*func)(buffer_type, sock_ptr*)) {
-	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(),func);
-} 
+void socketListener::WhileTcpMessage(void(*func)(sihnalbuffer, sock_ptr*)) {
+	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(), func);
+}
 
-void socketListener::WhileUdpMessage(void(*func)(buffer_type, udp_endpoint*)) {
+void socketListener::WhileUdpMessage(void(*func)(sihnalbuffer, udp_endpoint*)) {
 	_udpReciveDataCallback.connect(_udpReciveDataCallback.num_slots(), func);
 }
 
