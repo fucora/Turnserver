@@ -50,7 +50,7 @@ private:   void tcp_write_handler(const boost::system::error_code & ec);
 
 
 
-private:	void tcp_read_handler(const boost::system::error_code & ec, sock_ptr sock);
+private:	void tcp_read_handler(const boost::system::error_code & ec, sock_ptr sock, std::size_t);
 
 private:	void accept_udp();
 

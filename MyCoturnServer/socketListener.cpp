@@ -37,9 +37,11 @@ void socketListener::read_tcp(sock_ptr sock)
 	sock.get()->async_read_some(
 		buffer(tcp_buffer),
 		boost::bind(
-			&socketListener::tcp_read_handler, this,
+			&socketListener::tcp_read_handler,
+			this,
 			boost::asio::placeholders::error,
-			sock
+			sock,
+			boost::asio::placeholders::bytes_transferred
 		)
 	);
 }
@@ -76,12 +78,11 @@ void socketListener::tcp_write_handler(const boost::system::error_code&ec)
 	cout << "send msg complete" << endl;
 }
 
-void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock)
+void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock, std::size_t size)
 {
 	try
 	{
-		_tcpReciveDataCallback(tcp_buffer,sizeof(tcp_buffer), &sock);
-		 
+		_tcpReciveDataCallback(tcp_buffer, size, &sock);
 	}
 	catch (const std::exception&)
 	{
@@ -101,7 +102,7 @@ void socketListener::udp_hand_receive(const boost::system::error_code& error, st
 	}
 	try
 	{
-		_udpReciveDataCallback(udp_buffer, sizeof(udp_buffer), &udp_remot_endpoint);
+		_udpReciveDataCallback(udp_buffer, size, &udp_remot_endpoint);
 
 	}
 	catch (const std::exception&)
