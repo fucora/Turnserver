@@ -1,7 +1,11 @@
 #include <cstdio>
 #include "socketListener.h"
+#include "commonTypes.h"
+#include "turn_agreement.h"
+
 #include "main.h"
 using namespace std;
+
 int main()
 {
 	socketListener manager(8888);
@@ -21,7 +25,9 @@ void onTcpConnect(sock_ptr* remote_socket) {
 	printf("收到tcp连接");
 }
 
-void onTcpMessage(buffer_type  data, int lenth, sock_ptr* remote_socket) { 
+void onTcpMessage(buffer_type buf, int lenth, sock_ptr* remote_socket) {
+
+	int method = turn_agreement::stun_get_method_str(buf, lenth);
 	printf("收到tcp消息");
 }
 

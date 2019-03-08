@@ -77,10 +77,13 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="socketListener.cpp" />
+    <ClCompile Include="turn_agreement.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="commonTypes.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="socketListener.h" />
+    <ClInclude Include="turn_agreement.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

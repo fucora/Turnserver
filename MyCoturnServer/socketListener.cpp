@@ -32,20 +32,6 @@ void socketListener::accept_tcp()
 	tcp_listener->async_accept(*tcp_dataInfo, boost::bind(&socketListener::accept_handler, this, boost::asio::placeholders::error, tcp_dataInfo));
 }
 
-void socketListener::read_tcp(sock_ptr sock)
-{
-	sock.get()->async_read_some(
-		buffer(tcp_buffer),
-		boost::bind(
-			&socketListener::tcp_read_handler,
-			this,
-			boost::asio::placeholders::error,
-			sock,
-			boost::asio::placeholders::bytes_transferred
-		)
-	);
-}
-
 void socketListener::accept_handler(const boost::system::error_code& ec, sock_ptr sock)
 {
 	if (ec)
@@ -73,16 +59,32 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 	accept_tcp();
 }
 
-void socketListener::tcp_write_handler(const boost::system::error_code&ec)
+
+void socketListener::read_tcp(sock_ptr sock)
 {
-	cout << "send msg complete" << endl;
+	sock.get()->async_read_some(
+		buffer(tcp_buffer),
+		boost::bind(
+			&socketListener::tcp_read_handler,
+			this,
+			boost::asio::placeholders::error,
+			sock,
+			boost::asio::placeholders::bytes_transferred,
+			tcp_buffer
+		)
+	);
 }
 
-void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock, std::size_t size)
+void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_ptr sock, std::size_t size, buffer_type buf)
 {
 	try
 	{
-		_tcpReciveDataCallback(tcp_buffer, size, &sock);
+		if (size < 1) {
+			return;
+		}
+		char linshbuf[size];
+		memcpy(linshbuf, buf, size); //拷贝到新的数组中
+		_tcpReciveDataCallback(linshbuf, size, &sock);
 	}
 	catch (const std::exception&)
 	{
@@ -90,19 +92,37 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 	}
 	read_tcp(sock);
 }
+
+void socketListener::tcp_write_handler(const boost::system::error_code&ec)
+{
+	cout << "send msg complete" << endl;
+}
+
+
 //********************************UDP listen****************************************************************************************
 void socketListener::accept_udp()
 {
-	udp_listener->async_receive_from(buffer(udp_buffer), udp_remot_endpoint, boost::bind(&socketListener::udp_hand_receive, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	udp_listener->async_receive_from(buffer(udp_buffer), udp_remot_endpoint,
+		boost::bind(&socketListener::udp_hand_receive,
+			this,
+			boost::asio::placeholders::error,
+			boost::asio::placeholders::bytes_transferred,
+			udp_buffer
+		));
 }
-void socketListener::udp_hand_receive(const boost::system::error_code& error, std::size_t size)
+void socketListener::udp_hand_receive(const boost::system::error_code& error, std::size_t size, buffer_type buf)
 {
 	if (error) {
 		return;
 	}
 	try
 	{
-		_udpReciveDataCallback(udp_buffer, size, &udp_remot_endpoint);
+		if (size < 1) {
+			return;
+		}
+		char linshbuf[size];
+		memcpy(linshbuf, buf, size); //拷贝到新的数组中
+		_udpReciveDataCallback(buf, size, &udp_remot_endpoint);
 
 	}
 	catch (const std::exception&)
