@@ -182,6 +182,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Text Include="Coturn解析.txt" />
     <Text Include="readme.txt" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
