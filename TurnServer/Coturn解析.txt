@@ -1,5 +1,6 @@
 relay_receive_auth_message:分析用户auth
 
-handle_turn_command:分析turn协议和数据的重要入口
+read_client_connection：分析turn协议和数据的重要入口
+handle_turn_command:分析turn协议 的入口
  
 ns_turn_msg.cpp 类里包含了详细的解析协议的方法
