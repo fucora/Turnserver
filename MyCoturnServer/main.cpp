@@ -1,37 +1,14 @@
-#include <cstdio>
-#include "socketListener.h"
-#include "commonTypes.h"
-#include "turn_agreement.h"
-
-#include "main.h"
+#include <cstdio>  
+#include "turn_server.h"
 using namespace std;
 
 int main()
 {
-	socketListener manager(8888);
-	manager.WhileTcpConnect(onTcpConnect);
-	manager.WhileTcpMessage(onTcpMessage);
-	manager.WhileUdpMessage(onUdpMessage);
-
-	manager.StartSocketListen();
-
-	int i = 0;
-	cin >> i;
+	turn_server turnserver;
+	turnserver.StartServer();
+	  
+	 
 	return 0;
 }
 
 
-void onTcpConnect(sock_ptr* remote_socket) {
-	printf("收到tcp连接");
-}
-
-void onTcpMessage(buffer_type buf, int lenth, sock_ptr* remote_socket) {
-
-	int method = turn_agreement::stun_get_method_str(buf, lenth);
-	printf("收到tcp消息");
-}
-
-void onUdpMessage(buffer_type  data, int lenth, udp_endpoint* remote_endpoint) {
-	auto x = remote_endpoint->data()->sa_data;
-	printf("收到udp消息");
-}

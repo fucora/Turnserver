@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdio>  
+#include <stdint.h>
 #include <iostream>
 #include <memory>
 #include <array>
@@ -25,3 +27,8 @@ typedef ip::udp::endpoint udp_endpoint;
 
 typedef ip::address address_type;
 typedef boost::shared_ptr<tcp_socket> sock_ptr;
+
+enum SOCKET_TYPE {
+	TCP_SOCKET = 6,
+	UDP_SOCKET = 17
+};

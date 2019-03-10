@@ -8,6 +8,9 @@
     <ClCompile Include="turn_agreement.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="turn_server.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="common">
@@ -23,6 +26,9 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="commonTypes.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="turn_server.h">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

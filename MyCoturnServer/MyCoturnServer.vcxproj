@@ -78,12 +78,14 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="socketListener.cpp" />
     <ClCompile Include="turn_agreement.cpp" />
+    <ClCompile Include="turn_server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commonTypes.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="socketListener.h" />
     <ClInclude Include="turn_agreement.h" />
+    <ClInclude Include="turn_server.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
