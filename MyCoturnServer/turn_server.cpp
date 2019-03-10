@@ -12,6 +12,7 @@ turn_server::~turn_server()
 
 int turn_server::StartServer() {
 	socketListener manager(8888);
+
 	auto func = (void(*)(sock_ptr *))(&turn_server::onTcpConnect);
 	manager.WhileTcpConnect(func);
 
@@ -22,6 +23,7 @@ int turn_server::StartServer() {
 	manager.WhileUdpMessage(func2);
 
 	manager.StartSocketListen();
+	return 1;
 }
 void turn_server::onTcpConnect(sock_ptr* remote_socket) {
 	printf("收到tcp连接");
@@ -34,13 +36,13 @@ void turn_server::onTcpMessage(buffer_type buf, int lenth, sock_ptr* remote_sock
 	uint16_t chnum = 0;
 	int is_padding_mandatory = 1;
 
-	if (stun_is_channel_message_str(buf, &blen, &chnum, is_padding_mandatory))
+	if (stun_is_channel_message_str((u08bits*)buf, &blen, &chnum, is_padding_mandatory))
 	{
 
 	}
-	else if (stun_is_command_message_full_check_str()) {
+	//else if (stun_is_command_message_full_check_str()) {
 
-	}
+	//}
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
 }

@@ -5,7 +5,12 @@
 #include <memory>
 #include <array>
 #include <netinet/in.h>
-
+////////////
+#include "../common/ns_turn_msg.h"
+#include "../common/ns_turn_server.h"
+#include "../ns_turn_defs.h"
+#include "../common/ns_turn_msg_defs.h"
+////////
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/placeholders.hpp>
@@ -27,8 +32,4 @@ typedef ip::udp::endpoint udp_endpoint;
 
 typedef ip::address address_type;
 typedef boost::shared_ptr<tcp_socket> sock_ptr;
-
-enum SOCKET_TYPE {
-	TCP_SOCKET = 6,
-	UDP_SOCKET = 17
-};
+ 

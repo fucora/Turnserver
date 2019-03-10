@@ -1,8 +1,7 @@
 #pragma once
 
 #include "socketListener.h"
-#include "commonTypes.h"
-#include "turn_agreement.h"
+#include "commonTypes.h" 
 
 class turn_server
 {
