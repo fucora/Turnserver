@@ -36,11 +36,11 @@ private:	void udp_hand_send(boost::shared_ptr<std::string> message, const boost:
 
 public:  	void StartSocketListen();
 
-			void WhileTcpConnect(void(*func)(sock_ptr *));
+public: 	void WhileTcpConnect(void(*func)(sock_ptr *));
 
-			void WhileTcpMessage(void(*func)(buffer_type, int, sock_ptr *));
+public: 	void WhileTcpMessage(void(*func)(buffer_type*, int, sock_ptr *));
 
-			void WhileUdpMessage(void(*func)(buffer_type, int, udp_endpoint *));
+public: 	void WhileUdpMessage(void(*func)(buffer_type*, int, udp_endpoint *));
 
 
 

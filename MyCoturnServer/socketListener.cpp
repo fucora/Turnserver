@@ -12,8 +12,8 @@ udp_endpoint udp_remot_endpoint;
 buffer_type udp_buffer;
 
 boost::signals2::signal<void(sock_ptr*)> _tcpconnectCallback;
-boost::signals2::signal<void(buffer_type, int, sock_ptr*)> _tcpReciveDataCallback;
-boost::signals2::signal<void(buffer_type, int, udp_endpoint*)> _udpReciveDataCallback;
+boost::signals2::signal<void(buffer_type*, int, sock_ptr*)> _tcpReciveDataCallback;
+boost::signals2::signal<void(buffer_type*, int, udp_endpoint*)> _udpReciveDataCallback;
 
 socketListener::socketListener(int port)
 {
@@ -82,9 +82,9 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 		if (size < 1) {
 			return;
 		}
-		char linshbuf[size];
+		buffer_type linshbuf;
 		memcpy(linshbuf, buf, size); //拷贝到新的数组中
-		_tcpReciveDataCallback(linshbuf, size, &sock);
+		_tcpReciveDataCallback(&linshbuf, size, &sock);
 	}
 	catch (const std::exception&)
 	{
@@ -120,9 +120,9 @@ void socketListener::udp_hand_receive(const boost::system::error_code& error, st
 		if (size < 1) {
 			return;
 		}
-		char linshbuf[size];
+		buffer_type linshbuf;
 		memcpy(linshbuf, buf, size); //拷贝到新的数组中
-		_udpReciveDataCallback(buf, size, &udp_remot_endpoint);
+		_udpReciveDataCallback(&linshbuf, size, &udp_remot_endpoint);
 
 	}
 	catch (const std::exception&)
@@ -150,11 +150,11 @@ void socketListener::StartSocketListen() {
 void socketListener::WhileTcpConnect(void(*func)(sock_ptr*)) {
 	_tcpconnectCallback.connect(_tcpconnectCallback.num_slots(), func);
 }
-void socketListener::WhileTcpMessage(void(*func)(buffer_type, int, sock_ptr*)) {
+void socketListener::WhileTcpMessage(void(*func)(buffer_type*, int, sock_ptr*)) {
 	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(), func);
 }
 
-void socketListener::WhileUdpMessage(void(*func)(buffer_type, int, udp_endpoint*)) {
+void socketListener::WhileUdpMessage(void(*func)(buffer_type*, int, udp_endpoint*)) {
 	_udpReciveDataCallback.connect(_udpReciveDataCallback.num_slots(), func);
 }
 
