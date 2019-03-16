@@ -16,9 +16,6 @@
     <Filter Include="common">
       <UniqueIdentifier>{924fefe0-b8d9-478e-b3a3-6f679399f3f3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dbdriver">
-      <UniqueIdentifier>{fd481f19-ff2a-4ecc-96e5-b059e044c78b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="server">
       <UniqueIdentifier>{a4c74973-0728-43ee-8c6a-6ef4ae30bd4e}</UniqueIdentifier>
     </Filter>
@@ -32,6 +29,9 @@
     </ClInclude>
     <ClInclude Include="turn_server.h">
       <Filter>mycommon</Filter>
+    </ClInclude>
+    <ClInclude Include="myDeletegate.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
