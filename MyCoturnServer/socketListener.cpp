@@ -82,9 +82,11 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 		if (size < 1) {
 			return;
 		}
-		buffer_type linshbuf;
-		memcpy(linshbuf, buf, size); //拷贝到新的数组中
-		_tcpReciveDataCallback(&linshbuf, size, &sock);
+
+		//buffer_type linshbuf;
+		//memcpy(linshbuf, buf, size); //拷贝到新的数组中
+	 
+		_tcpReciveDataCallback((), size, &sock);
 	}
 	catch (const std::exception&)
 	{
@@ -148,13 +150,13 @@ void socketListener::StartSocketListen() {
 }
 
 void socketListener::WhileTcpConnect(void(*func)(sock_ptr*)) {
-	_tcpconnectCallback.connect(_tcpconnectCallback.num_slots(), func);
+	_tcpconnectCallback.connect(_tcpconnectCallback.num_slots(), *func);
 }
 void socketListener::WhileTcpMessage(void(*func)(buffer_type*, int, sock_ptr*)) {
-	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(), func);
+	_tcpReciveDataCallback.connect(_tcpReciveDataCallback.num_slots(), *func);
 }
 
 void socketListener::WhileUdpMessage(void(*func)(buffer_type*, int, udp_endpoint*)) {
-	_udpReciveDataCallback.connect(_udpReciveDataCallback.num_slots(), func);
+	_udpReciveDataCallback.connect(_udpReciveDataCallback.num_slots(), *func);
 }
 

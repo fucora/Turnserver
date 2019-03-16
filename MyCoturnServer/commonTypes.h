@@ -5,11 +5,7 @@
 #include <memory>
 #include <array>
 #include <netinet/in.h>
-////////////
-#include "../common/ns_turn_msg.h"
-#include "../common/ns_turn_server.h"
-#include "../ns_turn_defs.h"
-#include "../common/ns_turn_msg_defs.h" 
+//////////// 
 ////////
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>

@@ -1202,7 +1202,7 @@ int start_c2c_connection(uint16_t clnet_remote_port0,
 	if (clnet_connect(clnet_remote_port0, remote_address0, ifname, local_address, verbose, clnet_info_probe) < 0) {
 		exit(-1);
 	}
-
+ 
 	uint16_t clnet_remote_port = clnet_remote_port0;
 	char remote_address[1025];
 	STRCPY(remote_address, remote_address0);
