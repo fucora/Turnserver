@@ -23,11 +23,11 @@ int turn_server::StartServer() {
 	manager.StartSocketListen();
 	return 1;
 }
-void turn_server::onTcpConnect(sock_ptr* remote_socket) {
+void turn_server::onTcpConnect(tcp_socket* tcpsocket) {
 	printf("收到tcp连接");
 }
 
-void turn_server::onTcpMessage(buffer_type* buf, int lenth, sock_ptr* remote_socket) {
+void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocket) {
 	 
 	MessageHandle(*buf, lenth);
 
@@ -35,9 +35,8 @@ void turn_server::onTcpMessage(buffer_type* buf, int lenth, sock_ptr* remote_soc
 	printf("收到tcp消息");
 }
 
-void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_endpoint* remote_endpoint) {
-	MessageHandle(*buf, lenth);
-	auto x = remote_endpoint->data()->sa_data;
+void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocket) {
+	MessageHandle(*buf, lenth); 
 	printf("收到udp消息");
 }
 

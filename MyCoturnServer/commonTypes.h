@@ -32,9 +32,6 @@ typedef  char buffer_type[4096];
 
 typedef ip::tcp::socket tcp_socket;
 typedef ip::udp::socket udp_socket;
-typedef ip::tcp::endpoint tcp_endpoint;
-typedef ip::udp::endpoint udp_endpoint;
 
-typedef ip::address address_type;
-typedef boost::shared_ptr<tcp_socket> sock_ptr; 
+
  

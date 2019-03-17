@@ -10,11 +10,13 @@ public:
 	~turn_server();
 	int StartServer();
 
-	void onTcpConnect(sock_ptr * remote_socket);
+	void onTcpConnect(tcp_socket * tcpsocket);
 
-	void onTcpMessage(buffer_type* buf, int lenth, sock_ptr * remote_socket);
+	void onTcpMessage(buffer_type * buf, int lenth, tcp_socket * tcpsocket);
 
-	void onUdpMessage(buffer_type* buf, int lenth, udp_endpoint * remote_endpoint);
+	void onUdpMessage(buffer_type * buf, int lenth, udp_socket * udpsocket);
+
+ 
 
 	void MessageHandle(buffer_type data, int lenth); 
 	 

@@ -31,7 +31,7 @@ void socketListener::accept_handler(const boost::system::error_code& ec, sock_pt
 
 	try
 	{
-		onTcpconnected(&sock);
+		onTcpconnected(sock.get());
 	}
 	catch (const std::exception&)
 	{
@@ -75,7 +75,7 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 
 		buffer_type linshbuf;
 		memcpy(linshbuf, buf, size); //拷贝到新的数组中 
-		onTcpReciveData(&linshbuf, (int)size, &sock); 
+		onTcpReciveData(&linshbuf, (int)size, sock.get()); 
 
 	}
 	catch (const std::exception&)
@@ -98,25 +98,25 @@ void socketListener::accept_udp()
 		boost::bind(&socketListener::udp_hand_receive,
 			this,
 			boost::asio::placeholders::error,
+			udp_listener,
 			boost::asio::placeholders::bytes_transferred,
 			udp_buffer
 		));
 }
-void socketListener::udp_hand_receive(const boost::system::error_code& error, std::size_t size, buffer_type buf)
+void socketListener::udp_hand_receive(const boost::system::error_code& error, udp_socket* sock, std::size_t size, buffer_type buf)
 {
 	if (error) {
 		return;
 	}
 	try
-	{
-
+	{ 
 		if (size < 1) {
 			return;
 		}
 
 		buffer_type linshbuf;
 		memcpy(linshbuf, buf, size); //拷贝到新的数组中 
-		onUdpReciveData(&linshbuf, (int)size, &udp_remot_endpoint);
+		onUdpReciveData(&linshbuf, (int)size, sock);
 
 	}
 	catch (const std::exception&)

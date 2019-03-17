@@ -6,6 +6,10 @@
 
 class socketListener
 {
+typedef boost::shared_ptr<tcp_socket> sock_ptr;
+typedef ip::tcp::endpoint tcp_endpoint;
+typedef ip::udp::endpoint udp_endpoint; 
+typedef ip::address address_type;
 
 private:	int serverport = 8888;
 private:	io_service m_io;
@@ -16,9 +20,9 @@ private:	udp_socket* udp_listener;
 private:	udp_endpoint udp_remot_endpoint;
 private:	buffer_type udp_buffer;
 			//第一个void是返回值类型
-public:     CMultiDelegate<void, sock_ptr*> onTcpconnected;
-public:  	CMultiDelegate<void, buffer_type*, int, sock_ptr*> onTcpReciveData;
-public:  	CMultiDelegate<void, buffer_type*, int, udp_endpoint*> onUdpReciveData;
+public:     CMultiDelegate<void, tcp_socket*> onTcpconnected;
+public:  	CMultiDelegate<void, buffer_type*, int, tcp_socket*> onTcpReciveData;
+public:  	CMultiDelegate<void, buffer_type*, int, udp_socket*> onUdpReciveData;
 
 
 public:
@@ -46,7 +50,9 @@ private:        void tcp_write_handler(const boost::system::error_code & ec);
 
 private:	void accept_udp();
 
-private:	void udp_hand_receive(const boost::system::error_code & error, std::size_t size, buffer_type buf);
+private:	void udp_hand_receive(const boost::system::error_code & error, udp_socket * sock, std::size_t size, buffer_type buf);
+
+ 
 
 private:	void udp_hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error & error, std::size_t size);
 
