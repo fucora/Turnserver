@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28010.2046
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TurnServer", "TurnServer\TurnServer.vcxproj", "{FE8064DE-791D-4C9B-84D2-8681DF76D20B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TurnServer5766", "TurnServer5766\TurnServer5766.vcxproj", "{B71C592C-0DDD-47B4-8D76-BE324884D9A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,28 @@ Global
 		{FE8064DE-791D-4C9B-84D2-8681DF76D20B}.Release|x64.Build.0 = Release|x64
 		{FE8064DE-791D-4C9B-84D2-8681DF76D20B}.Release|x86.ActiveCfg = Release|x86
 		{FE8064DE-791D-4C9B-84D2-8681DF76D20B}.Release|x86.Build.0 = Release|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|ARM.ActiveCfg = Debug|ARM
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|ARM.Build.0 = Debug|ARM
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|ARM64.Build.0 = Debug|ARM64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|x64.ActiveCfg = Debug|x64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|x64.Build.0 = Debug|x64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|x86.ActiveCfg = Debug|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Debug|x86.Build.0 = Debug|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|Any CPU.ActiveCfg = Release|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|ARM.ActiveCfg = Release|ARM
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|ARM.Build.0 = Release|ARM
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|ARM64.ActiveCfg = Release|ARM64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|ARM64.Build.0 = Release|ARM64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|Mixed Platforms.Build.0 = Release|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|x64.ActiveCfg = Release|x64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|x64.Build.0 = Release|x64
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|x86.ActiveCfg = Release|x86
+		{B71C592C-0DDD-47B4-8D76-BE324884D9A1}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
