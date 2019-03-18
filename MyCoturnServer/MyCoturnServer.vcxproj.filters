@@ -8,6 +8,9 @@
     <ClCompile Include="turn_server.cpp">
       <Filter>mycommon</Filter>
     </ClCompile>
+    <ClCompile Include="turnProtocol.cpp">
+      <Filter>turnserver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="mycommon">
@@ -18,6 +21,9 @@
     </Filter>
     <Filter Include="server">
       <UniqueIdentifier>{a4c74973-0728-43ee-8c6a-6ef4ae30bd4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="turnserver">
+      <UniqueIdentifier>{8ab2e19a-6291-43a1-8396-3eccb1b01239}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -32,6 +38,12 @@
     </ClInclude>
     <ClInclude Include="myDeletegate.h">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="turn.h">
+      <Filter>turnserver</Filter>
+    </ClInclude>
+    <ClInclude Include="turnProtocol.h">
+      <Filter>turnserver</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

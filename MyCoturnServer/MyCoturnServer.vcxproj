@@ -85,12 +85,15 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="socketListener.cpp" />
+    <ClCompile Include="turnProtocol.cpp" />
     <ClCompile Include="turn_server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commonTypes.h" />
     <ClInclude Include="myDeletegate.h" />
     <ClInclude Include="socketListener.h" />
+    <ClInclude Include="turn.h" />
+    <ClInclude Include="turnProtocol.h" />
     <ClInclude Include="turn_server.h" />
   </ItemGroup>
   <ItemGroup>
