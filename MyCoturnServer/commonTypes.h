@@ -11,6 +11,7 @@
 #include <algorithm>
 //////////// 
 #include "myDeletegate.h"
+#include "dbg.h"
 ////////
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
@@ -23,15 +24,21 @@
 #include <boost/typeof/typeof.hpp>
 #include <boost/assign.hpp>
 #include <boost/ref.hpp>
-#include <boost/function.hpp>   
+#include <boost/function.hpp>  
+#include <boost/asio/basic_socket.hpp>
 
 using namespace boost::asio;
 using namespace std;
-  
+
+typedef  opop;
+
 typedef  char buffer_type[4096];
 
 typedef ip::tcp::socket tcp_socket;
 typedef ip::udp::socket udp_socket;
-
+typedef ip::address address_type;
 
  
+
+
+

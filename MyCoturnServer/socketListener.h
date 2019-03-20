@@ -8,8 +8,7 @@ class socketListener
 {
 typedef boost::shared_ptr<tcp_socket> sock_ptr;
 typedef ip::tcp::endpoint tcp_endpoint;
-typedef ip::udp::endpoint udp_endpoint; 
-typedef ip::address address_type;
+typedef ip::udp::endpoint udp_endpoint;  
 
 private:	int serverport = 8888;
 private:	io_service m_io;
