@@ -83,26 +83,23 @@
     <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="allocation.c" />
+    <ClCompile Include="allocation.cpp" />
     <ClCompile Include="dbg.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="protocol.cpp" />
+    <ClCompile Include="protocol.c" />
     <ClCompile Include="socketListener.cpp" />
-    <ClCompile Include="turnProtocol.cpp" />
     <ClCompile Include="turn_server.cpp" />
-    <ClCompile Include="util_sys.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="allocation.h" />
     <ClInclude Include="commonTypes.h" />
     <ClInclude Include="dbg.h" />
+    <ClInclude Include="list.h" />
     <ClInclude Include="myDeletegate.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="socketListener.h" />
     <ClInclude Include="turn.h" />
-    <ClInclude Include="turnProtocol.h" />
     <ClInclude Include="turn_server.h" />
-    <ClInclude Include="util_sys.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

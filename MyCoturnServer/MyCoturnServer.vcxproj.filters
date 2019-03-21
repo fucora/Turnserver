@@ -8,17 +8,13 @@
     <ClCompile Include="turn_server.cpp">
       <Filter>mycommon</Filter>
     </ClCompile>
-    <ClCompile Include="turnProtocol.cpp">
-      <Filter>turnserver</Filter>
-    </ClCompile>
     <ClCompile Include="dbg.c">
       <Filter>turnserver</Filter>
     </ClCompile>
-    <ClCompile Include="protocol.cpp" />
-    <ClCompile Include="allocation.c">
+    <ClCompile Include="protocol.c">
       <Filter>turnserver</Filter>
     </ClCompile>
-    <ClCompile Include="util_sys.c">
+    <ClCompile Include="allocation.cpp">
       <Filter>turnserver</Filter>
     </ClCompile>
   </ItemGroup>
@@ -52,17 +48,16 @@
     <ClInclude Include="turn.h">
       <Filter>turnserver</Filter>
     </ClInclude>
-    <ClInclude Include="turnProtocol.h">
-      <Filter>turnserver</Filter>
-    </ClInclude>
     <ClInclude Include="dbg.h">
       <Filter>turnserver</Filter>
     </ClInclude>
-    <ClInclude Include="protocol.h" />
     <ClInclude Include="allocation.h">
       <Filter>turnserver</Filter>
     </ClInclude>
-    <ClInclude Include="util_sys.h">
+    <ClInclude Include="list.h">
+      <Filter>turnserver</Filter>
+    </ClInclude>
+    <ClInclude Include="protocol.h">
       <Filter>turnserver</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,10 +2,8 @@
 
 #include "socketListener.h"
 #include "commonTypes.h" 
-#include "turn.h"
-#include "protocol.h"
-#include "allocation.h" 
-#include "util_sys.h"
+#include "turn.h" 
+ 
 
 class turn_server
 {

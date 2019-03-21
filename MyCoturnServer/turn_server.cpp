@@ -1,6 +1,6 @@
 
 #include "turn_server.h"
-
+#include "allocation.h" 
 
 unsigned long bandwidth = 1024;//´ø¿í
 list_head* _allocation_list;
@@ -55,7 +55,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	if (lenth < 4)
 	{
 		debug(DBG_ATTR, "Size too short\n");
-		return;
+		return 0;
 	}
 	memcpy(&type, data, sizeof(uint16_t));
 	type = ntohs(type);
@@ -190,12 +190,15 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		break;
 	}
 
+
+ 
+
 	/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 	 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
 	 */
 	if (desc->relayed_addr.ss_family == AF_INET &&
-		(desc->tuple.client_addr.ss_family == AF_INET ||
-		(desc->tuple.client_addr.ss_family == AF_INET6 &&
+		(desc->tuple.client_addr.is_v4()==true ||
+		(desc->tuple.client_addr.is_v6()==true &&
 			IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*)&desc->tuple.client_addr)->sin6_addr))))
 	{
 #ifdef OS_SET_DF_SUPPORT
