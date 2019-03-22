@@ -4,6 +4,10 @@
 
 unsigned long bandwidth = 1024;//´ø¿í
 list_head* _allocation_list;
+char* nonce_key = "hieKedq";
+int turn_tcp = 1;
+char* realm = "domain.org";
+
 
 turn_server::turn_server()
 {
@@ -54,8 +58,12 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	struct turn_message message;
 	uint16_t unknown[32];
 	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
-
+	uint16_t hdr_msg_type = 0;
+	size_t total_len = 0;
+	uint16_t method = 0;
 	uint16_t type = 0;
+
+
 	if (lenth < 4)
 	{
 		debug(DBG_ATTR, "Size too short\n");
@@ -75,6 +83,117 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		debug(DBG_ATTR, "Parse message failed\n");
 		return -1;
 	}
+
+	/* check if it is a STUN/TURN header */
+	if (!message.msg)
+	{
+		debug(DBG_ATTR, "No STUN/TURN header\n");
+		return -1;
+	}
+	/* convert into host byte order */
+	hdr_msg_type = ntohs(message.msg->turn_msg_type);
+	total_len = ntohs(message.msg->turn_msg_len) + sizeof(struct turn_msg_hdr); 
+
+    /* check if it is a known class */
+	if (!STUN_IS_REQUEST(hdr_msg_type) &&
+		!STUN_IS_INDICATION(hdr_msg_type) &&
+		!STUN_IS_SUCCESS_RESP(hdr_msg_type) &&
+		!STUN_IS_ERROR_RESP(hdr_msg_type))
+	{
+		debug(DBG_ATTR, "Unknown message class\n");
+		return -1;
+	}
+
+	method = STUN_GET_METHOD(hdr_msg_type);
+	/* check that the method value is supported */
+	if (method != STUN_METHOD_BINDING &&
+		method != TURN_METHOD_ALLOCATE &&
+		method != TURN_METHOD_REFRESH &&
+		method != TURN_METHOD_CREATEPERMISSION &&
+		method != TURN_METHOD_CHANNELBIND &&
+		method != TURN_METHOD_SEND &&
+		method != TURN_METHOD_DATA &&
+		(method != TURN_METHOD_CONNECT || !turn_tcp) &&
+		(method != TURN_METHOD_CONNECTIONBIND || !turn_tcp))
+	{
+		debug(DBG_ATTR, "Unknown method\n");
+		return -1;
+	}
+
+	/* check the magic cookie */
+	if (message.msg->turn_msg_cookie != htonl(STUN_MAGIC_COOKIE))
+	{
+		debug(DBG_ATTR, "Bad magic cookie\n");
+		return -1;
+	}
+
+	/* check the fingerprint if present */
+	if (message.fingerprint)
+	{
+		/* verify if CRC is valid */
+		uint32_t crc = 0; 
+		crc = crc32_generate((const unsigned char*)data, total_len - sizeof(struct turn_attr_fingerprint), 0);
+		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl(
+			STUN_FINGERPRINT_XOR_VALUE)))
+		{
+			debug(DBG_ATTR, "Fingerprint mismatch\n");
+			return -1;
+		}
+	}
+
+	/* all this cases above discard silently the packets,
+	 * so now process the packet more in details
+	 */
+
+	if (STUN_IS_REQUEST(hdr_msg_type) && method != STUN_METHOD_BINDING)
+	{
+		/* check long-term authentication for all requests except for a STUN
+		 * binding request
+		 */
+		if (!message.message_integrity)
+		{
+			/* no messages integrity => error 401 */
+			/* header, error-code, realm, nonce, software */
+			struct iovec iov[12];
+			uint8_t nonce[48];
+			struct turn_msg_hdr* error = NULL;
+			struct turn_attr_hdr* attr = NULL; 
+			size_t idx = 0;
+
+			debug(DBG_ATTR, "No message integrity\n");
+			 
+			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+
+			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
+			{
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, saddr, saddr_size, speer, NULL);
+				return -1;
+			}
+
+			/* software (not fatal if it cannot be allocated) */
+			if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+			{
+				error->turn_msg_len += iov[idx].iov_len;
+				idx++;
+			}
+
+			turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+
+			/* convert to big endian */
+			error->turn_msg_len = htons(error->turn_msg_len);
+
+			if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size,
+				ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov,
+				idx) == -1)
+			{
+				debug(DBG_ATTR, "turn_send_message failed\n");
+			}
+
+			/* free sent data */
+			iovec_free_data(iov, idx);
+			return 0;
+		}
+
 
 }
 
@@ -226,7 +345,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-}
+		}
 #else
 		/* avoid compilation warning */
 		optval = 0;

@@ -185,3 +185,108 @@ int turn_parse_message(const char* msg, ssize_t msg_len,
 
 	return 0;
 }
+
+
+int turn_generate_nonce(uint8_t* nonce, size_t len, uint8_t* key, size_t key_len)
+{
+	time_t t;
+	char c = ':';
+	MD5_CTX ctx;
+	unsigned char md_buf[MD5_DIGEST_LENGTH];
+
+	if (len < (16 + MD5_DIGEST_LENGTH))
+	{
+		return -1;
+	}
+
+	MD5_Init(&ctx);
+
+	/* timestamp */
+	t = time(NULL);
+
+	/* add expire period */
+	t += TURN_DEFAULT_NONCE_LIFETIME;
+
+	t = (time_t)htonl((uint32_t)t);
+	hex_convert((unsigned char*)&t, sizeof(time_t), nonce, sizeof(time_t) * 2);
+
+	if (sizeof(time_t) == 4) /* 32 bit */
+	{
+		memset(nonce + 8, 0x30, 8);
+	}
+
+	MD5_Update(&ctx, nonce, 16); /* time */
+	MD5_Update(&ctx, &c, 1);
+	MD5_Update(&ctx, key, key_len);
+	MD5_Final(md_buf, &ctx);
+
+	/* add MD5 at the end of the nonce */
+	hex_convert(md_buf, MD5_DIGEST_LENGTH, nonce + 16, len - 16);
+
+	return 0;
+}
+
+
+struct turn_msg_hdr* turn_error_response_401(int method, const uint8_t* id, const char* realm, const uint8_t* nonce, size_t nonce_len, struct iovec* iov, size_t* idx)
+{
+	struct turn_msg_hdr* error = NULL;
+	struct turn_attr_hdr* attr = NULL;
+
+	/* header */
+	if (!(error = turn_msg_create(method | STUN_ERROR_RESP, 0, id, &iov[*idx])))
+	{
+		return NULL;
+	}
+	(*idx)++;
+
+	/* error-code */
+	if (!(attr = turn_attr_error_create(401, STUN_ERROR_401, sizeof(STUN_ERROR_401), &iov[*idx])))
+	{
+		iovec_free_data(iov, *idx);
+		return NULL;
+	}
+	error->turn_msg_len += iov[*idx].iov_len;
+	(*idx)++;
+
+	/* realm */
+	if (!(attr = turn_attr_realm_create(realm, strlen(realm), &iov[*idx])))
+	{
+		iovec_free_data(iov, *idx);
+		return NULL;
+	}
+	error->turn_msg_len += iov[*idx].iov_len;
+	(*idx)++;
+
+	/* nonce */
+	if (!(attr = turn_attr_nonce_create(nonce, nonce_len, &iov[*idx])))
+	{
+		iovec_free_data(iov, *idx);
+		return NULL;
+	}
+	error->turn_msg_len += iov[*idx].iov_len;
+	(*idx)++;
+
+	return error;
+}
+
+
+struct turn_msg_hdr* turn_msg_create(uint16_t type, uint16_t len,
+	const uint8_t* id, struct iovec* iov)
+{
+	struct turn_msg_hdr* ret = NULL;
+
+	if ((ret = (turn_msg_hdr*)malloc(sizeof(struct turn_msg_hdr))) == NULL)
+	{
+		return NULL;
+	}
+
+	ret->turn_msg_type = htons(type);
+	ret->turn_msg_len = htons(len);
+	ret->turn_msg_cookie = htonl(STUN_MAGIC_COOKIE);
+	memcpy(ret->turn_msg_id, id, 12);
+
+	iov->iov_base = ret;
+	iov->iov_len = sizeof(struct turn_msg_hdr);
+
+	return ret;
+}
