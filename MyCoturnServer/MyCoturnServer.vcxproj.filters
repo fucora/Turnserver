@@ -11,10 +11,10 @@
     <ClCompile Include="dbg.c">
       <Filter>turnserver</Filter>
     </ClCompile>
-    <ClCompile Include="protocol.c">
+    <ClCompile Include="allocation.cpp">
       <Filter>turnserver</Filter>
     </ClCompile>
-    <ClCompile Include="allocation.cpp">
+    <ClCompile Include="protocol.cpp">
       <Filter>turnserver</Filter>
     </ClCompile>
   </ItemGroup>

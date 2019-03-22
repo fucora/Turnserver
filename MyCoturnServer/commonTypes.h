@@ -9,10 +9,14 @@
 #include <functional> 
 #include <string>
 #include <algorithm>
+
+#include <stdint.h>
+#include <sys/types.h>
 //////////// 
 #include "myDeletegate.h"
 #include "dbg.h"
 #include "list.h"
+
 ////////
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
@@ -163,6 +167,42 @@ struct allocation_desc
 	struct list_head list2; /**< For list management (expired list) */
 };
 
+
+#ifndef XOR_PEER_ADDRESS_MAX
+/**
+ * \def XOR_PEER_ADDRESS_MAX
+ * \brief Maximum number of XOR-PEER-ADDRESS attributes in a request.
+ */
+#define XOR_PEER_ADDRESS_MAX 5
+#endif
+
+struct turn_message
+{
+	struct turn_msg_hdr* msg; /**< STUN/TURN header */
+	struct turn_attr_mapped_address* mapped_addr; /**< MAPPED-ADDRESS attribute */
+	struct turn_attr_xor_mapped_address* xor_mapped_addr; /**< XOR-MAPPED-ADDRESS attribute */
+	struct turn_attr_alternate_server* alternate_server; /**< ALTERNATE-SERVER attribute */
+	struct turn_attr_nonce* nonce; /**< NONCE attribute */
+	struct turn_attr_realm* realm; /**< REALM attribute */
+	struct turn_attr_username* username; /**< USERNAME attribute */
+	struct turn_attr_error_code* error_code; /**< ERROR-CODE attribute */
+	struct turn_attr_unknown_attribute* unknown_attribute; /**< UNKNOWN-ATTRIBUTE attribute */
+	struct turn_attr_message_integrity* message_integrity; /**< MESSAGE-INTEGRITY attribute */
+	struct turn_attr_fingerprint* fingerprint; /**< FINGERPRINT attribute */
+	struct turn_attr_software* software; /**< SOFTWARE attribute */
+	struct turn_attr_channel_number* channel_number; /**< CHANNEL-NUMBER attribute */
+	struct turn_attr_lifetime* lifetime; /**< LIFETIME attribute */
+	struct turn_attr_xor_peer_address* peer_addr[XOR_PEER_ADDRESS_MAX]; /**< XOR-PEER-ADDRESS attribute */
+	struct turn_attr_data* data; /**< DATA attribute */
+	struct turn_attr_xor_relayed_address* relayed_addr; /**< XOR-RELAYED-ADDRESS attribute */
+	struct turn_attr_even_port* even_port; /**< REQUESTED-PROPS attribute */
+	struct turn_attr_requested_transport* requested_transport; /**< REQUESTED-TRANSPORT attribute */
+	struct turn_attr_dont_fragment* dont_fragment; /**< DONT-FRAGMENT attribute */
+	struct turn_attr_reservation_token* reservation_token; /**< RESERVATION-TOKEN attribute */
+	struct turn_attr_requested_address_family* requested_addr_family; /**< REQUESTED-ADDRESS-FAMILY attribute (RFC6156) */
+	struct turn_attr_connection_id* connection_id; /**< CONNECTION-ID attribute (RFC6062) */
+	size_t xor_peer_addr_overflow; /**< If set to 1, not all the XOR-PEER-ADDRESS given in request are in this structure */
+};
 
 
 

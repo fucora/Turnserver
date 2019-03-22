@@ -1,6 +1,6 @@
 
 #include "turn_server.h"
-#include "allocation.h" 
+
 
 unsigned long bandwidth = 1024;//带宽
 list_head* _allocation_list;
@@ -35,7 +35,7 @@ void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocke
 	address_type localaddr = address_type(tcpsocket->local_endpoint().address());
 	int remoteAddrSize = tcpsocket->local_endpoint().size();
 
-	MessageHandle(*buf, lenth, IPPROTO_TCP, remoteaddr, localaddr,remoteAddrSize);
+	MessageHandle(*buf, lenth, IPPROTO_TCP, remoteaddr, localaddr, remoteAddrSize);
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
 }
@@ -51,6 +51,10 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type remoteaddr, address_type localaddr, int remoteAddrSize)
 {
+	struct turn_message message;
+	uint16_t unknown[32];
+	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
+
 	uint16_t type = 0;
 	if (lenth < 4)
 	{
@@ -66,6 +70,11 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		return turnserver_process_channeldata(transport_protocol, type, data, lenth, remoteaddr, localaddr, remoteAddrSize, _allocation_list);
 	}
 
+	if (turn_parse_message(data, lenth, &message, unknown, &unknown_size) == -1)
+	{
+		debug(DBG_ATTR, "Parse message failed\n");
+		return -1;
+	}
 
 }
 
@@ -191,14 +200,14 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 	}
 
 
- 
+
 
 	/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 	 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
 	 */
 	if (desc->relayed_addr.ss_family == AF_INET &&
-		(desc->tuple.client_addr.is_v4()==true ||
-		(desc->tuple.client_addr.is_v6()==true &&
+		(desc->tuple.client_addr.is_v4() == true ||
+		(desc->tuple.client_addr.is_v6() == true &&
 			IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*)&desc->tuple.client_addr)->sin6_addr))))
 	{
 #ifdef OS_SET_DF_SUPPORT
@@ -217,7 +226,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-		}
+}
 #else
 		/* avoid compilation warning */
 		optval = 0;
