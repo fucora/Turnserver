@@ -207,6 +207,32 @@ struct turn_message
 	size_t xor_peer_addr_overflow; /**< If set to 1, not all the XOR-PEER-ADDRESS given in request are in this structure */
 };
  
+
+/**
+ * \enum protocol_type
+ * \brief Transport protocol.
+ */
+enum protocol_type
+{
+	UDP = IPPROTO_UDP, /**< UDP protocol */
+	TCP = IPPROTO_TCP, /**< TCP protocol */
+};
+/**
+ * \struct tls_peer
+ * \brief Describes a (D)TLS peer.
+ */
+struct tls_peer
+{
+	enum protocol_type type; /**< Transport protocol used (TCP or UDP) */
+	int sock; /**< Server socket descriptor */
+	SSL_CTX* ctx_client; /**< SSL context for client side */
+	SSL_CTX* ctx_server; /**< SSL context for server side */
+	struct list_head remote_peers; /**< Remote peers */
+	BIO* bio_fake; /**< Fake BIO for read operations */
+	int(*verify_callback)(int, X509_STORE_CTX *); /**< Verification callback */
+};
+
+
 uint32_t crc32_generate(const uint8_t* data, size_t len, uint32_t prev)
 {
 	/* http://fxr.watson.org/fxr/source/libkern/crc32.c?v=DFBSD
@@ -313,4 +339,20 @@ void hex_convert(const unsigned char* bin, size_t bin_len, unsigned char* hex, s
 	}
 }
 
+void iovec_free_data(struct iovec* iov, uint32_t nb)
+{
+	size_t i = 0;
+
+	for (i = 0; i < nb; i++)
+	{
+		free(iov[i].iov_base);
+		iov[i].iov_base = NULL;
+	}
+}
+
+int is_little_endian(void)
+{
+	long one = 1;
+	return (*((char *)(&one)));
+}
 

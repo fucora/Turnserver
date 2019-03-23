@@ -131,6 +131,12 @@ void socketListener::udp_hand_send(boost::shared_ptr<std::string> message, const
 {
 
 }
+ 
+void socketListener::udp_send()
+{
+	//udp_listener->send_to()
+	 
+}
 //***********************************public method*******************************************************
 void socketListener::StartSocketListen() {
 	tcp_listener = new ip::tcp::acceptor(m_io, tcp_endpoint(ip::tcp::v4(), serverport));

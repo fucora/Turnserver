@@ -8,6 +8,9 @@ char* nonce_key = "hieKedq";
 int turn_tcp = 1;
 char* realm = "domain.org";
 
+#define SOFTWARE_DESCRIPTION "TurnServer 1"  
+
+socketListener manager(8888);
 
 turn_server::turn_server()
 {
@@ -18,7 +21,6 @@ turn_server::~turn_server()
 }
 
 int turn_server::StartServer() {
-	socketListener manager(8888);
 
 	manager.onTcpconnected += newDelegate(this, &turn_server::onTcpConnect);
 
@@ -92,9 +94,9 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	}
 	/* convert into host byte order */
 	hdr_msg_type = ntohs(message.msg->turn_msg_type);
-	total_len = ntohs(message.msg->turn_msg_len) + sizeof(struct turn_msg_hdr); 
+	total_len = ntohs(message.msg->turn_msg_len) + sizeof(struct turn_msg_hdr);
 
-    /* check if it is a known class */
+	/* check if it is a known class */
 	if (!STUN_IS_REQUEST(hdr_msg_type) &&
 		!STUN_IS_INDICATION(hdr_msg_type) &&
 		!STUN_IS_SUCCESS_RESP(hdr_msg_type) &&
@@ -131,7 +133,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	if (message.fingerprint)
 	{
 		/* verify if CRC is valid */
-		uint32_t crc = 0; 
+		uint32_t crc = 0;
 		crc = crc32_generate((const unsigned char*)data, total_len - sizeof(struct turn_attr_fingerprint), 0);
 		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl(
 			STUN_FINGERPRINT_XOR_VALUE)))
@@ -157,11 +159,11 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			struct iovec iov[12];
 			uint8_t nonce[48];
 			struct turn_msg_hdr* error = NULL;
-			struct turn_attr_hdr* attr = NULL; 
+			struct turn_attr_hdr* attr = NULL;
 			size_t idx = 0;
 
 			debug(DBG_ATTR, "No message integrity\n");
-			 
+
 			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 
 			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
@@ -182,9 +184,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			/* convert to big endian */
 			error->turn_msg_len = htons(error->turn_msg_len);
 
-			if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size,
-				ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov,
-				idx) == -1)
+			if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov,idx) == -1)
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -193,8 +193,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			iovec_free_data(iov, idx);
 			return 0;
 		}
-
-
+	}
 }
 
 /**
@@ -345,7 +344,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-		}
+}
 #else
 		/* avoid compilation warning */
 		optval = 0;
@@ -463,3 +462,222 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
 		sizeof(struct sockaddr_in6);
 }
 
+
+/**
+ * \brief Send a TURN Error response.
+ * \param transport_protocol transport protocol to send the message
+ * \param sock socket
+ * \param method STUN/TURN method
+ * \param id transaction ID
+ * \param saddr address to send
+ * \param saddr_size sizeof address
+ * \param error error code
+ * \param speer TLS peer, if not NULL, send the error in TLS
+ * \param key MD5 hash of account, if present, MESSAGE-INTEGRITY will be added
+ * \note Some error codes cannot be sent using this function (420, 438, ...).
+ * \return 0 if success, -1 otherwise
+ */
+int turn_server::turnserver_send_error(int transport_protocol, int sock, int method,
+	const uint8_t* id, int error, const struct sockaddr* saddr,
+	socklen_t saddr_size, struct tls_peer* speer, unsigned char* key)
+{
+	struct iovec iov[16]; /* should be sufficient */
+	struct turn_msg_hdr* hdr = NULL;
+	struct turn_attr_hdr* attr = NULL;
+	size_t idx = 0;
+
+	switch (error)
+	{
+	case 400: /* Bad request */
+		hdr = turn_error_response_400(method, id, &iov[idx], &idx);
+		break;
+	case 403: /* Forbidden */
+		hdr = turn_error_response_403(method, id, &iov[idx], &idx);
+		break;
+	case 437: /* Alocation mismatch */
+		hdr = turn_error_response_437(method, id, &iov[idx], &idx);
+		break;
+	case 440: /* Address family not supported */
+		hdr = turn_error_response_440(method, id, &iov[idx], &idx);
+		break;
+	case 441: /* Wrong credentials */
+		hdr = turn_error_response_441(method, id, &iov[idx], &idx);
+		break;
+	case 442: /* Unsupported transport protocol */
+		hdr = turn_error_response_442(method, id, &iov[idx], &idx);
+		break;
+	case 443: /* Peer address family mismatch */
+		hdr = turn_error_response_443(method, id, &iov[idx], &idx);
+		break;
+	case 446: /* Connection already exists (RFC6062) */
+		hdr = turn_error_response_446(method, id, &iov[idx], &idx);
+		break;
+	case 447: /* Connection timeout or failure (RFC6062) */
+		hdr = turn_error_response_447(method, id, &iov[idx], &idx);
+		break;
+	case 486: /* Allocation quota reached */
+		hdr = turn_error_response_486(method, id, &iov[idx], &idx);
+		break;
+	case 500: /* Server error */
+		hdr = turn_error_response_500(method, id, &iov[idx], &idx);
+		break;
+	case 508: /* Insufficient port capacity */
+		hdr = turn_error_response_508(method, id, &iov[idx], &idx);
+		break;
+	default:
+		break;
+	}
+
+	if (!hdr)
+	{
+		return -1;
+	}
+
+	/* software (not fatal if it cannot be allocated) */
+	if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+	{
+		hdr->turn_msg_len += iov[idx].iov_len;
+		idx++;
+	}
+
+	if (key)
+	{
+		if (turn_add_message_integrity(iov, &idx, key, 16, 1) == -1)
+		{
+			/* MESSAGE-INTEGRITY option has to be in message, so
+			 * deallocate ressources and return
+			 */
+			iovec_free_data(iov, idx);
+			return -1;
+		}
+		/* function above already set turn_msg_len field to big endian */
+	}
+	else
+	{
+		turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+
+		/* convert to big endian */
+		hdr->turn_msg_len = htons(hdr->turn_msg_len);
+	}
+
+	/* finally send the response */
+	if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+	{
+		debug(DBG_ATTR, "turn_send_message failed\n");
+	}
+
+	iovec_free_data(iov, idx);
+	return 0;
+}
+
+#pragma region MyRegion
+
+int turn_send_message(int transport_protocol, int sock, struct tls_peer* speer,
+	const struct sockaddr* addr, socklen_t addr_size, size_t total_len,
+	const struct iovec* iov, size_t iovlen)
+{
+	if (speer) /* TLS */
+	{
+		return turn_tls_send(speer, addr, addr_size, total_len, iov, iovlen);
+	}
+	else if (transport_protocol == IPPROTO_UDP)
+	{
+		return turn_udp_send(sock, addr, addr_size, iov, iovlen);
+	}
+	else /* TCP */
+	{
+		return turn_tcp_send(sock, iov, iovlen);
+	}
+}
+
+
+int turn_send_message(int transport_protocol, int sock, struct tls_peer* speer,
+	const struct sockaddr* addr, socklen_t addr_size, size_t total_len,
+	const struct iovec* iov, size_t iovlen)
+{
+	if (speer) /* TLS */
+	{
+		return turn_tls_send(speer, addr, addr_size, total_len, iov, iovlen);
+	}
+	else if (transport_protocol == IPPROTO_UDP)
+	{
+		return turn_udp_send(sock, addr, addr_size, iov, iovlen);
+	}
+	else /* TCP */
+	{
+		return turn_tcp_send(sock, iov, iovlen);
+	}
+}
+
+
+int turn_udp_send(int sock, const struct sockaddr* addr, socklen_t addr_size,const struct iovec* iov, size_t iovlen)
+{
+  ssize_t len = -1;
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  struct msghdr msg;
+
+  memset(&msg, 0x00, sizeof(struct msghdr));
+  msg.msg_name = (struct sockaddr*)addr;
+  msg.msg_namelen = addr_size;
+  msg.msg_iov = (struct iovec*)iov;
+  msg.msg_iovlen = iovlen;
+  len = sendmsg(sock, &msg, 0);
+#else
+  len = sock_writev(sock, iov, iovlen, addr, addr_size);
+#endif
+  return len;
+}
+
+int turn_tcp_send(int sock, const struct iovec* iov, size_t iovlen)
+{
+	ssize_t len = -1;
+
+#if !defined(_WIN32) && !defined(_WIN64)
+	struct msghdr msg;
+
+	memset(&msg, 0x00, sizeof(struct msghdr));
+	msg.msg_iov = (struct iovec*)iov;
+	msg.msg_iovlen = iovlen;
+	len = sendmsg(sock, &msg, 0);
+#else
+	len = sock_writev(sock, iov, iovlen, NULL, 0);
+#endif
+	return len;
+}
+
+int turn_tls_send(struct tls_peer* peer, const struct sockaddr* addr,
+	socklen_t addr_size, size_t total_len, const struct iovec* iov,
+	size_t iovlen)
+{
+	char* buf = NULL;
+	char* p = NULL;
+	size_t i = 0;
+	ssize_t nb = -1;
+
+	buf = (char*)malloc(total_len);
+	if (!buf)
+	{
+		return -1;
+	}
+
+	p = buf;
+
+	/* convert the iovec into raw buffer
+	 * cannot send iovec with libssl.
+	 */
+	for (i = 0; i < iovlen; i++)
+	{
+		memcpy(p, iov[i].iov_base, iov[i].iov_len);
+		p += iov[i].iov_len;
+	}
+
+	nb = tls_peer_write(peer, buf, total_len, addr, addr_size);
+
+	free(buf);
+
+	return nb;
+}
+
+
+#pragma endregion

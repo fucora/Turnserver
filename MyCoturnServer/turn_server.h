@@ -28,6 +28,10 @@ public:
 
 	socklen_t sockaddr_get_size(sockaddr_storage * ss);
 
+	int turnserver_send_error(int transport_protocol, int sock, int method, const uint8_t * id, int error, const sockaddr * saddr, socklen_t saddr_size, tls_peer * speer, unsigned char * key);
+
+ 
+
  
 	 
 };

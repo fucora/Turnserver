@@ -1646,8 +1646,7 @@ int turn_add_message_integrity(struct iovec* iov, size_t* idx,
   hdr->turn_msg_len = htons(hdr->turn_msg_len);
 
   /* do not take into account the attribute itself */
-  turn_calculate_integrity_hmac_iov(iov, (*idx) - 1, key, key_len,
-      ((struct turn_attr_message_integrity*)attr)->turn_attr_hmac);
+  turn_calculate_integrity_hmac_iov(iov, (*idx) - 1, key, key_len,((struct turn_attr_message_integrity*)attr)->turn_attr_hmac);
 
   hdr->turn_msg_len = ntohs(hdr->turn_msg_len);
 

@@ -55,6 +55,8 @@ private:	void udp_hand_receive(const boost::system::error_code & error, udp_sock
 
 private:	void udp_hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error & error, std::size_t size);
 
+private:	void udp_send();
+
 
 public:  	void StartSocketListen();
 
