@@ -39,24 +39,24 @@ void turn_server::onTcpConnect(tcp_socket* tcpsocket) {
 void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocket) {
 	address_type remoteaddr = address_type(tcpsocket->remote_endpoint().address());
 	address_type localaddr = address_type(tcpsocket->local_endpoint().address());
-	int remoteAddrSize = tcpsocket->local_endpoint().size();
+	int remoteAddrSize = tcpsocket->local_endpoint().size(); 
 
-	MessageHandle(*buf, lenth, IPPROTO_TCP, remoteaddr, localaddr, remoteAddrSize);
+	MessageHandle(*buf, lenth, IPPROTO_TCP, remoteaddr, localaddr, remoteAddrSize, tcpsocket);
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
 }
 
-void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocket) {
+void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocket) { 
 	address_type remoteaddr = address_type(udpsocket->remote_endpoint().address());
 	address_type localaddr = address_type(udpsocket->local_endpoint().address());
 	int remoteAddrSize = udpsocket->local_endpoint().size();
-	MessageHandle(*buf, lenth, IPPROTO_UDP, remoteaddr, localaddr, remoteAddrSize);
+	MessageHandle(*buf, lenth, IPPROTO_UDP, remoteaddr, localaddr, remoteAddrSize, udpsocket);
 	printf("收到udp消息");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type remoteaddr, address_type localaddr, int remoteAddrSize)
-{
+int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type remoteaddr, address_type localaddr, int remoteAddrSize, socket_base* sock)
+{ 
 	struct turn_message message;
 	uint16_t unknown[32];
 	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
@@ -154,12 +154,11 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			struct turn_msg_hdr* error = NULL;
 			struct turn_attr_hdr* attr = NULL;
 			size_t idx = 0;
-			debug(DBG_ATTR, "No message integrity\n");
-
+			debug(DBG_ATTR, "No message integrity\n"); 
 			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
 			{
-				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, saddr, saddr_size, NULL);
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 				return -1;
 			}
 
@@ -174,7 +173,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			/* convert to big endian */
 			error->turn_msg_len = htons(error->turn_msg_len);
 
-			if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -461,9 +460,9 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
  * \note Some error codes cannot be sent using this function (420, 438, ...).
  * \return 0 if success, -1 otherwise
  */
-int turn_server::turnserver_send_error(int transport_protocol, int sock, int method,
-	const uint8_t* id, int error, const struct sockaddr* saddr,
-	socklen_t saddr_size, unsigned char* key)
+int turn_server::turnserver_send_error(int transport_protocol, socket_base* sock, int method,
+	const uint8_t* id, int error, address_type remoteaddr,
+	int remoteAddrSize, unsigned char* key)
 {
 	struct iovec iov[16]; /* should be sufficient */
 	struct turn_msg_hdr* hdr = NULL;
@@ -545,7 +544,7 @@ int turn_server::turnserver_send_error(int transport_protocol, int sock, int met
 	}
 
 	/* finally send the response */
-	if (turn_send_message(transport_protocol, sock, saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+	if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
@@ -556,13 +555,13 @@ int turn_server::turnserver_send_error(int transport_protocol, int sock, int met
 
 #pragma region 发送socket
 
-int turn_server::turn_send_message(int transport_protocol, int sock,
-	const struct sockaddr* addr, socklen_t addr_size, size_t total_len,
+int turn_server::turn_send_message(int transport_protocol, socket_base* sock,
+	address_type remoteaddr, int remoteAddrSize, size_t total_len,
 	const struct iovec* iov, size_t iovlen)
 {
 	if (transport_protocol == IPPROTO_UDP)
 	{
-		return turn_udp_send(sock, addr, addr_size, iov, iovlen);
+		return turn_udp_send(sock, remoteaddr, remoteAddrSize, iov, iovlen);
 	}
 	else /* TCP */
 	{
@@ -570,39 +569,30 @@ int turn_server::turn_send_message(int transport_protocol, int sock,
 	}
 }
 
-int turn_server::turn_udp_send(int sock, const struct sockaddr* addr, socklen_t addr_size, const struct iovec* iov, size_t iovlen)
+int turn_server::turn_udp_send(socket_base* sock, address_type remoteaddr, int remoteAddrSize, const struct iovec* iov, size_t iovlen)
 {
-	ssize_t len = -1;
-
-#if !defined(_WIN32) && !defined(_WIN64)
-	struct msghdr msg;
-
+	ssize_t len = -1; 
+	struct msghdr msg; 
 	memset(&msg, 0x00, sizeof(struct msghdr));
-	msg.msg_name = (struct sockaddr*)addr;
-	msg.msg_namelen = addr_size;
+
+	msg.msg_name = (struct sockaddr*)(&remoteaddr);//此处的转换可能无效，日后调试需注意
+	msg.msg_namelen = remoteAddrSize;
 	msg.msg_iov = (struct iovec*)iov;
 	msg.msg_iovlen = iovlen;
-	len = sendmsg(sock, &msg, 0);
-#else
-	len = sock_writev(sock, iov, iovlen, addr, addr_size);
-#endif
+
+	len = manager.udp_send(&msg, (udp_socket*)sock);
 	return len;
 }
 
-int turn_server::turn_tcp_send(int sock, const struct iovec* iov, size_t iovlen)
+int turn_server::turn_tcp_send(socket_base* sock, const struct iovec* iov, size_t iovlen)
 {
-	ssize_t len = -1;
-
-#if !defined(_WIN32) && !defined(_WIN64)
-	struct msghdr msg;
-
+	ssize_t len = -1; 
+	struct msghdr msg; 
 	memset(&msg, 0x00, sizeof(struct msghdr));
 	msg.msg_iov = (struct iovec*)iov;
-	msg.msg_iovlen = iovlen;
-	len = sendmsg(sock, &msg, 0);
-#else
-	len = sock_writev(sock, iov, iovlen, NULL, 0);
-#endif
+	msg.msg_iovlen = iovlen; 
+	///////////
+	len = manager.tcp_send(&msg, (tcp_socket*)sock); 
 	return len;
 }
 

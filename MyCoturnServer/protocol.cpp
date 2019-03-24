@@ -226,50 +226,7 @@ int turn_generate_nonce(uint8_t* nonce, size_t len, uint8_t* key, size_t key_len
 	return 0;
 }
 
-
-struct turn_msg_hdr* turn_error_response_401(int method, const uint8_t* id, const char* realm, const uint8_t* nonce, size_t nonce_len, struct iovec* iov, size_t* idx)
-{
-	struct turn_msg_hdr* error = NULL;
-	struct turn_attr_hdr* attr = NULL;
-
-	/* header */
-	if (!(error = turn_msg_create(method | STUN_ERROR_RESP, 0, id, &iov[*idx])))
-	{
-		return NULL;
-	}
-	(*idx)++;
-
-	/* error-code */
-	if (!(attr = turn_attr_error_create(401, STUN_ERROR_401, sizeof(STUN_ERROR_401), &iov[*idx])))
-	{
-		iovec_free_data(iov, *idx);
-		return NULL;
-	}
-	error->turn_msg_len += iov[*idx].iov_len;
-	(*idx)++;
-
-	/* realm */
-	if (!(attr = turn_attr_realm_create(realm, strlen(realm), &iov[*idx])))
-	{
-		iovec_free_data(iov, *idx);
-		return NULL;
-	}
-	error->turn_msg_len += iov[*idx].iov_len;
-	(*idx)++;
-
-	/* nonce */
-	if (!(attr = turn_attr_nonce_create(nonce, nonce_len, &iov[*idx])))
-	{
-		iovec_free_data(iov, *idx);
-		return NULL;
-	}
-	error->turn_msg_len += iov[*idx].iov_len;
-	(*idx)++;
-
-	return error;
-}
-
-
+ 
 struct turn_msg_hdr* turn_msg_create(uint16_t type, uint16_t len,const uint8_t* id, struct iovec* iov)
 {
 	struct turn_msg_hdr* ret = NULL;
@@ -541,30 +498,6 @@ struct turn_attr_hdr* turn_attr_message_integrity_create(const uint8_t* hmac, st
 	return (struct turn_attr_hdr*)ret;
 }
 
-struct turn_msg_hdr* turn_error_response_400(int method, const uint8_t* id, struct iovec* iov, size_t* idx)
-{
-	struct turn_msg_hdr* error = NULL;
-	struct turn_attr_hdr* attr = NULL;
-
-	/* header */
-	if (!(error = turn_msg_create(method | STUN_ERROR_RESP, 0, id, &iov[*idx])))
-	{
-		return NULL;
-	}
-	(*idx)++;
-
-	/* error-code */
-	if (!(attr = turn_attr_error_create(400, STUN_ERROR_400, sizeof(STUN_ERROR_400), &iov[*idx])))
-	{
-		iovec_free_data(iov, *idx);
-		return NULL;
-	}
-	error->turn_msg_len += iov[*idx].iov_len;
-	(*idx)++;
-
-	return error;
-}
-
 
 
 int turn_add_fingerprint(struct iovec* iov, size_t* idx)
@@ -630,6 +563,30 @@ struct turn_attr_hdr* turn_attr_fingerprint_create(uint32_t fingerprint,struct i
 	iov->iov_len = sizeof(struct turn_attr_fingerprint);
 
 	return (struct turn_attr_hdr*)ret;
+}
+
+struct turn_msg_hdr* turn_error_response_400(int method, const uint8_t* id, struct iovec* iov, size_t* idx)
+{
+	struct turn_msg_hdr* error = NULL;
+	struct turn_attr_hdr* attr = NULL;
+
+	/* header */
+	if (!(error = turn_msg_create(method | STUN_ERROR_RESP, 0, id, &iov[*idx])))
+	{
+		return NULL;
+	}
+	(*idx)++;
+
+	/* error-code */
+	if (!(attr = turn_attr_error_create(400, STUN_ERROR_400, sizeof(STUN_ERROR_400), &iov[*idx])))
+	{
+		iovec_free_data(iov, *idx);
+		return NULL;
+	}
+	error->turn_msg_len += iov[*idx].iov_len;
+	(*idx)++;
+
+	return error;
 }
 
 

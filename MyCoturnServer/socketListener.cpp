@@ -75,7 +75,7 @@ void socketListener::tcp_read_handler(const boost::system::error_code&ec, sock_p
 
 		buffer_type linshbuf;
 		memcpy(linshbuf, buf, size); //拷贝到新的数组中 
-		onTcpReciveData(&linshbuf, (int)size, sock.get()); 
+		onTcpReciveData(&linshbuf, (int)size, sock.get());
 
 	}
 	catch (const std::exception&)
@@ -109,7 +109,7 @@ void socketListener::udp_hand_receive(const boost::system::error_code& error, ud
 		return;
 	}
 	try
-	{ 
+	{
 		if (size < 1) {
 			return;
 		}
@@ -131,12 +131,7 @@ void socketListener::udp_hand_send(boost::shared_ptr<std::string> message, const
 {
 
 }
- 
-void socketListener::udp_send()
-{
-	//udp_listener->send_to()
-	 
-}
+
 //***********************************public method*******************************************************
 void socketListener::StartSocketListen() {
 	tcp_listener = new ip::tcp::acceptor(m_io, tcp_endpoint(ip::tcp::v4(), serverport));
@@ -145,6 +140,31 @@ void socketListener::StartSocketListen() {
 	accept_tcp();
 	accept_udp();
 	m_io.run();
+}
+
+
+int socketListener::udp_send(msghdr* senddata, udp_socket* udpsocket)
+{
+	int sendlength = 0;
+	for (int i = 0; i < senddata->msg_iovlen; i++) {
+		buffer_type linshbuf;
+		memcpy(linshbuf, senddata->msg_iov[i].iov_base, senddata->msg_iov[i].iov_len); //拷贝到新的数组中   
+		auto senddata = boost::asio::buffer(linshbuf); 
+		sendlength += udpsocket->send(senddata);
+	}
+	return sendlength;
+}
+
+int socketListener::tcp_send(msghdr* senddata, tcp_socket* tcpsocket)
+{
+	int sendlength = 0;
+	for (int i = 0; i < senddata->msg_iovlen; i++) {
+		buffer_type linshbuf;
+		memcpy(linshbuf, senddata->msg_iov[i].iov_base, senddata->msg_iov[i].iov_len); //拷贝到新的数组中   
+		auto senddata = boost::asio::buffer(linshbuf); 
+		sendlength += tcpsocket->write_some(senddata);
+	}
+	return sendlength;
 }
 
 

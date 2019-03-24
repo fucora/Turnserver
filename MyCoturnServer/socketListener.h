@@ -6,9 +6,7 @@
 
 class socketListener
 {
-typedef boost::shared_ptr<tcp_socket> sock_ptr;
-typedef ip::tcp::endpoint tcp_endpoint;
-typedef ip::udp::endpoint udp_endpoint;  
+	typedef boost::shared_ptr<tcp_socket> sock_ptr;
 
 private:	int serverport = 8888;
 private:	io_service m_io;
@@ -51,14 +49,16 @@ private:	void accept_udp();
 
 private:	void udp_hand_receive(const boost::system::error_code & error, udp_socket * sock, std::size_t size, buffer_type buf);
 
- 
+
 
 private:	void udp_hand_send(boost::shared_ptr<std::string> message, const boost::system::system_error & error, std::size_t size);
 
-private:	void udp_send();
-
 
 public:  	void StartSocketListen();
+
+public:		int udp_send(msghdr* senddata, udp_socket * udpsocket);
+
+public:		int tcp_send(msghdr* senddata, tcp_socket * tcpsocket);
 
 
 

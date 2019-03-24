@@ -4,7 +4,6 @@
 
 
 
-
 struct allocation_desc* allocation_list_find_tuple(struct list_head* list,
 	int transport_protocol, const  address_type server_addr,
 	const  address_type client_addr, socklen_t addr_size);

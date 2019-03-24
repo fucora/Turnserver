@@ -36,23 +36,7 @@ int turn_parse_message(const char* msg, ssize_t msg_len,
 int turn_generate_nonce(uint8_t* nonce, size_t len, uint8_t* key, size_t key_len);
 
 
-/**
- *创建401错误的信息
- * \brief Create a complete error 401.
- * \param method method used
- * \param id transaction ID
- * \param realm realm value
- * \param nonce nonce value
- * \param nonce_len nonce length
- * \param iov vector
- * \param index will be filled with the number of element added
- * \return pointer on turn_msg_hdr or NULL if problem
- */
-struct turn_msg_hdr* turn_error_response_401(int method, const uint8_t* id,
-	const char* realm, const uint8_t* nonce, size_t nonce_len,
-    struct iovec* iov, size_t* index);
-
-
+ 
 
 /**
  * \brief Create a TURN (or STUN) message.
@@ -75,6 +59,8 @@ struct turn_msg_hdr* turn_msg_create(uint16_t type, uint16_t len,
  */
 struct turn_attr_hdr* turn_attr_error_create(uint16_t code, const char* reason,
 	size_t len, struct iovec* iov);
+
+ 
 
 /**
  * \brief Create a NONCE attribute.
@@ -327,6 +313,16 @@ struct turn_msg_hdr* turn_error_response_508(int method, const uint8_t* id,struc
  * \param iov vector
  */
 struct turn_attr_hdr* turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size, struct iovec* iov);
+
+/**
+ * \brief Create a REALM attribute.
+ * \param realm text as described in RFC 3261 (including the quotes)
+ * \param len length of realm
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+struct turn_attr_hdr* turn_attr_realm_create(const char* realm, size_t len,struct iovec* iov);
+
 
 
 

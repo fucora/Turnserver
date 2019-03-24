@@ -84,6 +84,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="allocation.cpp" />
+    <ClCompile Include="commonTypes.cpp" />
     <ClCompile Include="dbg.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol.cpp" />
@@ -106,9 +107,9 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;%(AdditionalDependencies)</AdditionalDependencies>
-      <VerboseOutput>false</VerboseOutput>
-      <Trace>false</Trace>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <VerboseOutput>true</VerboseOutput>
+      <Trace>true</Trace>
     </Link>
     <ClCompile>
       <Verbose>false</Verbose>
@@ -117,9 +118,9 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;%(AdditionalDependencies)</AdditionalDependencies>
-      <VerboseOutput>false</VerboseOutput>
-      <Trace>false</Trace>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <VerboseOutput>true</VerboseOutput>
+      <Trace>true</Trace>
     </Link>
     <ClCompile>
       <Verbose>false</Verbose>

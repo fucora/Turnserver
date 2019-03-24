@@ -17,6 +17,9 @@
     <ClCompile Include="protocol.cpp">
       <Filter>turnserver</Filter>
     </ClCompile>
+    <ClCompile Include="commonTypes.cpp">
+      <Filter>mycommon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="mycommon">
