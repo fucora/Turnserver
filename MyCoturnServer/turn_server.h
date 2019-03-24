@@ -28,7 +28,15 @@ public:
 
 	socklen_t sockaddr_get_size(sockaddr_storage * ss);
 
-	int turnserver_send_error(int transport_protocol, int sock, int method, const uint8_t * id, int error, const sockaddr * saddr, socklen_t saddr_size, tls_peer * speer, unsigned char * key);
+	int turnserver_send_error(int transport_protocol, int sock, int method, const uint8_t * id, int error, const sockaddr * saddr, socklen_t saddr_size,unsigned char * key);
+
+	int turn_send_message(int transport_protocol, int sock, const sockaddr * addr, socklen_t addr_size, size_t total_len, const iovec * iov, size_t iovlen);
+
+	int turn_udp_send(int sock, const sockaddr * addr, socklen_t addr_size, const iovec * iov, size_t iovlen);
+
+	int turn_tcp_send(int sock, const iovec * iov, size_t iovlen);
+
+	int turn_tls_send(tls_peer * peer, const sockaddr * addr, socklen_t addr_size, size_t total_len, const iovec * iov, size_t iovlen);
 
  
 

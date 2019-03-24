@@ -65,7 +65,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	uint16_t method = 0;
 	uint16_t type = 0;
 
-
 	if (lenth < 4)
 	{
 		debug(DBG_ATTR, "Size too short\n");
@@ -73,7 +72,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	}
 	memcpy(&type, data, sizeof(uint16_t));
 	type = ntohs(type);
-
 	/* is it a ChannelData message (bit 0 and 1 are not set to 0) ? */
 	if (TURN_IS_CHANNELDATA(type))
 	{
@@ -85,7 +83,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		debug(DBG_ATTR, "Parse message failed\n");
 		return -1;
 	}
-
 	/* check if it is a STUN/TURN header */
 	if (!message.msg)
 	{
@@ -95,7 +92,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	/* convert into host byte order */
 	hdr_msg_type = ntohs(message.msg->turn_msg_type);
 	total_len = ntohs(message.msg->turn_msg_len) + sizeof(struct turn_msg_hdr);
-
 	/* check if it is a known class */
 	if (!STUN_IS_REQUEST(hdr_msg_type) &&
 		!STUN_IS_INDICATION(hdr_msg_type) &&
@@ -128,7 +124,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		debug(DBG_ATTR, "Bad magic cookie\n");
 		return -1;
 	}
-
 	/* check the fingerprint if present */
 	if (message.fingerprint)
 	{
@@ -142,11 +137,9 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			return -1;
 		}
 	}
-
 	/* all this cases above discard silently the packets,
 	 * so now process the packet more in details
 	 */
-
 	if (STUN_IS_REQUEST(hdr_msg_type) && method != STUN_METHOD_BINDING)
 	{
 		/* check long-term authentication for all requests except for a STUN
@@ -161,18 +154,16 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			struct turn_msg_hdr* error = NULL;
 			struct turn_attr_hdr* attr = NULL;
 			size_t idx = 0;
-
 			debug(DBG_ATTR, "No message integrity\n");
 
 			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
-
 			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
 			{
-				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, saddr, saddr_size, speer, NULL);
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, saddr, saddr_size, NULL);
 				return -1;
 			}
 
-			/* software (not fatal if it cannot be allocated) */
+			/* software (not fatal if it cannot be allocated)`````` */
 			if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
 			{
 				error->turn_msg_len += iov[idx].iov_len;
@@ -180,15 +171,13 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			}
 
 			turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
-
 			/* convert to big endian */
 			error->turn_msg_len = htons(error->turn_msg_len);
 
-			if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov,idx) == -1)
+			if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
-
 			/* free sent data */
 			iovec_free_data(iov, idx);
 			return 0;
@@ -316,10 +305,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		return -1;
 		break;
 	}
-
-
-
-
+	 
 	/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 	 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
 	 */
@@ -344,7 +330,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-}
+		}
 #else
 		/* avoid compilation warning */
 		optval = 0;
@@ -369,7 +355,6 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
-
 	return 0;
 }
 
@@ -458,8 +443,7 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
 	/* assume address type is IPv4 or IPv6 as TURN specification
 	 * supports only these two types of address
 	 */
-	return (ss->ss_family == AF_INET) ? sizeof(struct sockaddr_in) :
-		sizeof(struct sockaddr_in6);
+	return (ss->ss_family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 }
 
 
@@ -479,7 +463,7 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
  */
 int turn_server::turnserver_send_error(int transport_protocol, int sock, int method,
 	const uint8_t* id, int error, const struct sockaddr* saddr,
-	socklen_t saddr_size, struct tls_peer* speer, unsigned char* key)
+	socklen_t saddr_size, unsigned char* key)
 {
 	struct iovec iov[16]; /* should be sufficient */
 	struct turn_msg_hdr* hdr = NULL;
@@ -561,7 +545,7 @@ int turn_server::turnserver_send_error(int transport_protocol, int sock, int met
 	}
 
 	/* finally send the response */
-	if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+	if (turn_send_message(transport_protocol, sock, saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
@@ -570,17 +554,13 @@ int turn_server::turnserver_send_error(int transport_protocol, int sock, int met
 	return 0;
 }
 
-#pragma region MyRegion
+#pragma region ·¢ËÍsocket
 
-int turn_send_message(int transport_protocol, int sock, struct tls_peer* speer,
+int turn_server::turn_send_message(int transport_protocol, int sock,
 	const struct sockaddr* addr, socklen_t addr_size, size_t total_len,
 	const struct iovec* iov, size_t iovlen)
 {
-	if (speer) /* TLS */
-	{
-		return turn_tls_send(speer, addr, addr_size, total_len, iov, iovlen);
-	}
-	else if (transport_protocol == IPPROTO_UDP)
+	if (transport_protocol == IPPROTO_UDP)
 	{
 		return turn_udp_send(sock, addr, addr_size, iov, iovlen);
 	}
@@ -590,46 +570,26 @@ int turn_send_message(int transport_protocol, int sock, struct tls_peer* speer,
 	}
 }
 
-
-int turn_send_message(int transport_protocol, int sock, struct tls_peer* speer,
-	const struct sockaddr* addr, socklen_t addr_size, size_t total_len,
-	const struct iovec* iov, size_t iovlen)
+int turn_server::turn_udp_send(int sock, const struct sockaddr* addr, socklen_t addr_size, const struct iovec* iov, size_t iovlen)
 {
-	if (speer) /* TLS */
-	{
-		return turn_tls_send(speer, addr, addr_size, total_len, iov, iovlen);
-	}
-	else if (transport_protocol == IPPROTO_UDP)
-	{
-		return turn_udp_send(sock, addr, addr_size, iov, iovlen);
-	}
-	else /* TCP */
-	{
-		return turn_tcp_send(sock, iov, iovlen);
-	}
-}
-
-
-int turn_udp_send(int sock, const struct sockaddr* addr, socklen_t addr_size,const struct iovec* iov, size_t iovlen)
-{
-  ssize_t len = -1;
+	ssize_t len = -1;
 
 #if !defined(_WIN32) && !defined(_WIN64)
-  struct msghdr msg;
+	struct msghdr msg;
 
-  memset(&msg, 0x00, sizeof(struct msghdr));
-  msg.msg_name = (struct sockaddr*)addr;
-  msg.msg_namelen = addr_size;
-  msg.msg_iov = (struct iovec*)iov;
-  msg.msg_iovlen = iovlen;
-  len = sendmsg(sock, &msg, 0);
+	memset(&msg, 0x00, sizeof(struct msghdr));
+	msg.msg_name = (struct sockaddr*)addr;
+	msg.msg_namelen = addr_size;
+	msg.msg_iov = (struct iovec*)iov;
+	msg.msg_iovlen = iovlen;
+	len = sendmsg(sock, &msg, 0);
 #else
-  len = sock_writev(sock, iov, iovlen, addr, addr_size);
+	len = sock_writev(sock, iov, iovlen, addr, addr_size);
 #endif
-  return len;
+	return len;
 }
 
-int turn_tcp_send(int sock, const struct iovec* iov, size_t iovlen)
+int turn_server::turn_tcp_send(int sock, const struct iovec* iov, size_t iovlen)
 {
 	ssize_t len = -1;
 
@@ -646,38 +606,37 @@ int turn_tcp_send(int sock, const struct iovec* iov, size_t iovlen)
 	return len;
 }
 
-int turn_tls_send(struct tls_peer* peer, const struct sockaddr* addr,
+int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* addr,
 	socklen_t addr_size, size_t total_len, const struct iovec* iov,
 	size_t iovlen)
 {
-	char* buf = NULL;
-	char* p = NULL;
-	size_t i = 0;
-	ssize_t nb = -1;
+	debug(DBG_ATTR, "connot use tls\n");
+	return -1;
+	//char* buf = NULL;
+	//char* p = NULL;
+	//size_t i = 0;
+	//ssize_t nb = -1;
 
-	buf = (char*)malloc(total_len);
-	if (!buf)
-	{
-		return -1;
-	}
+	//buf = (char*)malloc(total_len);
+	//if (!buf)
+	//{
+	//	return -1;
+	//}
 
-	p = buf;
+	//p = buf;
 
-	/* convert the iovec into raw buffer
-	 * cannot send iovec with libssl.
-	 */
-	for (i = 0; i < iovlen; i++)
-	{
-		memcpy(p, iov[i].iov_base, iov[i].iov_len);
-		p += iov[i].iov_len;
-	}
+	///* convert the iovec into raw buffer
+	// * cannot send iovec with libssl.
+	// */
+	//for (i = 0; i < iovlen; i++)
+	//{
+	//	memcpy(p, iov[i].iov_base, iov[i].iov_len);
+	//	p += iov[i].iov_len;
+	//}
 
-	nb = tls_peer_write(peer, buf, total_len, addr, addr_size);
-
-	free(buf);
-
-	return nb;
+	//nb = tls_peer_write(peer, buf, total_len, addr, addr_size);
+	//free(buf);
+	//return nb;
 }
-
 
 #pragma endregion
