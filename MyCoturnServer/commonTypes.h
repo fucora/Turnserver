@@ -237,11 +237,10 @@ struct tls_peer
 
 
 uint32_t crc32_generate(const uint8_t* data, size_t len, uint32_t prev);
-
-
 void hex_convert(const unsigned char* bin, size_t bin_len, unsigned char* hex, size_t hex_len);
-
 void iovec_free_data(struct iovec* iov, uint32_t nb);
-
 int is_little_endian(void);
+void uint32_convert(const unsigned char* data, size_t data_len, uint32_t* t);
+void uint64_convert(const unsigned char* data, size_t data_len, uint64_t* t);
+
 

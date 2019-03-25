@@ -998,9 +998,7 @@ struct turn_msg_hdr* turn_error_response_508(int method, const uint8_t* id,struc
 
 	return error;
 }
-
-
-
+ 
 struct turn_attr_hdr* turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size, struct iovec* iov)
 {
 	size_t len = 0;
@@ -1043,4 +1041,54 @@ struct turn_attr_hdr* turn_attr_unknown_attributes_create(const uint16_t* unknow
 	iov->iov_base = ret;
 	iov->iov_len = sizeof(struct turn_attr_unknown_attribute) + (len * 2);
 	return (struct turn_attr_hdr*)ret;
+}
+
+
+int turn_nonce_is_stale(uint8_t* nonce, size_t len, unsigned char* key,size_t key_len)
+{
+	uint32_t ct = 0;
+	uint64_t ct64 = 0;
+	time_t t = 0;
+	unsigned char c = ':';
+	MD5_CTX ctx;
+	unsigned char md_buf[MD5_DIGEST_LENGTH];
+	unsigned char md_txt[MD5_DIGEST_LENGTH * 2];
+
+	if (len != (16 + MD5_DIGEST_LENGTH * 2))
+	{
+		return 1; /* bad nonce length */
+	}
+
+	if (sizeof(time_t) == 4) /* 32 bits */
+	{
+		uint32_convert(nonce, sizeof(time_t) * 2, &ct);
+		memcpy(&t, &ct, 4);
+	}
+	else
+	{
+		uint64_convert(nonce, sizeof(time_t) * 2, &ct64);
+		memcpy(&t, &ct64, 8);
+	}
+
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, nonce, 16); /* time */
+	MD5_Update(&ctx, &c, 1);
+	MD5_Update(&ctx, key, key_len);
+	MD5_Final(md_buf, &ctx);
+
+	hex_convert(md_buf, MD5_DIGEST_LENGTH, md_txt, sizeof(md_txt));
+
+	if (memcmp(md_txt, nonce + 16, (MD5_DIGEST_LENGTH * 2)) != 0)
+	{
+		/* MD5 hash mismatch */
+		return 1;
+	}
+
+	if (time(NULL) > t)
+	{
+		/* nonce stale */
+		return 1;
+	}
+
+	return 0;
 }

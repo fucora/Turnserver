@@ -34,10 +34,7 @@ int turn_parse_message(const char* msg, ssize_t msg_len,
  * \return 0 if success, -1 otherwise
  */
 int turn_generate_nonce(uint8_t* nonce, size_t len, uint8_t* key, size_t key_len);
-
-
  
-
 /**
  * \brief Create a TURN (or STUN) message.
  * \param type type of the message
@@ -59,7 +56,6 @@ struct turn_msg_hdr* turn_msg_create(uint16_t type, uint16_t len,
  */
 struct turn_attr_hdr* turn_attr_error_create(uint16_t code, const char* reason,
 	size_t len, struct iovec* iov);
-
  
 
 /**
@@ -144,6 +140,15 @@ struct turn_attr_hdr* turn_attr_fingerprint_create(uint32_t fingerprint,struct i
  */
 uint32_t turn_calculate_fingerprint(const struct iovec* iov, size_t iovlen);
 
+/**
+ * \brief Check if nonce is stale.
+ * \param nonce nonce
+ * \param len length of nonce
+ * \param key nonce key
+ * \param key_len length of the key
+ * \return 1 if nonce is stale, 0 otherwise
+ */
+int turn_nonce_is_stale(uint8_t* nonce, size_t len, unsigned char* key,size_t key_len);
 
 /* STUN specific error message */
 /**

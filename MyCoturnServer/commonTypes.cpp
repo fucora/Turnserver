@@ -123,3 +123,42 @@ int is_little_endian(void)
 	long one = 1;
 	return (*((char *)(&one)));
 }
+
+void uint32_convert(const unsigned char* data, size_t data_len, uint32_t* t)
+{
+	unsigned int i = 0;
+	*t = 0;
+
+	for (i = 0; i < data_len; i++)
+	{
+		*t = (*t) * 16;
+
+		if (data[i] >= '0' && data[i] <= '9')
+		{
+			*t += data[i] - '0';
+		}
+		else if (data[i] >= 'a' && data[i] <= 'f')
+		{
+			*t += data[i] - 'a' + 10;
+		}
+	}
+}
+void uint64_convert(const unsigned char* data, size_t data_len, uint64_t* t)
+{
+	unsigned int i = 0;
+	*t = 0;
+
+	for (i = 0; i < data_len; i++)
+	{
+		*t = (*t) * 16;
+
+		if (data[i] >= '0' && data[i] <= '9')
+		{
+			*t += data[i] - '0';
+		}
+		else if (data[i] >= 'a' && data[i] <= 'f')
+		{
+			*t += data[i] - 'a' + 10;
+		}
+	}
+}

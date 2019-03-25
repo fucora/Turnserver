@@ -39,14 +39,14 @@ void turn_server::onTcpConnect(tcp_socket* tcpsocket) {
 void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocket) {
 	address_type remoteaddr = address_type(tcpsocket->remote_endpoint().address());
 	address_type localaddr = address_type(tcpsocket->local_endpoint().address());
-	int remoteAddrSize = tcpsocket->local_endpoint().size(); 
+	int remoteAddrSize = tcpsocket->local_endpoint().size();
 
 	MessageHandle(*buf, lenth, IPPROTO_TCP, remoteaddr, localaddr, remoteAddrSize, tcpsocket);
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
 }
 
-void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocket) { 
+void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocket) {
 	address_type remoteaddr = address_type(udpsocket->remote_endpoint().address());
 	address_type localaddr = address_type(udpsocket->local_endpoint().address());
 	int remoteAddrSize = udpsocket->local_endpoint().size();
@@ -56,7 +56,7 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type remoteaddr, address_type localaddr, int remoteAddrSize, socket_base* sock)
-{ 
+{
 	struct turn_message message;
 	uint16_t unknown[32];
 	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
@@ -154,7 +154,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			struct turn_msg_hdr* error = NULL;
 			struct turn_attr_hdr* attr = NULL;
 			size_t idx = 0;
-			debug(DBG_ATTR, "No message integrity\n"); 
+			debug(DBG_ATTR, "No message integrity\n");
 			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
 			{
@@ -170,6 +170,54 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			}
 
 			turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+			/* convert to big endian */
+			error->turn_msg_len = htons(error->turn_msg_len);
+
+			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+			{
+				debug(DBG_ATTR, "turn_send_message failed\n");
+			}
+			/* free sent data */
+			iovec_free_data(iov, idx);
+			return 0;
+		}
+
+		if (!message.username || !message.realm || !message.nonce)
+		{
+			/* missing username, realm or nonce => error 400 */
+			turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
+			return 0;
+		}
+
+		if (turn_nonce_is_stale(message.nonce->turn_attr_nonce, ntohs(message.nonce->turn_attr_len), (unsigned char*)nonce_key, strlen(nonce_key)))
+		{
+			/* nonce staled => error 438 */
+			/* header, error-code, realm, nonce, software */
+			struct iovec iov[5];
+			size_t idx = 0;
+			struct turn_msg_hdr* error = NULL;
+			struct turn_attr_hdr* attr = NULL;
+			uint8_t nonce[48];
+			 
+
+			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key,strlen(nonce_key));
+			idx = 0;
+
+			if (!(error = turn_error_response_438(method, message.msg->turn_msg_id,
+				realm, nonce, sizeof(nonce), iov, &idx)))
+			{
+				turnserver_send_error(transport_protocol, sock, method,message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+				return -1;
+			}
+
+			/* software (not fatal if it cannot be allocated) */
+			if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
+				sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+			{
+				error->turn_msg_len += iov[idx].iov_len;
+				idx++;
+			}
+
 			/* convert to big endian */
 			error->turn_msg_len = htons(error->turn_msg_len);
 
@@ -304,7 +352,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		return -1;
 		break;
 	}
-	 
+
 	/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 	 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
 	 */
@@ -571,8 +619,8 @@ int turn_server::turn_send_message(int transport_protocol, socket_base* sock,
 
 int turn_server::turn_udp_send(socket_base* sock, address_type remoteaddr, int remoteAddrSize, const struct iovec* iov, size_t iovlen)
 {
-	ssize_t len = -1; 
-	struct msghdr msg; 
+	ssize_t len = -1;
+	struct msghdr msg;
 	memset(&msg, 0x00, sizeof(struct msghdr));
 
 	msg.msg_name = (struct sockaddr*)(&remoteaddr);//此处的转换可能无效，日后调试需注意
@@ -586,13 +634,13 @@ int turn_server::turn_udp_send(socket_base* sock, address_type remoteaddr, int r
 
 int turn_server::turn_tcp_send(socket_base* sock, const struct iovec* iov, size_t iovlen)
 {
-	ssize_t len = -1; 
-	struct msghdr msg; 
+	ssize_t len = -1;
+	struct msghdr msg;
 	memset(&msg, 0x00, sizeof(struct msghdr));
 	msg.msg_iov = (struct iovec*)iov;
-	msg.msg_iovlen = iovlen; 
+	msg.msg_iovlen = iovlen;
 	///////////
-	len = manager.tcp_send(&msg, (tcp_socket*)sock); 
+	len = manager.tcp_send(&msg, (tcp_socket*)sock);
 	return len;
 }
 
