@@ -58,7 +58,10 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type remoteaddr, address_type localaddr, int remoteAddrSize, socket_base* sock)
 {
 	struct turn_message message;
+	list_head* account_list;
+
 	uint16_t unknown[32];
+	struct account_desc* account = NULL;
 	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
 	uint16_t hdr_msg_type = 0;
 	size_t total_len = 0;
@@ -198,18 +201,16 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			struct turn_msg_hdr* error = NULL;
 			struct turn_attr_hdr* attr = NULL;
 			uint8_t nonce[48];
-			 
 
-			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key,strlen(nonce_key));
+			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 			idx = 0;
 
 			if (!(error = turn_error_response_438(method, message.msg->turn_msg_id,
 				realm, nonce, sizeof(nonce), iov, &idx)))
 			{
-				turnserver_send_error(transport_protocol, sock, method,message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 				return -1;
 			}
-
 			/* software (not fatal if it cannot be allocated) */
 			if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
 				sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
@@ -217,7 +218,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 				error->turn_msg_len += iov[idx].iov_len;
 				idx++;
 			}
-
 			/* convert to big endian */
 			error->turn_msg_len = htons(error->turn_msg_len);
 
@@ -229,6 +229,137 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			iovec_free_data(iov, idx);
 			return 0;
 		}
+		/* find the desired username and password in the account list */
+		{
+			char username[514];
+			char user_realm[256];
+			size_t username_len = ntohs(message.username->turn_attr_len) + 1;
+			size_t realm_len = ntohs(message.realm->turn_attr_len) + 1;
+
+			if (username_len > 513 || realm_len > 256)
+			{
+				/* some attributes are too long */
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
+				return -1;
+			}
+
+			strncpy(username, (char*)message.username->turn_attr_username, username_len);
+			username[username_len - 1] = 0x00;
+			strncpy(user_realm, (char*)message.realm->turn_attr_realm, realm_len);
+			user_realm[realm_len - 1] = 0x00;
+			/* search the account */
+			account = account_list_find(_allocation_list, username, user_realm);
+
+			if (!account)
+			{
+				/* not valid username => error 401 */
+				struct iovec iov[5]; /* header, error-code, realm, nonce, software */
+				size_t idx = 0;
+				struct turn_msg_hdr* error = NULL;
+				struct turn_attr_hdr* attr = NULL;
+				uint8_t nonce[48];
+
+				debug(DBG_ATTR, "No account\n");
+				turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+				idx = 0;
+
+				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id,
+					realm, nonce, sizeof(nonce), iov, &idx)))
+				{
+					turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+					return -1;
+				}
+				/* software (not fatal if it cannot be allocated) */
+				if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+				{
+					error->turn_msg_len += iov[idx].iov_len;
+					idx++;
+				}
+
+				turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+				/* convert to big endian */
+				error->turn_msg_len = htons(error->turn_msg_len);
+				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+				{
+					debug(DBG_ATTR, "turn_send_message failed\n");
+				}
+				/* free sent data */
+				iovec_free_data(iov, idx);
+				return 0;
+			}
+		}
+		/* compute HMAC-SHA1 and compare with the value in message_integrity */
+		{
+			uint8_t hash[20];
+
+			if (message.fingerprint)
+			{
+				/* if the message contains a FINGERPRINT attribute, adjust the size */
+				size_t len_save = message.msg->turn_msg_len;
+				message.msg->turn_msg_len = ntohs(message.msg->turn_msg_len) - sizeof(struct turn_attr_fingerprint);
+
+				message.msg->turn_msg_len = htons(message.msg->turn_msg_len);
+				turn_calculate_integrity_hmac((const unsigned char*)data,
+					total_len - sizeof(struct turn_attr_fingerprint) -
+					sizeof(struct turn_attr_message_integrity), account->key,
+					sizeof(account->key), hash);
+
+				/* restore length */
+				message.msg->turn_msg_len = len_save;
+			}
+			else
+			{
+				turn_calculate_integrity_hmac((const unsigned char*)data, total_len - sizeof(struct turn_attr_message_integrity), account->key, sizeof(account->key), hash);
+			}
+
+			if (memcmp(hash, message.message_integrity->turn_attr_hmac, 20) != 0)
+			{
+				/* integrity does not match => error 401 */
+				struct iovec iov[5]; /* header, error-code, realm, nonce, software */
+				size_t idx = 0;
+				struct turn_msg_hdr* error = NULL;
+				struct turn_attr_hdr* attr = NULL;
+				uint8_t nonce[48];
+
+				debug(DBG_ATTR, "Hash mismatch\n");
+#ifndef NDEBUG
+				/* print computed hash and the one from the message */
+				digest_print(hash, 20);
+				digest_print(message.message_integrity->turn_attr_hmac, 20);
+#endif
+				turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+				idx = 0;
+
+				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
+				{
+					turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+					return -1;
+				}
+
+				/* software (not fatal if it cannot be allocated) */
+				if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
+					sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+				{
+					error->turn_msg_len += iov[idx].iov_len;
+					idx++;
+				}
+
+				turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+
+				/* convert to big endian */
+				error->turn_msg_len = htons(error->turn_msg_len);
+
+				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+				{
+					debug(DBG_ATTR, "turn_send_message failed\n");
+				}
+
+				/* free sent data */
+				iovec_free_data(iov, idx);
+				return 0;
+			}
+		}
+
 	}
 }
 

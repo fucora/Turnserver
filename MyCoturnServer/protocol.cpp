@@ -1092,3 +1092,20 @@ int turn_nonce_is_stale(uint8_t* nonce, size_t len, unsigned char* key,size_t ke
 
 	return 0;
 }
+
+int turn_calculate_integrity_hmac(const unsigned char* buf, size_t len,
+	const unsigned char* key, size_t key_len, unsigned char* integrity)
+{
+	HMAC_CTX ctx;
+	unsigned int md_len = SHA_DIGEST_LENGTH;
+
+	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
+	HMAC_CTX_init(&ctx);
+	HMAC_Init(&ctx, key, key_len, EVP_sha1());
+	HMAC_Update(&ctx, buf, len);
+	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
+
+	HMAC_CTX_cleanup(&ctx);
+
+	return 0;
+}

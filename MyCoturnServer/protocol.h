@@ -150,6 +150,21 @@ uint32_t turn_calculate_fingerprint(const struct iovec* iov, size_t iovlen);
  */
 int turn_nonce_is_stale(uint8_t* nonce, size_t len, unsigned char* key,size_t key_len);
 
+/**
+ * \brief Calculate the HMAC-SHA1 hash.
+ * \param buf buffer entry buffer to calculate HMAC
+ * \param len length of the buffer
+ * \param key key used to hash
+ * \param key_len length of key
+ * \param integrity buffer that will received HMAC hash (MUST be at least 20
+ * bytes length)
+ * \return 0 if success, -1 otherwise
+ */
+int turn_calculate_integrity_hmac(const unsigned char* buf, size_t len,
+	const unsigned char* key, size_t key_len, unsigned char* integrity);
+
+
+
 /* STUN specific error message */
 /**
  * \brief Create a complete error 400.

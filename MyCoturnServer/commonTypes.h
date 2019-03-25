@@ -210,6 +210,31 @@ struct turn_message
 	size_t xor_peer_addr_overflow; /**< If set to 1, not all the XOR-PEER-ADDRESS given in request are in this structure */
 };
  
+/**
+ * \enum account_state
+ * \brief Account access state.
+ */
+enum account_state
+{
+	AUTHORIZED, /**< Client is authorized to access service */
+	RESTRICTED, /**< Client has limited access to service (bandwidth, ...) */
+	REFUSED, /**< Client is always refused to access service (i.e. blacklist) */
+};
+
+/**
+ * \struct account_desc
+ * \brief Account descriptor.
+ */
+struct account_desc
+{
+	char username[514]; /**< Username */
+	char realm[256]; /**< Realm */
+	unsigned char key[16]; /**< MD5 hash */
+	enum account_state state; /**< Access state */
+	size_t allocations; /**< Number of allocations used */
+	int is_tmp; /**< If account is a temporary account */
+	struct list_head list; /**< For list management */
+};
 
 /**
  * \enum protocol_type
@@ -242,5 +267,19 @@ void iovec_free_data(struct iovec* iov, uint32_t nb);
 int is_little_endian(void);
 void uint32_convert(const unsigned char* data, size_t data_len, uint32_t* t);
 void uint64_convert(const unsigned char* data, size_t data_len, uint64_t* t);
+/**
+ * \brief Print a digest.
+ * \param buf buffer
+ * \param len length of buffer
+ */
+void digest_print(const unsigned char* buf, size_t len);
+/**
+ * \brief Find a account with specified username and realm from a list.
+ * \param list list of accounts
+ * \param username
+ * \param realm realm
+ * \return pointer on account_desc or NULL if not found
+ */
+struct account_desc* account_list_find(struct list_head* list,const char* username, const char* realm);
 
 

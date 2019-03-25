@@ -162,3 +162,47 @@ void uint64_convert(const unsigned char* data, size_t data_len, uint64_t* t)
 		}
 	}
 }
+
+void digest_print(const unsigned char* buf, size_t len)
+{
+	unsigned int i = 0;
+	char res[128];
+
+	if (len > sizeof(res) - 1)
+	{
+		return;
+	}
+
+	for (i = 0; i < len; i++)
+	{
+		sprintf(&res[i * 2], "%02x", buf[i]);
+	}
+	res[i * 2] = 0x00;
+
+	fprintf(stderr, "%s\n", res);
+}
+
+
+struct account_desc* account_list_find(struct list_head* list,const char* username, const char* realm)
+{
+	struct list_head* get = NULL;
+	struct list_head* n = NULL;
+
+	list_iterate_safe(get, n, list)
+	{
+		struct account_desc* tmp = list_get(get, struct account_desc, list);
+
+		if (!strncmp(tmp->username, username, sizeof(tmp->username) - 1))
+		{
+			/* if realm is specified, try a match otherwise the peer is found */
+			if (!realm || !strncmp(tmp->realm, realm, sizeof(tmp->realm) - 1))
+			{
+				return tmp;
+			}
+		}
+	}
+
+	/* not found */
+	return NULL;
+}
+
