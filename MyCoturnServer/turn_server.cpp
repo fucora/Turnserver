@@ -438,7 +438,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_turn(int transport_protocol, socket_base* sock,
+  int turn_server::turnserver_process_turn(int transport_protocol, socket_base* sock,
 	const struct turn_message* message, const address_type saddr,
 	const address_type daddr, socklen_t saddr_size, struct account_desc* account)
 {
@@ -872,7 +872,7 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_channelbind_request(int transport_protocol,
+  int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	socket_base*  sock, const struct turn_message* message, const address_type saddr,
 	socklen_t saddr_size, struct allocation_desc* desc)
 {
@@ -1011,16 +1011,20 @@ static int turnserver_process_channelbind_request(int transport_protocol,
 		port = ntohs(((struct sockaddr_in6*)&desc->relayed_addr)->sin6_port);
 	}
 
-	if (saddr.is_v4())
-	{ 
-		str2= saddr.to_string();   
-		port2 = ntohs(((struct sockaddr_in*)saddr)->sin_port);
-	}
-	else /* IPv6 */
+
+	if (transport_protocol == IPPROTO_TCP)
 	{
-		str2 = saddr.to_string();
-		port2 = ntohs(((struct sockaddr_in6*)saddr)->sin6_port);
+		auto tcpsocket = (tcp_socket*)sock;
+		str2 = tcpsocket->remote_endpoint().address().to_string();
+		port2 = tcpsocket->remote_endpoint().port();
 	}
+	else if (transport_protocol == IPPROTO_UDP)
+	{
+		auto tcpsocket = (udp_socket*)sock;
+		str2 = tcpsocket->remote_endpoint().address().to_string();
+		port2 = tcpsocket->remote_endpoint().port();
+	}
+	 
 
 	syslog(LOG_INFO, "ChannelBind transport=%u (d)tls=%u source=%s:%u account=%s "
 		"relayed=%s:%u channel=%s:%u", transport_protocol, desc->relayed_tls ||
@@ -1033,21 +1037,18 @@ static int turnserver_process_channelbind_request(int transport_protocol,
 	/* update or create allocation permission on that peer */
 	if (!alloc_permission)
 	{
-		allocation_desc_add_permission(desc, TURN_DEFAULT_PERMISSION_LIFETIME,
-			family, peer_addr);
+		allocation_desc_add_permission(desc, TURN_DEFAULT_PERMISSION_LIFETIME, family, peer_addr);
 	}
 	else
 	{
-		allocation_permission_set_timer(alloc_permission,
-			TURN_DEFAULT_PERMISSION_LIFETIME);
+		allocation_permission_set_timer(alloc_permission, TURN_DEFAULT_PERMISSION_LIFETIME);
 	}
 
 	/* finally send the response */
 	if (!(hdr = turn_msg_channelbind_response_create(0, message->msg->turn_msg_id,
 		&iov[idx])))
 	{
-		turnserver_send_error(transport_protocol, sock, method,
-			message->msg->turn_msg_id, 500, saddr, saddr_size, speer, desc->key);
+		turnserver_send_error(transport_protocol, sock, method,message->msg->turn_msg_id, 500, saddr, saddr_size, desc->key);
 		return -1;
 	}
 	idx++;
@@ -1064,18 +1065,14 @@ static int turnserver_process_channelbind_request(int transport_protocol,
 		== -1)
 	{
 		iovec_free_data(iov, idx);
-		turnserver_send_error(transport_protocol, sock, method,
-			message->msg->turn_msg_id, 500, saddr, saddr_size, speer, desc->key);
+		turnserver_send_error(transport_protocol, sock, method, message->msg->turn_msg_id, 500, saddr, saddr_size,desc->key);
 		return -1;
 	}
 
-	debug(DBG_ATTR,
-		"ChannelBind successful, send success ChannelBind response\n");
+	debug(DBG_ATTR,"ChannelBind successful, send success ChannelBind response\n");
 
 	/* finally send the response */
-	if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size,
-		ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx)
-		== -1)
+	if (turn_send_message(transport_protocol, sock,saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
@@ -1091,7 +1088,7 @@ static int turnserver_process_channelbind_request(int transport_protocol,
  * \param desc allocation descriptor
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_send_indication(const struct turn_message* message, struct allocation_desc* desc)
+  int turn_server::turnserver_process_send_indication(const struct turn_message* message, struct allocation_desc* desc)
 {
 	const char* msg = NULL;
 	size_t msg_len = 0;
@@ -1294,7 +1291,7 @@ static int turnserver_process_send_indication(const struct turn_message* message
  * \param port port to check
  * \return 1 if address is denied, 0 otherwise
  */
-static int turnserver_is_address_denied(const uint8_t* addr, size_t addrlen, uint16_t port)
+  int  turn_server::turnserver_is_address_denied(const uint8_t* addr, size_t addrlen, uint16_t port)
 {
 	struct list_head* get = NULL;
 	struct list_head* n = NULL;
@@ -1376,7 +1373,7 @@ static int turnserver_is_address_denied(const uint8_t* addr, size_t addrlen, uin
  * \param addrlen sizeof address
  * \return 1 if address is an IPv6 tunneled ones, 0 otherwise
  */
-static int turnserver_is_ipv6_tunneled_address(const uint8_t* addr, size_t addrlen)
+  int  turn_server::turnserver_is_ipv6_tunneled_address(const uint8_t* addr, size_t addrlen)
 {
 	if (addrlen == 16)
 	{
@@ -1405,7 +1402,7 @@ static int turnserver_is_ipv6_tunneled_address(const uint8_t* addr, size_t addrl
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_connect_request(int transport_protocol, socket_base* sock,
+  int  turn_server::turnserver_process_connect_request(int transport_protocol, socket_base* sock,
 	const struct turn_message* message, const address_type saddr,
 	socklen_t saddr_size, struct allocation_desc* desc)
 {
@@ -1686,11 +1683,11 @@ int turn_server::turnserver_send_error(int transport_protocol, socket_base* sock
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_binding_request(int transport_protocol, socket_base* sock,
+ int turn_server::turnserver_process_binding_request(int transport_protocol, socket_base* sock,
 	const struct turn_message* message, const address_type saddr,
 	socklen_t saddr_size)
 {
-	struct iovec iov[4]; /* header, software, xor-address, fingerprint */
+    iovec iov[4]; /* header, software, xor-address, fingerprint */
 	size_t idx = 0;
 	struct turn_msg_hdr* hdr = NULL;
 	struct turn_attr_hdr* attr = NULL;
@@ -1728,7 +1725,7 @@ static int turnserver_process_binding_request(int transport_protocol, socket_bas
 	if (!(attr = turn_attr_fingerprint_create(0, &iov[idx])))
 	{
 		iovec_free_data(iov, idx);
-		turnserver_send_error(transport_protocol, sock, STUN_METHOD_BINDING, message->msg->turn_msg_id, 500, saddr, saddr_size, speer, NULL);
+		turnserver_send_error(transport_protocol, sock, STUN_METHOD_BINDING, message->msg->turn_msg_id, 500, saddr, saddr_size, NULL);
 		return -1;
 	}
 	hdr->turn_msg_len += iov[idx].iov_len;
@@ -1745,9 +1742,8 @@ static int turnserver_process_binding_request(int transport_protocol, socket_bas
 	((struct turn_attr_fingerprint*)attr)->turn_attr_crc ^=
 		htonl(STUN_FINGERPRINT_XOR_VALUE);
 
-	if (turn_send_message(transport_protocol, sock, speer, saddr, saddr_size,
-		ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx)
-		== -1)
+ 
+	if ( turn_send_message(transport_protocol, sock, saddr, (int)saddr_size, (size_t)(ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr)), iov, idx) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
@@ -1768,7 +1764,7 @@ static int turnserver_process_binding_request(int transport_protocol, socket_bas
  * \param allocation_list list of allocations
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_connectionbind_request(int transport_protocol,
+  int  turn_server::turnserver_process_connectionbind_request(int transport_protocol,
 	socket_base* sock, const struct turn_message* message, const address_type saddr,
 	socklen_t saddr_size, struct account_desc* account,
 	struct list_head* allocation_list)
@@ -1982,7 +1978,7 @@ static int turnserver_process_connectionbind_request(int transport_protocol,
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_allocate_request(int transport_protocol, socket_base* sock,
+  int  turn_server::turnserver_process_allocate_request(int transport_protocol, socket_base* sock,
 	const struct turn_message* message, const address_type saddr,
 	const address_type daddr, socklen_t saddr_size, struct account_desc* account)
 {
@@ -2637,7 +2633,7 @@ send_success_response:
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_createpermission_request(int transport_protocol,
+  int  turn_server::turnserver_process_createpermission_request(int transport_protocol,
 	socket_base* sock, const struct turn_message* message, const address_type saddr,
 	socklen_t saddr_size, struct allocation_desc* desc)
 {
@@ -2872,7 +2868,7 @@ static int turnserver_process_createpermission_request(int transport_protocol,
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_process_refresh_request(int transport_protocol, socket_base* sock,
+  int  turn_server::turnserver_process_refresh_request(int transport_protocol, socket_base* sock,
 	const struct turn_message* message, const address_type saddr,
 	socklen_t saddr_size, struct allocation_desc* desc, struct account_desc* account)
 {
@@ -3048,8 +3044,8 @@ static int turnserver_process_refresh_request(int transport_protocol, socket_bas
 #pragma region ·¢ËÍsocket
 
 int turn_server::turn_send_message(int transport_protocol, socket_base* sock,
-	address_type remoteaddr, int remoteAddrSize, size_t total_len,
-	const struct iovec* iov, size_t iovlen)
+	const address_type remoteaddr, int remoteAddrSize, size_t total_len,
+	const  iovec* iov, size_t iovlen)
 {
 	if (transport_protocol == IPPROTO_UDP)
 	{
@@ -3135,7 +3131,7 @@ int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* add
  * \note Some error codes cannot be sent using this function (420, 438, ...).
  * \return 0 if success, -1 otherwise
  */
-static int turnserver_send_error(int transport_protocol, socket_base* sock, int method,
+  int  turn_server::turnserver_send_error(int transport_protocol, socket_base* sock, int method,
 	const uint8_t* id, int error, const address_type saddr,
 	socklen_t saddr_size, unsigned char* key)
 {
