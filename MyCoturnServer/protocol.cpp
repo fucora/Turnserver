@@ -1099,6 +1099,7 @@ int turn_calculate_integrity_hmac(const unsigned char* buf, size_t len,
 	HMAC_CTX ctx;
 	unsigned int md_len = SHA_DIGEST_LENGTH;
 
+
 	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
 	HMAC_CTX_init(&ctx);
 	HMAC_Init(&ctx, key, key_len, EVP_sha1());
@@ -1106,6 +1107,42 @@ int turn_calculate_integrity_hmac(const unsigned char* buf, size_t len,
 	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
 
 	HMAC_CTX_cleanup(&ctx);
+
+	return 0;
+}
+
+
+int turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16_t* peer_port,const uint8_t* cookie, const uint8_t* msg_id)
+{
+	size_t i = 0;
+	size_t len = 0;
+
+	switch (family)
+	{
+	case STUN_ATTR_FAMILY_IPV4:
+		len = 4;
+		break;
+	case STUN_ATTR_FAMILY_IPV6:
+		len = 16;
+		break;
+	default:
+		return -1;
+	}
+
+	/* XOR port */
+	*peer_port ^= ((cookie[0] << 8) | (cookie[1]));
+
+	/* IPv4/IPv6 XOR cookie (just the first four bytes of IPv6 address) */
+	for (i = 0; i < 4; i++)
+	{
+		peer_addr[i] ^= cookie[i];
+	}
+
+	/* end of IPv6 address XOR transaction ID */
+	for (i = 4; i < len; i++)
+	{
+		peer_addr[i] ^= msg_id[i - 4];
+	}
 
 	return 0;
 }

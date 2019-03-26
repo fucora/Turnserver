@@ -81,4 +81,99 @@ struct allocation_channel* allocation_desc_find_channel_number(
 	}
 }
 
+struct allocation_channel* allocation_desc_find_channel_number(struct allocation_desc* desc, uint16_t channel)
+{
+	struct list_head* get = NULL;
+	struct list_head* n = NULL;
+
+	list_iterate_safe(get, n, &desc->peers_channels)
+	{
+		struct allocation_channel* tmp = list_get(get, struct allocation_channel,
+			list);
+
+		if (tmp->channel_number == channel)
+		{
+			return tmp;
+		}
+	}
+
+	/* not found */
+	return 0;
+}
+
+uint32_t allocation_desc_find_channel(struct allocation_desc* desc, int family, const uint8_t* peer_addr, uint16_t peer_port)
+{
+	struct list_head* get = NULL;
+	struct list_head* n = NULL; 
+	list_iterate_safe(get, n, &desc->peers_channels)
+	{
+		struct allocation_channel* tmp = list_get(get, struct allocation_channel,
+			list);
+
+		if (tmp->family == family && !memcmp(&tmp->peer_addr, peer_addr,
+			family == AF_INET ? 4 : 16) && tmp->peer_port == peer_port)
+		{
+			return tmp->channel_number;
+		}
+	}
+	/* not found */
+	return 0;
+}
+
+void allocation_channel_set_timer(struct allocation_channel* channel,uint32_t lifetime)
+{
+	struct itimerspec expire;
+	struct itimerspec old;
+
+	/* timer */
+	expire.it_value.tv_sec = (long)lifetime;
+	expire.it_value.tv_nsec = 0;
+	expire.it_interval.tv_sec = 0; /* no interval */
+	expire.it_interval.tv_nsec = 0;
+	memset(&old, 0x00, sizeof(struct itimerspec));
+
+	/* set the timer */
+	if (timer_settime(channel->expire_timer, 0, &expire, &old) == -1)
+	{
+		return;
+	}
+}
+
+
+int allocation_desc_add_channel(struct allocation_desc* desc, uint16_t channel,uint32_t lifetime, int family, const uint8_t* peer_addr, uint16_t peer_port)
+{
+	struct allocation_channel* ret = NULL;
+	struct sigevent event;
+
+	if (!(ret = (allocation_channel*)malloc(sizeof(struct allocation_channel))))
+	{
+		return -1;
+	}
+
+	ret->family = family;
+	memcpy(&ret->peer_addr, peer_addr, family == AF_INET ? 4 : 16);
+	ret->peer_port = peer_port;
+	ret->channel_number = channel;
+
+	/* timer */
+	memset(&event, 0x00, sizeof(struct sigevent));
+	event.sigev_value.sival_ptr = ret;
+	event.sigev_notify = SIGEV_SIGNAL;
+	event.sigev_signo = SIGRT_EXPIRE_CHANNEL;
+
+	memset(&ret->expire_timer, 0x00, sizeof(timer_t));
+	if (timer_create(CLOCK_REALTIME, &event, &ret->expire_timer) == -1)
+	{
+		free(ret);
+		return -1;
+	}
+
+	allocation_channel_set_timer(ret, lifetime);
+
+	/* add to the list */
+	LIST_ADD(&ret->list, &desc->peers_channels);
+	INIT_LIST(ret->list2);
+	return 0;
+}
+
  

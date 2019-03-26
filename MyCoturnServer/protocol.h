@@ -343,6 +343,20 @@ struct turn_attr_hdr* turn_attr_unknown_attributes_create(const uint16_t* unknow
  */
 struct turn_attr_hdr* turn_attr_realm_create(const char* realm, size_t len,struct iovec* iov);
 
+/**
+ * \brief (Address and port) XOR cookie.
+ * \param family address famiily
+ * \param peer_addr peer address (which contains already XORed address),
+ * it will be filled with de-XORed address
+ * \param peer_port peer port (which contains already XORed port), it will be
+ * filled with de-XORed port
+ * \param cookie cookie
+ * \param msg_id ID of the message
+ * \return 0 if success, -1 otherwise
+ */
+int turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16_t* peer_port,const uint8_t* cookie, const uint8_t* msg_id);
+
+
 
 
 

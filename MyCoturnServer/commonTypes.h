@@ -182,6 +182,7 @@ struct allocation_desc
 #define XOR_PEER_ADDRESS_MAX 5
 #endif
 
+ 
 struct turn_message
 {
 	struct turn_msg_hdr* msg; /**< STUN/TURN header */
@@ -219,6 +220,19 @@ enum account_state
 	AUTHORIZED, /**< Client is authorized to access service */
 	RESTRICTED, /**< Client has limited access to service (bandwidth, ...) */
 	REFUSED, /**< Client is always refused to access service (i.e. blacklist) */
+};
+
+/**
+ * \struct denied_address
+ * \brief Describes an address.
+ */
+struct denied_address
+{
+	int family; /**< AF family (AF_INET or AF_INET6) */
+	uint8_t addr[16]; /**< IPv4 or IPv6 address */
+	uint8_t mask; /**< Network mask of the address */
+	uint16_t port; /**< Port */
+	struct list_head list; /**< For list management */
 };
 
 /**
@@ -281,5 +295,14 @@ void digest_print(const unsigned char* buf, size_t len);
  * \return pointer on account_desc or NULL if not found
  */
 struct account_desc* account_list_find(struct list_head* list,const char* username, const char* realm);
+
+
+ 
+
+/**
+ * \def SIGRT_EXPIRE_CHANNEL
+ * \brief Signal value when channel expires.
+ */
+#define SIGRT_EXPIRE_CHANNEL (SIGRTMIN + 2)
 
 
