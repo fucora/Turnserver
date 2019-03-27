@@ -1,5 +1,8 @@
 #include "commonTypes.h"
-
+#include <openssl/rand.h>
+#include <openssl/sha.h>
+#include <openssl/md5.h>
+#include <openssl/hmac.h>
 
 uint32_t crc32_generate(const uint8_t* data, size_t len, uint32_t prev)
 {
@@ -206,3 +209,20 @@ struct account_desc* account_list_find(struct list_head* list,const char* userna
 	return NULL;
 }
 
+
+int random_bytes_generate(uint8_t* id, size_t len)
+{
+	if (!RAND_bytes(id, len))
+	{
+		return -1;
+	} 
+	return 0;
+}
+
+void account_list_remove(struct list_head* list, struct account_desc* desc)
+{
+	/* to avoid compilation warning */
+	(void)list;
+
+	LIST_DEL(&desc->list);
+}

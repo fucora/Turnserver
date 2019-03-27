@@ -149,8 +149,8 @@ int socketListener::udp_send(msghdr* senddata, udp_socket* udpsocket)
 	for (int i = 0; i < senddata->msg_iovlen; i++) {
 		buffer_type linshbuf;
 		memcpy(linshbuf, senddata->msg_iov[i].iov_base, senddata->msg_iov[i].iov_len); //拷贝到新的数组中   
-		auto senddata = boost::asio::buffer(linshbuf); 
-		sendlength += udpsocket->send(senddata);
+		auto senddata1 = boost::asio::buffer(linshbuf); 
+		sendlength += udpsocket->send(senddata1);
 	}
 	return sendlength;
 }
@@ -161,11 +161,30 @@ int socketListener::tcp_send(msghdr* senddata, tcp_socket* tcpsocket)
 	for (int i = 0; i < senddata->msg_iovlen; i++) {
 		buffer_type linshbuf;
 		memcpy(linshbuf, senddata->msg_iov[i].iov_base, senddata->msg_iov[i].iov_len); //拷贝到新的数组中   
-		auto senddata = boost::asio::buffer(linshbuf); 
-		sendlength += tcpsocket->write_some(senddata);
+		auto senddata1 = boost::asio::buffer(linshbuf); 
+		sendlength += tcpsocket->write_some(senddata1);
 	}
 	return sendlength;
 }
 
+
+
+int socketListener::udp_send(buffer_type senddata, udp_socket* udpsocket)
+{
+	int sendlength = 0;
+	auto xxx = (buffer_type*)senddata;
+	auto senddata1 = boost::asio::buffer(*xxx);
+	sendlength += udpsocket->send(senddata1);
+	return sendlength;
+}
+
+int socketListener::tcp_send(buffer_type senddata, tcp_socket* tcpsocket)
+{
+	int sendlength = 0;
+	auto xxx = (buffer_type*)senddata;
+	auto senddata1 = boost::asio::buffer(*xxx);
+	sendlength += tcpsocket->write_some(senddata1);
+	return sendlength;
+}
 
 

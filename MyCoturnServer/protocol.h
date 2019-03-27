@@ -356,6 +356,121 @@ struct turn_attr_hdr* turn_attr_realm_create(const char* realm, size_t len,struc
  */
 int turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16_t* peer_port,const uint8_t* cookie, const uint8_t* msg_id);
 
+/**
+ * \brief Create a LIFETIME attribute.
+ * \param lifetime lifetime
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+struct turn_attr_hdr* turn_attr_lifetime_create(uint32_t lifetime,
+	struct iovec* iov);
+
+
+#pragma region create turn messages
+/**
+ * \brief Create a TURN ChannelBind Response.
+ * \param len length of the message
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_msg_hdr or NULL if problem
+ */
+struct turn_msg_hdr* turn_msg_channelbind_response_create(uint16_t len, const uint8_t* id, struct iovec* iov);
+
+/**
+ * \brief Create a STUN Binding Response.
+ * \param len length of the message
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_msg_hdr or NULL if problem
+ */
+struct turn_msg_hdr* turn_msg_binding_response_create(uint16_t len,const uint8_t* id, struct iovec* iov);
+
+
+/**
+ * \brief Create a XOR-MAPPED-ADDRESS attribute.
+ * \param address address
+ * \param cookie magic cookie
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+struct turn_attr_hdr* turn_attr_xor_mapped_address_create(const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id,struct iovec* iov);
+
+turn_attr_hdr * turn_attr_xor_address_create(uint16_t type, const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id, iovec * iov);
+
+/**
+ * \brief Create a TURN ConnectionBind Response.
+ * \param len length of the message
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_msg_hdr or NULL if problem
+ */
+struct turn_msg_hdr* turn_msg_connectionbind_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov);
+
+
+/**
+ * \brief Create a CONNECTION-ID attribute.
+ * \param id 32 bits ID
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+struct turn_attr_hdr* turn_attr_connection_id_create(uint32_t id,
+	struct iovec* iov);
+
+/**
+ * \brief Create a TURN Refresh Response.
+ * \param len length of the message
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_msg_hdr or NULL if problem
+ */
+struct turn_msg_hdr* turn_msg_refresh_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov);
+
+/**
+ * \brief Create a TURN CreatePermission Response.
+ * \param len length of the message
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_msg_hdr or NULL if problem
+ */
+struct turn_msg_hdr* turn_msg_createpermission_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov);
+/**
+ * \brief Create a RESERVATION-TOKEN attribute.
+ * \param token token (must be 8 bytes length)
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+struct turn_attr_hdr* turn_attr_reservation_token_create(const uint8_t* token,
+	struct iovec* iov);
+/**
+ * \brief Create a TURN Allocate Response.
+ * \param len length of the message
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_msg_hdr or NULL if problem
+ */
+struct turn_msg_hdr* turn_msg_allocate_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov);
+
+/**
+ * \brief Create a XOR-RELAYED-ADDRESS attribute.
+ * \param address address
+ * \param cookie magic cookie
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+struct turn_attr_hdr* turn_attr_xor_relayed_address_create(
+	const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id,
+	struct iovec* iov);
+
+#pragma endregion
+
+
+
 
 
 

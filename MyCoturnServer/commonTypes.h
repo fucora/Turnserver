@@ -9,7 +9,8 @@
 #include <functional> 
 #include <string>
 #include <algorithm>
-
+#include <time.h>
+#include <sys/time.h>
 #include <stdint.h>
 #include <sys/types.h>
 //////////// 
@@ -118,7 +119,7 @@ struct allocation_tcp_relay
 	uint8_t peer_addr[16]; /**< Peer address */
 	uint16_t peer_port; /**< Peer port */
 	int peer_sock; /**< Peer data connection (server <-> peer) */
-	int client_sock; /**< Client data connection (client <-> server) */
+	socket_base* client_sock; /**< Client data connection (client <-> server) */
 	timer_t expire_timer; /**< Expire timer */
 	int newConnection; /** int new  < If the connection is newly initiated */
 	int ready; /**< If remote peer is connected (i.e. connect() has succeed
@@ -157,7 +158,7 @@ struct allocation_desc
 							request succeed */
 	int relayed_tls; /**< If allocation has been set in TLS */
 	int relayed_dtls; /**< If allocation has been set in DTLS */
-	int tuple_sock; /**< Socket for the connection between the TURN server and the
+	socket_base* tuple_sock; /**< Socket for the connection between the TURN server and the
 					  TURN client */
 	uint8_t transaction_id[12]; /**< Transaction ID of the Allocate Request */
 	timer_t expire_timer; /**< Expire timer */
@@ -297,12 +298,66 @@ void digest_print(const unsigned char* buf, size_t len);
 struct account_desc* account_list_find(struct list_head* list,const char* username, const char* realm);
 
 
- 
+/**
+ * \brief Generate random bytes.
+ * \param id buffer that will be filled with random value
+ * \param len length of id
+ * \return 0 if successfull, -1 if the random number is cryptographically weak
+ */
+int random_bytes_generate(uint8_t* id, size_t len);
+
+
+/**
+ * \brief Remove and free an account from a list.
+ * \param list list of accounts
+ * \param desc account to remove
+ */
+void account_list_remove(struct list_head* list, struct account_desc* desc);
+
+
+/**
+ * \struct socket_desc
+ * \brief Descriptor for TCP client connected.
+ *
+ * It contains a buffer for TCP segment reconstruction.
+ */
+struct socket_desc
+{
+	socket_base* sock; /**< Socket descriptor */
+	char buf[1500]; /**< Internal buffer for TCP stream reconstruction */
+	size_t buf_pos; /**< Position in the internal buffer */
+	size_t msg_len; /**< Message length that is not complete */
+	int tls; /**< If socket uses TLS */
+	struct list_head list; /**< For list management */
+};
+
 
 /**
  * \def SIGRT_EXPIRE_CHANNEL
  * \brief Signal value when channel expires.
  */
-#define SIGRT_EXPIRE_CHANNEL (SIGRTMIN + 2)
+#define SIGRT_EXPIRE_CHANNEL (SIGRTMIN + 2) 
+ /**
+  * \def SIGRT_EXPIRE_PERMISSION
+  * \brief Signal value when a permission expires.
+  */
+#define SIGRT_EXPIRE_PERMISSION (SIGRTMIN + 1)
 
+  /**
+   * \def SIGRT_EXPIRE_ALLOCATION
+   * \brief Signal value when an allocation expires.
+   */
+#define SIGRT_EXPIRE_ALLOCATION (SIGRTMIN)
+
+   /**
+	* \def SIGRT_EXPIRE_TOKEN
+	* \brief Signal value when token expires.
+	*/
+#define SIGRT_EXPIRE_TOKEN (SIGRTMIN + 3)
+
+  /**
+   * \def SIGRT_EXPIRE_TCP_RELAY
+   * \brief Signal value when TCP relay expires (no ConnectionBind received).
+   */
+#define SIGRT_EXPIRE_TCP_RELAY (SIGRTMIN + 4)
 

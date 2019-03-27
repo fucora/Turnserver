@@ -661,14 +661,7 @@ struct turn_attr_hdr* turn_attr_fingerprint_create(uint32_t fingerprint,
 struct turn_attr_hdr* turn_attr_channel_number_create(uint16_t number,
     struct iovec* iov);
 
-/**
- * \brief Create a LIFETIME attribute.
- * \param lifetime lifetime
- * \param iov vector
- * \return pointer on turn_attr_hdr or NULL if problem
- */
-struct turn_attr_hdr* turn_attr_lifetime_create(uint32_t lifetime,
-    struct iovec* iov);
+
 
 /**
  * \brief Create a XOR-PEER-ADDRESS attribute.

@@ -247,8 +247,7 @@ struct turn_msg_hdr* turn_msg_create(uint16_t type, uint16_t len,const uint8_t* 
 	return ret;
 }
 
-struct turn_attr_hdr* turn_attr_error_create(uint16_t code, const char* reason,
-	size_t len, struct iovec* iov)
+struct turn_attr_hdr* turn_attr_error_create(uint16_t code, const char* reason,size_t len, struct iovec* iov)
 {
 	struct turn_attr_error_code* ret = NULL;
 	uint8_t _class = code / 100;
@@ -1146,3 +1145,217 @@ int turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16_t* peer_port,
 
 	return 0;
 }
+
+
+struct turn_attr_hdr* turn_attr_lifetime_create(uint32_t lifetime,
+	struct iovec* iov)
+{
+	struct turn_attr_lifetime* ret = NULL;
+
+	if (!(ret = (turn_attr_lifetime*)malloc(sizeof(struct turn_attr_lifetime))))
+	{
+		return NULL;
+	}
+
+	ret->turn_attr_type = htons(TURN_ATTR_LIFETIME);
+	ret->turn_attr_len = htons(4);
+	ret->turn_attr_lifetime = htonl(lifetime);
+
+	iov->iov_base = ret;
+	iov->iov_len = sizeof(struct turn_attr_lifetime);
+
+	return (struct turn_attr_hdr*)ret;
+}
+
+#pragma region create turn messages
+struct turn_msg_hdr* turn_msg_channelbind_response_create(uint16_t len, const uint8_t* id, struct iovec* iov)
+{
+	return turn_msg_create((TURN_METHOD_CHANNELBIND | STUN_SUCCESS_RESP), len, id, iov);
+}
+
+struct turn_msg_hdr* turn_msg_binding_response_create(uint16_t len,const uint8_t* id, struct iovec* iov)
+{
+	return turn_msg_create((STUN_METHOD_BINDING | STUN_SUCCESS_RESP), len, id, iov);
+}
+
+
+struct turn_attr_hdr* turn_attr_xor_mapped_address_create(const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id, struct iovec* iov)
+{
+	return turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, sock, transport_protocol, cookie, id, iov);
+}
+
+
+struct turn_msg_hdr* turn_msg_createpermission_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov)
+{
+	return turn_msg_create((TURN_METHOD_CREATEPERMISSION | STUN_SUCCESS_RESP), len, id, iov);
+}
+
+/**
+ * \brief Helper function to create XOR-MAPPED-ADDRESS like.
+ * \param type type
+ * \param address network address
+ * \param cookie magic cookie
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+  struct turn_attr_hdr* turn_attr_xor_address_create(uint16_t type,
+	const socket_base* sock , int transport_protocol, uint32_t cookie, const uint8_t* id,
+	struct iovec* iov)
+{
+	/* XOR-MAPPED-ADDRESS are the same as XOR-PEER-ADDRESS and
+	 * XOR-RELAYED-ADDRESS
+	 */
+	struct turn_attr_xor_mapped_address* ret = NULL;
+	size_t len = 0;
+	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
+	uint8_t* p = (uint8_t*)&cookie;
+	size_t i = 0; 
+	uint16_t port = 0;
+	uint8_t family = 0;
+	uint16_t msb_cookie = 0;
+	
+ 
+	if (transport_protocol == IPPROTO_TCP)
+	{
+		auto sockett = (tcp_socket*)sock;
+		//ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());
+		port = sockett->remote_endpoint().port();
+		if (sockett->remote_endpoint().address().is_v4())
+		{
+			family = STUN_ATTR_FAMILY_IPV4;
+			len = 4;
+		}
+		else
+		{
+			family = STUN_ATTR_FAMILY_IPV6;
+			len = 16;
+		}
+	}
+	else
+	{
+		auto sockett = (udp_socket*)sock;
+	/*	ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());*/
+		port = sockett->remote_endpoint().port();
+		if (sockett->remote_endpoint().address().is_v4())
+		{
+			family = STUN_ATTR_FAMILY_IPV4;
+			len = 4;
+		}
+		else
+		{
+			family = STUN_ATTR_FAMILY_IPV6;
+			len = 16;
+		}
+	}
+
+	  
+	if (!(ret = (turn_attr_xor_mapped_address*)malloc(sizeof(struct turn_attr_xor_mapped_address) + len)))
+	{
+		return NULL;
+	}
+
+	/* XOR the address and port */
+
+	/* host order port XOR most-significant 16 bits of the cookie */
+	cookie = htonl(cookie);
+	msb_cookie = ((uint8_t*)&cookie)[0] << 8 | ((uint8_t*)&cookie)[1];
+	port ^= msb_cookie;
+
+	/* IPv4/IPv6 XOR cookie (just the first four bytes of IPv6 address) */
+	for (i = 0; i < 4; i++)
+	{
+		ptr[i] ^= p[i];
+	}
+
+	/* end of IPv6 address XOR transaction ID */
+	for (i = 4; i < len; i++)
+	{
+		ptr[i] ^= id[i - 4];
+	}
+
+	ret->turn_attr_type = htons(type);
+	/* reserved (1)  + family (1) + port (2) + address (variable) */
+	ret->turn_attr_len = htons(4 + len);
+	ret->turn_attr_reserved = 0;
+	ret->turn_attr_family = family;
+	ret->turn_attr_port = htons(port);
+	memcpy(ret->turn_attr_address, ptr, len);
+
+	iov->iov_base = ret;
+	iov->iov_len = sizeof(struct turn_attr_xor_mapped_address) + len;
+
+	return (struct turn_attr_hdr*)ret;
+}
+
+
+struct turn_msg_hdr* turn_msg_connectionbind_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov)
+{
+	return turn_msg_create((TURN_METHOD_CONNECTIONBIND | STUN_SUCCESS_RESP), len, id, iov);
+}
+
+
+struct turn_attr_hdr* turn_attr_connection_id_create(uint32_t id,
+	struct iovec* iov)
+{
+	struct turn_attr_connection_id* ret = NULL;
+
+	if (!(ret = (turn_attr_connection_id*)malloc(sizeof(struct turn_attr_connection_id))))
+	{
+		return NULL;
+	}
+
+	ret->turn_attr_type = htons(TURN_ATTR_CONNECTION_ID);
+	ret->turn_attr_len = htons(4);
+	ret->turn_attr_id = id;
+
+	iov->iov_base = ret;
+	iov->iov_len = sizeof(struct turn_attr_connection_id);
+
+	return (struct turn_attr_hdr*)ret;
+}
+
+struct turn_attr_hdr* turn_attr_reservation_token_create(const uint8_t* token,
+	struct iovec* iov)
+{
+	struct turn_attr_reservation_token* ret = NULL;
+
+	if (!(ret = (turn_attr_reservation_token*)malloc(sizeof(struct turn_attr_reservation_token))))
+	{
+		return NULL;
+	}
+
+	ret->turn_attr_type = htons(TURN_ATTR_RESERVATION_TOKEN);
+	ret->turn_attr_len = htons(8);
+	memcpy(ret->turn_attr_token, token, 8);
+
+	iov->iov_base = ret;
+	iov->iov_len = sizeof(struct turn_attr_reservation_token);
+
+	return (struct turn_attr_hdr*)ret;
+}
+
+
+struct turn_msg_hdr* turn_msg_refresh_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov)
+{
+	return turn_msg_create((TURN_METHOD_REFRESH | STUN_SUCCESS_RESP), len, id, iov);
+}
+ 
+
+struct turn_msg_hdr* turn_msg_allocate_response_create(uint16_t len,
+	const uint8_t* id, struct iovec* iov)
+{
+	return turn_msg_create((TURN_METHOD_ALLOCATE | STUN_SUCCESS_RESP), len, id, iov);
+}
+
+struct turn_attr_hdr* turn_attr_xor_relayed_address_create(
+	const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id,
+	struct iovec* iov)
+{
+	return turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, sock, transport_protocol, cookie, id, iov);
+}
+#pragma endregion
+

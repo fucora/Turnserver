@@ -60,6 +60,10 @@ public:		int udp_send(msghdr* senddata, udp_socket * udpsocket);
 
 public:		int tcp_send(msghdr* senddata, tcp_socket * tcpsocket);
 
+			int udp_send(buffer_type senddata, udp_socket * udpsocket);
+
+			int tcp_send(buffer_type senddata, tcp_socket * tcpsocket);
+
 
 
 
