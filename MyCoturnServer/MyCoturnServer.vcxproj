@@ -89,6 +89,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol.cpp" />
     <ClCompile Include="socketListener.cpp" />
+    <ClCompile Include="StunProtocol.cpp" />
     <ClCompile Include="turn_server.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +100,7 @@
     <ClInclude Include="myDeletegate.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="socketListener.h" />
+    <ClInclude Include="StunProtocol.h" />
     <ClInclude Include="turn.h" />
     <ClInclude Include="turn_server.h" />
   </ItemGroup>

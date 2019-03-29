@@ -20,6 +20,9 @@
     <ClCompile Include="commonTypes.cpp">
       <Filter>mycommon</Filter>
     </ClCompile>
+    <ClCompile Include="StunProtocol.cpp">
+      <Filter>mycommon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="mycommon">
@@ -62,6 +65,9 @@
     </ClInclude>
     <ClInclude Include="protocol.h">
       <Filter>turnserver</Filter>
+    </ClInclude>
+    <ClInclude Include="StunProtocol.h">
+      <Filter>mycommon</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,3 +1,87 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="check_account.c" />
+    <ClCompile Include="check_allocation.c" />
+    <ClCompile Include="check_turn.c" />
+    <ClCompile Include="src\mod_tmpuser.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\protocol.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\test_echo_server.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\test_turn_client.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tls_peer.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\turnserver.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util_crypto.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util_sys.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\account.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\allocation.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\conf.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dbg.c">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{1929aeec-c9b0-4948-8613-4b67597dbc2c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\list.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mod_tmpuser.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\protocol.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tls_peer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\turn.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\turnserver.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util_crypto.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util_sys.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\account.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\allocation.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\conf.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dbg.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

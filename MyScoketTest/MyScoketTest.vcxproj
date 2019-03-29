@@ -74,13 +74,53 @@
   <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <IncludePath>$(ProjectDir)src;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <IncludePath>$(ProjectDir)src;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="check_account.c" />
+    <ClCompile Include="check_allocation.c" />
+    <ClCompile Include="check_turn.c" />
+    <ClCompile Include="src\account.c" />
+    <ClCompile Include="src\allocation.c" />
+    <ClCompile Include="src\conf.c" />
+    <ClCompile Include="src\dbg.c" />
+    <ClCompile Include="src\mod_tmpuser.c" />
+    <ClCompile Include="src\protocol.c" />
+    <ClCompile Include="src\test_echo_server.c" />
+    <ClCompile Include="src\test_turn_client.c" />
+    <ClCompile Include="src\tls_peer.c" />
+    <ClCompile Include="src\turnserver.c" />
+    <ClCompile Include="src\util_crypto.c" />
+    <ClCompile Include="src\util_sys.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="main.h" />
+    <ClInclude Include="src\account.h" />
+    <ClInclude Include="src\allocation.h" />
+    <ClInclude Include="src\conf.h" />
+    <ClInclude Include="src\dbg.h" />
+    <ClInclude Include="src\list.h" />
+    <ClInclude Include="src\mod_tmpuser.h" />
+    <ClInclude Include="src\protocol.h" />
+    <ClInclude Include="src\tls_peer.h" />
+    <ClInclude Include="src\turn.h" />
+    <ClInclude Include="src\turnserver.h" />
+    <ClInclude Include="src\util_crypto.h" />
+    <ClInclude Include="src\util_sys.h" />
   </ItemGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <Link>
+      <LibraryDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(LibraryDependencies)</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <Link>
+      <LibraryDependencies>/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(LibraryDependencies)</LibraryDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

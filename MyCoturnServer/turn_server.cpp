@@ -6,8 +6,8 @@ unsigned long bandwidth = 1024;//´ø¿í
 list_head* _allocation_list;
 char* listen_address = "127.0.0.1";
 char* nonce_key = "hieKedq";
-int turn_tcp = 1;
-char* realm = "domain.org";
+int turn_tcp_po = 1;
+char* realmstr = "domain.org";
 bool is_turn_tcp = true;
 int allocation_lifetime = 1800;
 int restricted_bandwidth = 10;
@@ -53,6 +53,9 @@ turn_server::~turn_server()
 
 int turn_server::StartServer() {
 
+	auto x = sizeof(uint16_t);
+
+
 	manager.onTcpconnected += newDelegate(this, &turn_server::onTcpConnect);
 
 	manager.onTcpReciveData += newDelegate(this, &turn_server::onTcpMessage);
@@ -89,7 +92,10 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
-{
+{ 
+	StunProtocol protocol(data, lenth);
+	return 1;
+	 
 	struct turn_message message;
 	list_head* account_list;
 	struct account_desc* account = NULL;
@@ -146,8 +152,8 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		method != TURN_METHOD_CHANNELBIND &&
 		method != TURN_METHOD_SEND &&
 		method != TURN_METHOD_DATA &&
-		(method != TURN_METHOD_CONNECT || !turn_tcp) &&
-		(method != TURN_METHOD_CONNECTIONBIND || !turn_tcp))
+		(method != TURN_METHOD_CONNECT || !turn_tcp_po) &&
+		(method != TURN_METHOD_CONNECTIONBIND || !turn_tcp_po))
 	{
 		debug(DBG_ATTR, "Unknown method\n");
 		return -1;
@@ -165,8 +171,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		/* verify if CRC is valid */
 		uint32_t crc = 0;
 		crc = crc32_generate((const unsigned char*)data, total_len - sizeof(struct turn_attr_fingerprint), 0);
-		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl(
-			STUN_FINGERPRINT_XOR_VALUE)))
+		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl( STUN_FINGERPRINT_XOR_VALUE)))
 		{
 			debug(DBG_ATTR, "Fingerprint mismatch\n");
 			return -1;
@@ -191,7 +196,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			size_t idx = 0;
 			debug(DBG_ATTR, "No message integrity\n");
 			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
-			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
+			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
 			{
 				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 				return -1;
@@ -237,8 +242,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 			idx = 0;
 
-			if (!(error = turn_error_response_438(method, message.msg->turn_msg_id,
-				realm, nonce, sizeof(nonce), iov, &idx)))
+			if (!(error = turn_error_response_438(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
 			{
 				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 				return -1;
@@ -295,8 +299,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 				turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 				idx = 0;
 
-				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id,
-					realm, nonce, sizeof(nonce), iov, &idx)))
+				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
 				{
 					turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 					return -1;
@@ -362,7 +365,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 				turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
 				idx = 0;
 
-				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realm, nonce, sizeof(nonce), iov, &idx)))
+				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
 				{
 					turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 					return -1;

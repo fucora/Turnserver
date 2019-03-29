@@ -6,6 +6,7 @@
 #include "turn.h"
 #include "socketListener.h"
 #include "protocol.h"
+#include "StunProtocol.h"
 
 class turn_server
 {
