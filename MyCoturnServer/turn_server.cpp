@@ -45,6 +45,8 @@ socketListener manager(8888);
 
 turn_server::turn_server()
 {
+ 
+
 }
 
 turn_server::~turn_server()
@@ -92,14 +94,59 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
-{ 
+{
+	StunProtocol protocol(data, lenth);
+	if (protocol.IsErrorRequest() == true) {
+		return -1;
+	}
+	auto requestType = protocol.getRequestType();
+	auto requestMethod = protocol.getRequestMethod();
+
+	if (STUN_IS_REQUEST(requestType) && requestMethod != STUN_METHOD_BINDING) {
+		/* check long-term authentication for all requests except for a STUN
+		 * binding request
+		 */
+		if (!protocol.message_integrity)
+		{ 
+			StunProtocol* errorMessage;
+			unsigned char*  nonce = protocol.get_generate_nonce(nonce_key, strlen(nonce_key));
+			try
+			{
+				debug(DBG_ATTR, "No message integrity\n");
+				errorMessage->create_error_response_401(requestMethod, protocol.reuqestHeader->turn_msg_id, realmstr, nonce);
+			}
+			catch (const std::exception&)
+			{
+				//turnserver_send_error(transport_protocol, sock, requestMethod, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+			} 
+			errorMessage->turn_attr_software_create(SOFTWARE_DESCRIPTION); 
+		
+			errorMessage->turn_attr_fingerprint_create(0); 
+			/* convert to big endian */
+			errorMessage->reuqestHeader->turn_msg_len = htons(errorMessage->reuqestHeader->turn_msg_len);
+
+		写到了这里
+			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+			{
+				debug(DBG_ATTR, "turn_send_message failed\n");
+			}
+			/* free sent data */
+			iovec_free_data(iov, idx);
+			return 0;
+		}
+
+	}
+
+}
+int turn_server::MessageHandle2(buffer_type data, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
+{
 	StunProtocol protocol(data, lenth);
 	return 1;
-	 
+
 	struct turn_message message;
 	list_head* account_list;
 	struct account_desc* account = NULL;
-	uint16_t unknown[32]; 
+	uint16_t unknown[32];
 	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
 	uint16_t hdr_msg_type = 0;
 	size_t total_len = 0;
@@ -171,7 +218,543 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		/* verify if CRC is valid */
 		uint32_t crc = 0;
 		crc = crc32_generate((const unsigned char*)data, total_len - sizeof(struct turn_attr_fingerprint), 0);
-		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl( STUN_FINGERPRINT_XOR_VALUE)))
+		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl(STUN_FINGERPRINT_XOR_VALUE)))
+		{
+			debug(DBG_ATTR, "Fingerprint mismatch\n");
+			return -1;
+		}
+	}
+	/* all this cases above discard silently the packets,
+	 * so now process the packet more in details
+	 */
+	if (STUN_IS_REQUEST(hdr_msg_type) && method != STUN_METHOD_BINDING)
+	{
+		/* check long-term authentication for all requests except for a STUN
+		 * binding request
+		 */
+		if (!message.message_integrity)
+		{
+			/* no messages integrity => error 401 */
+			/* header, error-code, realm, nonce, software */
+			struct iovec iov[12];
+			uint8_t nonce[48];
+			struct turn_msg_hdr* error = NULL;
+			struct turn_attr_hdr* attr = NULL;
+			size_t idx = 0;
+			debug(DBG_ATTR, "No message integrity\n");
+			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+			if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
+			{
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+				return -1;
+			}
+
+			/* software (not fatal if it cannot be allocated)`````` */
+			if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+			{
+				error->turn_msg_len += iov[idx].iov_len;
+				idx++;
+			}
+
+			turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+			/* convert to big endian */
+			error->turn_msg_len = htons(error->turn_msg_len);
+
+			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+			{
+				debug(DBG_ATTR, "turn_send_message failed\n");
+			}
+			/* free sent data */
+			iovec_free_data(iov, idx);
+			return 0;
+		}
+
+		if (!message.username || !message.realm || !message.nonce)
+		{
+			/* missing username, realm or nonce => error 400 */
+			turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
+			return 0;
+		}
+
+		if (turn_nonce_is_stale(message.nonce->turn_attr_nonce, ntohs(message.nonce->turn_attr_len), (unsigned char*)nonce_key, strlen(nonce_key)))
+		{
+			/* nonce staled => error 438 */
+			/* header, error-code, realm, nonce, software */
+			struct iovec iov[5];
+			size_t idx = 0;
+			struct turn_msg_hdr* error = NULL;
+			struct turn_attr_hdr* attr = NULL;
+			uint8_t nonce[48];
+
+			turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+			idx = 0;
+
+			if (!(error = turn_error_response_438(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
+			{
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+				return -1;
+			}
+			/* software (not fatal if it cannot be allocated) */
+			if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
+				sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+			{
+				error->turn_msg_len += iov[idx].iov_len;
+				idx++;
+			}
+			/* convert to big endian */
+			error->turn_msg_len = htons(error->turn_msg_len);
+
+			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+			{
+				debug(DBG_ATTR, "turn_send_message failed\n");
+			}
+			/* free sent data */
+			iovec_free_data(iov, idx);
+			return 0;
+		}
+		/* find the desired username and password in the account list */
+		{
+			char username[514];
+			char user_realm[256];
+			size_t username_len = ntohs(message.username->turn_attr_len) + 1;
+			size_t realm_len = ntohs(message.realm->turn_attr_len) + 1;
+
+			if (username_len > 513 || realm_len > 256)
+			{
+				/* some attributes are too long */
+				turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
+				return -1;
+			}
+
+			strncpy(username, (char*)message.username->turn_attr_username, username_len);
+			username[username_len - 1] = 0x00;
+			strncpy(user_realm, (char*)message.realm->turn_attr_realm, realm_len);
+			user_realm[realm_len - 1] = 0x00;
+			/* search the account */
+			account = account_list_find(_allocation_list, username, user_realm);
+
+			if (!account)
+			{
+				/* not valid username => error 401 */
+				struct iovec iov[5]; /* header, error-code, realm, nonce, software */
+				size_t idx = 0;
+				struct turn_msg_hdr* error = NULL;
+				struct turn_attr_hdr* attr = NULL;
+				uint8_t nonce[48];
+
+				debug(DBG_ATTR, "No account\n");
+				turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+				idx = 0;
+
+				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
+				{
+					turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+					return -1;
+				}
+				/* software (not fatal if it cannot be allocated) */
+				if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+				{
+					error->turn_msg_len += iov[idx].iov_len;
+					idx++;
+				}
+
+				turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+				/* convert to big endian */
+				error->turn_msg_len = htons(error->turn_msg_len);
+				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+				{
+					debug(DBG_ATTR, "turn_send_message failed\n");
+				}
+				/* free sent data */
+				iovec_free_data(iov, idx);
+				return 0;
+			}
+		}
+		/* compute HMAC-SHA1 and compare with the value in message_integrity */
+		{
+			uint8_t hash[20];
+
+			if (message.fingerprint)
+			{
+				/* if the message contains a FINGERPRINT attribute, adjust the size */
+				size_t len_save = message.msg->turn_msg_len;
+				message.msg->turn_msg_len = ntohs(message.msg->turn_msg_len) - sizeof(struct turn_attr_fingerprint);
+
+				message.msg->turn_msg_len = htons(message.msg->turn_msg_len);
+				turn_calculate_integrity_hmac((const unsigned char*)data,
+					total_len - sizeof(struct turn_attr_fingerprint) -
+					sizeof(struct turn_attr_message_integrity), account->key,
+					sizeof(account->key), hash);
+
+				/* restore length */
+				message.msg->turn_msg_len = len_save;
+			}
+			else
+			{
+				turn_calculate_integrity_hmac((const unsigned char*)data, total_len - sizeof(struct turn_attr_message_integrity), account->key, sizeof(account->key), hash);
+			}
+
+			if (memcmp(hash, message.message_integrity->turn_attr_hmac, 20) != 0)
+			{
+				/* integrity does not match => error 401 */
+				struct iovec iov[5]; /* header, error-code, realm, nonce, software */
+				size_t idx = 0;
+				struct turn_msg_hdr* error = NULL;
+				struct turn_attr_hdr* attr = NULL;
+				uint8_t nonce[48];
+
+				debug(DBG_ATTR, "Hash mismatch\n");
+#ifndef NDEBUG
+				/* print computed hash and the one from the message */
+				digest_print(hash, 20);
+				digest_print(message.message_integrity->turn_attr_hmac, 20);
+#endif
+				turn_generate_nonce(nonce, sizeof(nonce), (unsigned char*)nonce_key, strlen(nonce_key));
+				idx = 0;
+
+				if (!(error = turn_error_response_401(method, message.msg->turn_msg_id, realmstr, nonce, sizeof(nonce), iov, &idx)))
+				{
+					turnserver_send_error(transport_protocol, sock, method, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+					return -1;
+				}
+
+				/* software (not fatal if it cannot be allocated) */
+				if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
+					sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+				{
+					error->turn_msg_len += iov[idx].iov_len;
+					idx++;
+				}
+
+				turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
+
+				/* convert to big endian */
+				error->turn_msg_len = htons(error->turn_msg_len);
+
+				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+				{
+					debug(DBG_ATTR, "turn_send_message failed\n");
+				}
+
+				/* free sent data */
+				iovec_free_data(iov, idx);
+				return 0;
+			}
+		}
+	}
+	/* check if there are unknown comprehension-required attributes */
+	if (unknown_size)
+	{
+		struct iovec iov[4]; /* header, error-code, unknown-attributes, software */
+		size_t idx = 0;
+		struct turn_msg_hdr* error = NULL;
+		struct turn_attr_hdr* attr = NULL;
+
+		/* if not a request, message is discarded */
+		if (!STUN_IS_REQUEST(hdr_msg_type))
+		{
+			debug(DBG_ATTR, "message has unknown attribute and it is not a request, "
+				"discard\n");
+			return -1;
+		}
+
+		/* unknown attributes found => error 420 */
+		if (!(error = turn_error_response_420(method, message.msg->turn_msg_id,
+			unknown, unknown_size, iov, &idx)))
+		{
+			turnserver_send_error(transport_protocol, sock, method,
+				message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize,
+				account ? account->key : NULL);
+			return -1;
+		}
+
+		/* software (not fatal if it cannot be allocated) */
+		if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
+			sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
+		{
+			error->turn_msg_len += iov[idx].iov_len;
+			idx++;
+		}
+
+		/* convert to big endian */
+		error->turn_msg_len = htons(error->turn_msg_len);
+
+		if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize,
+			ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx)
+			== -1)
+		{
+			debug(DBG_ATTR, "turn_send_message failed\n");
+		}
+
+		/* free sent data */
+		iovec_free_data(iov, idx);
+		return 0;
+	}
+
+	/* the basic checks are done,
+	 * now check that specific method requirement are OK
+	 */
+	debug(DBG_ATTR, "OK basic validation are done, process the TURN message\n");
+	return turnserver_process_turn(transport_protocol, sock, &message, remoteaddr, localaddr, remoteAddrSize, account);
+}
+
+/**
+ * \brief Process a TURN request.
+ * \param transport_protocol transport protocol used
+ * \param sock socket
+ * \param message TURN message
+ * \param saddr source address of the message
+ * \param daddr destination address of the message
+ * \param saddr_size sizeof addr
+ * \param allocation_list list of allocations
+ * \param account account descriptor (may be NULL)
+ * \param speer TLS peer, if not NULL the connection is in TLS so response is
+ * also in TLS
+ * \return 0 if success, -1 otherwise
+ */
+int turn_server::turnserver_process_turn(int transport_protocol, socket_base* sock,
+	const struct turn_message* message, const address_type* saddr,
+	const address_type* daddr, socklen_t saddr_size, struct account_desc* account)
+{
+	uint16_t hdr_msg_type = 0;
+	uint16_t method = 0;
+	struct allocation_desc* desc = NULL;
+	debug(DBG_ATTR, "Process a TURN message\n");
+	hdr_msg_type = ntohs(message->msg->turn_msg_type);
+	method = STUN_GET_METHOD(hdr_msg_type);
+	/* process STUN binding request */
+	if (STUN_IS_REQUEST(hdr_msg_type) && method == STUN_METHOD_BINDING)
+	{
+		return turnserver_process_binding_request(transport_protocol, sock, message, saddr, saddr_size);
+	}
+	/* RFC6062 (TURN-TCP) */
+	/* find right tuple for a TCP allocation (ConnectionBind case) */
+	if (STUN_IS_REQUEST(hdr_msg_type) && method == TURN_METHOD_CONNECTIONBIND)
+	{
+		/* ConnectionBind is only for TCP or TLS over TCP <-> TCP */
+		if (transport_protocol == IPPROTO_TCP)
+		{
+			return turnserver_process_connectionbind_request(transport_protocol, sock, message, saddr, saddr_size, account, _allocation_list);
+		}
+		else
+		{
+			return turnserver_send_error(transport_protocol, sock, method, message->msg->turn_msg_id, 400, saddr, saddr_size, account->key);
+		}
+	}
+	/* check the 5-tuple except for an Allocate request */
+	if (method != TURN_METHOD_ALLOCATE)
+	{
+		desc = allocation_list_find_tuple(_allocation_list, transport_protocol, daddr, saddr, saddr_size);
+		if (STUN_IS_REQUEST(hdr_msg_type))
+		{
+			/* check for the allocated username */
+			if (desc && message->username && message->realm)
+			{
+				size_t len = ntohs(message->username->turn_attr_len);
+				size_t rlen = ntohs(message->realm->turn_attr_len);
+				if (len != strlen(desc->username) ||
+					strncmp((char*)message->username->turn_attr_username,
+						desc->username, len) ||
+					rlen != strlen(desc->realm) ||
+					strncmp((char*)message->realm->turn_attr_realm, desc->realm, rlen))
+				{
+					desc = NULL;
+				}
+			}
+			else
+			{
+				desc = NULL;
+			}
+		}
+		if (!desc)
+		{
+			/* reject with error 437 if it a request, ignored otherwise */
+			/* the refresh function will handle this case */
+			if (STUN_IS_REQUEST(hdr_msg_type))
+			{
+				/* allocation mismatch => error 437 */
+				turnserver_send_error(transport_protocol, sock, method, message->msg->turn_msg_id, 437, saddr, saddr_size, account->key);
+				return 0;
+			}
+
+			debug(DBG_ATTR, "No valid 5-tuple match\n");
+			return -1;
+		}
+		/* update allocation nonce */
+		if (message->nonce)
+		{
+			memcpy(desc->nonce, message->nonce->turn_attr_nonce, 24);
+		}
+	}
+
+	if (STUN_IS_REQUEST(hdr_msg_type))
+	{
+		if (method != TURN_METHOD_ALLOCATE)
+		{
+			/* check to prevent hijacking the client's allocation */
+			size_t len = strlen(account->username);
+			size_t rlen = strlen(account->realm);
+			if (len != ntohs(message->username->turn_attr_len) ||
+				strncmp((char*)message->username->turn_attr_username,
+					account->username, len) ||
+				rlen != ntohs(message->realm->turn_attr_len) ||
+				strncmp((char*)message->realm->turn_attr_realm, account->realm, rlen))
+			{
+				/* credentials do not match with those used for allocation
+				 * => error 441
+				 */
+				debug(DBG_ATTR, "Wrong credentials!\n");
+				turnserver_send_error(transport_protocol, sock, method, message->msg->turn_msg_id, 441, saddr, saddr_size, account->key);
+				return 0;
+			}
+		}
+
+		switch (method)
+		{
+		case TURN_METHOD_ALLOCATE:
+			turnserver_process_allocate_request(transport_protocol, sock, message, saddr, daddr, saddr_size, account);
+			break;
+		case TURN_METHOD_REFRESH:
+			turnserver_process_refresh_request(transport_protocol, sock, message, saddr, saddr_size, desc, account);
+			break;
+		case TURN_METHOD_CREATEPERMISSION:
+			turnserver_process_createpermission_request(transport_protocol, sock, message, saddr, saddr_size, desc);
+			break;
+		case TURN_METHOD_CHANNELBIND:
+			/* ChannelBind is only for UDP relay */
+			if (desc->relayed_transport_protocol == IPPROTO_UDP)
+			{
+				turnserver_process_channelbind_request(transport_protocol, sock, message, saddr, saddr_size, desc);
+			}
+			else
+			{
+				turnserver_send_error(transport_protocol, sock, method, message->msg->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			}
+			break;
+		case TURN_METHOD_CONNECT: /* RFC6062 (TURN-TCP) */
+		  /* Connect is only for TCP or TLS over TCP <-> TCP */
+			if (transport_protocol == IPPROTO_TCP && desc->relayed_transport_protocol == IPPROTO_TCP)
+			{
+				turnserver_process_connect_request(transport_protocol, sock, message, saddr, saddr_size, desc);
+			}
+			else
+			{
+				turnserver_send_error(transport_protocol, sock, method, message->msg->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			}
+			break;
+		default:
+			return -1;
+			break;
+		}
+	}
+	else if (STUN_IS_SUCCESS_RESP(hdr_msg_type) || STUN_IS_ERROR_RESP(hdr_msg_type))
+	{
+		/* should not happen */
+	}
+	else if (STUN_IS_INDICATION(hdr_msg_type))
+	{
+		switch (method)
+		{
+		case TURN_METHOD_SEND:
+			if (desc->relayed_transport_protocol == IPPROTO_UDP)
+			{
+				turnserver_process_send_indication(message, desc);
+			}
+			break;
+		case TURN_METHOD_DATA:
+			/* should not happen */
+			return -1;
+			break;
+		}
+	}
+
+	return 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
+{
+	StunProtocol protocol(data, lenth);
+	return 1;
+
+	struct turn_message message;
+	list_head* account_list;
+	struct account_desc* account = NULL;
+	uint16_t unknown[32];
+	size_t unknown_size = sizeof(unknown) / sizeof(uint32_t);
+	uint16_t hdr_msg_type = 0;
+	size_t total_len = 0;
+	uint16_t method = 0;
+	uint16_t type = 0;
+
+	if (lenth < 4)
+	{
+		debug(DBG_ATTR, "Size too short\n");
+		return 0;
+	}
+	memcpy(&type, data, sizeof(uint16_t));
+	type = ntohs(type);
+	/* is it a ChannelData message (bit 0 and 1 are not set to 0) ? */
+	if (TURN_IS_CHANNELDATA(type))
+	{
+		return turnserver_process_channeldata(transport_protocol, type, data, lenth, remoteaddr, localaddr, remoteAddrSize, _allocation_list);
+	}
+
+	if (turn_parse_message(data, lenth, &message, unknown, &unknown_size) == -1)
+	{
+		debug(DBG_ATTR, "Parse message failed\n");
+		return -1;
+	}
+	/* check if it is a STUN/TURN header */
+	if (!message.msg)
+	{
+		debug(DBG_ATTR, "No STUN/TURN header\n");
+		return -1;
+	}
+	/* convert into host byte order */
+	hdr_msg_type = ntohs(message.msg->turn_msg_type);
+	total_len = ntohs(message.msg->turn_msg_len) + sizeof(struct turn_msg_hdr);
+	/* check if it is a known class */
+	if (!STUN_IS_REQUEST(hdr_msg_type) &&
+		!STUN_IS_INDICATION(hdr_msg_type) &&
+		!STUN_IS_SUCCESS_RESP(hdr_msg_type) &&
+		!STUN_IS_ERROR_RESP(hdr_msg_type))
+	{
+		debug(DBG_ATTR, "Unknown message class\n");
+		return -1;
+	}
+
+	method = STUN_GET_METHOD(hdr_msg_type);
+	/* check that the method value is supported */
+	if (method != STUN_METHOD_BINDING &&
+		method != TURN_METHOD_ALLOCATE &&
+		method != TURN_METHOD_REFRESH &&
+		method != TURN_METHOD_CREATEPERMISSION &&
+		method != TURN_METHOD_CHANNELBIND &&
+		method != TURN_METHOD_SEND &&
+		method != TURN_METHOD_DATA &&
+		(method != TURN_METHOD_CONNECT || !turn_tcp_po) &&
+		(method != TURN_METHOD_CONNECTIONBIND || !turn_tcp_po))
+	{
+		debug(DBG_ATTR, "Unknown method\n");
+		return -1;
+	}
+
+	/* check the magic cookie */
+	if (message.msg->turn_msg_cookie != htonl(STUN_MAGIC_COOKIE))
+	{
+		debug(DBG_ATTR, "Bad magic cookie\n");
+		return -1;
+	}
+	/* check the fingerprint if present */
+	if (message.fingerprint)
+	{
+		/* verify if CRC is valid */
+		uint32_t crc = 0;
+		crc = crc32_generate((const unsigned char*)data, total_len - sizeof(struct turn_attr_fingerprint), 0);
+		if (htonl(crc) != (message.fingerprint->turn_attr_crc ^ htonl(STUN_FINGERPRINT_XOR_VALUE)))
 		{
 			debug(DBG_ATTR, "Fingerprint mismatch\n");
 			return -1;
@@ -796,7 +1379,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
 	return 0;
-}
+	}
 
 
 /**
@@ -1233,7 +1816,7 @@ int turn_server::turnserver_process_send_indication(const struct turn_message* m
 		default:
 			return -1;
 			break;
-		}
+	}
 
 		/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 		 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
@@ -1300,7 +1883,7 @@ int turn_server::turnserver_process_send_indication(const struct turn_message* m
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
-	}
+}
 
 	return 0;
 }
@@ -1574,7 +2157,7 @@ int  turn_server::turnserver_process_connect_request(int transport_protocol, soc
 	}
 
 	return -1;
-}
+	}
 
 
 /**

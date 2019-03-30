@@ -21,6 +21,8 @@ public:
 
 	void onUdpMessage(buffer_type * buf, int lenth, udp_socket * udpsocket);
 
+	int MessageHandle2(buffer_type data, int lenth, int transport_protocol, address_type * remoteaddr, address_type * localaddr, int remoteAddrSize, socket_base * sock);
+
 	int MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type * remoteaddr, address_type * localaddr, int remoteAddrSize, socket_base * sock);
 
 	  

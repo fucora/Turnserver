@@ -406,7 +406,6 @@ struct turn_attr_hdr* turn_attr_software_create(const char* software, size_t len
 
 	iov->iov_base = ret;
 	iov->iov_len = sizeof(struct turn_attr_software) + real_len;
-
 	return (struct turn_attr_hdr*)ret;
 }
 
