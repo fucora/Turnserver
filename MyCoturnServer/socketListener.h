@@ -56,13 +56,14 @@ private:	void udp_hand_send(boost::shared_ptr<std::string> message, const boost:
 
 public:  	void StartSocketListen();
 
-public:		int udp_send(msghdr* senddata, udp_socket * udpsocket);
+public:			int udp_send(char * senddata, udp_socket * udpsocket);
 
-public:		int tcp_send(msghdr* senddata, tcp_socket * tcpsocket);
+public:			int tcp_send(char * senddata, tcp_socket * tcpsocket);
+ 
 
-			int udp_send(buffer_type senddata, udp_socket * udpsocket);
+public:			int udp_send(buffer_type senddata, udp_socket * udpsocket);
 
-			int tcp_send(buffer_type senddata, tcp_socket * tcpsocket);
+public:			int tcp_send(buffer_type senddata, tcp_socket * tcpsocket);
 
 
 

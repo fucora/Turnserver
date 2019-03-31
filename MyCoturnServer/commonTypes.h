@@ -37,6 +37,11 @@
 #include <boost/function.hpp>  
 #include <boost/asio/basic_socket.hpp>
 
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/export.hpp> 
+
 using namespace boost::asio;
 using namespace std;
  

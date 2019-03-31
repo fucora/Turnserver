@@ -254,42 +254,7 @@ bool StunProtocol::IsErrorRequest()
 
 	return false;
 }
-
-//根据nonce_key 生成一个随机数
-unsigned char* StunProtocol::get_generate_nonce(char* key, size_t key_len)
-{
-	unsigned char * result;
-	time_t t;
-	char c = ':';
-	MD5_CTX ctx;
-	unsigned char md_buf[MD5_DIGEST_LENGTH];
-
-	MD5_Init(&ctx);
-
-	/* timestamp */
-	t = time(NULL);
-
-	/* add expire period */
-	t += TURN_DEFAULT_NONCE_LIFETIME;
-
-	t = (time_t)htonl((uint32_t)t);
-	hex_convert((unsigned char*)&t, sizeof(time_t), result, sizeof(time_t) * 2);
-	if (sizeof(time_t) == 4) /* 32 bit */
-	{
-		memset(result + 8, 0x30, 8);
-	}
-
-	MD5_Update(&ctx, result, 16); /* time */
-	MD5_Update(&ctx, &c, 1);
-	MD5_Update(&ctx, key, key_len);
-	MD5_Final(md_buf, &ctx);
-
-	/* add MD5 at the end of the nonce */
-	hex_convert(md_buf, MD5_DIGEST_LENGTH, result + 16, 32);
-
-	return result;
-}
-
+  
 void  StunProtocol::turn_error_response_400(int requestMethod, const uint8_t* transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
@@ -321,6 +286,14 @@ void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t* tr
 	this->turn_attr_error_create(437, TURN_ERROR_437);
 }
 
+void  StunProtocol::turn_error_response_438(int requestMethod, const uint8_t* transactionID, const char* realm, const uint8_t* nonce)
+{ 
+	size_t nonce_size = sizeof(nonce);
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(438, STUN_ERROR_438);
+	this->turn_attr_realm_create(realm);
+	this->turn_attr_nonce_create(nonce); 
+}
 void  StunProtocol::turn_error_response_440(int requestMethod, const uint8_t* transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
@@ -433,7 +406,58 @@ int  StunProtocol::turn_attr_software_create(const char* software)
 	memcpy(this->software->turn_attr_software, software, softwareSize);
 	return 1;
 }
+ 
+int StunProtocol::turn_nonce_is_stale(const char* noncekey)
+{
+	size_t noncekey_len = strlen(noncekey);
+	uint8_t* nonce = this->nonce->turn_attr_nonce;
+	size_t len = ntohs(this->nonce->turn_attr_len);
+	uint32_t ct = 0;
+	uint64_t ct64 = 0;
+	time_t t = 0;
+	unsigned char c = ':';
+	MD5_CTX ctx;
+	unsigned char md_buf[MD5_DIGEST_LENGTH];
+	unsigned char md_txt[MD5_DIGEST_LENGTH * 2];
 
+	if (len != (16 + MD5_DIGEST_LENGTH * 2))
+	{
+		return 1; /* bad nonce length */
+	}
+
+	if (sizeof(time_t) == 4) /* 32 bits */
+	{
+		uint32_convert(nonce, sizeof(time_t) * 2, &ct);
+		memcpy(&t, &ct, 4);
+	}
+	else
+	{
+		uint64_convert(nonce, sizeof(time_t) * 2, &ct64);
+		memcpy(&t, &ct64, 8);
+	}
+
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, nonce, 16); /* time */
+	MD5_Update(&ctx, &c, 1);
+	MD5_Update(&ctx, noncekey, noncekey_len);
+	MD5_Final(md_buf, &ctx);
+
+	hex_convert(md_buf, MD5_DIGEST_LENGTH, md_txt, sizeof(md_txt));
+
+	if (memcmp(md_txt, nonce + 16, (MD5_DIGEST_LENGTH * 2)) != 0)
+	{
+		/* MD5 hash mismatch */
+		return 1;
+	}
+
+	if (time(NULL) > t)
+	{
+		/* nonce stale */
+		return 1;
+	}
+
+	return 0;
+}
 
 int StunProtocol::turn_add_message_integrity(const unsigned char* key, size_t key_len, int add_fingerprint)
 {
@@ -546,6 +570,25 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 
 	return 0;
 }
+
+unsigned char* turn_calculate_integrity_hmac(const unsigned char* buf, size_t len, const unsigned char* key, size_t key_len)
+{
+	unsigned char integrity[20];
+
+	HMAC_CTX ctx;
+	unsigned int md_len = SHA_DIGEST_LENGTH;
+	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
+	HMAC_CTX_init(&ctx);
+	HMAC_Init(&ctx, key, key_len, EVP_sha1());
+	HMAC_Update(&ctx, buf, len);
+	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
+
+	HMAC_CTX_cleanup(&ctx);
+
+	return 0;
+}
+
+
 //创建回复的消息头
 void  StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)
 {
@@ -752,6 +795,44 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 		crc = crc32_generate((uint8_t*)this->connection_id, sizeof(this->connection_id), crc);
 	}
 	return crc;
+}
+
+//48字节长度的随机数
+uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
+{
+	uint8_t* nonce;
+	size_t noncekey_len = strlen(noncekey);
+	size_t len = 48;
+
+	time_t t;
+	char c = ':';
+	MD5_CTX ctx;
+	unsigned char md_buf[MD5_DIGEST_LENGTH];
+	if (len < (16 + MD5_DIGEST_LENGTH))
+	{
+		return NULL;
+	}
+	MD5_Init(&ctx);
+	/* timestamp */
+	t = time(NULL);
+	/* add expire period */
+	t += TURN_DEFAULT_NONCE_LIFETIME;
+
+	t = (time_t)htonl((uint32_t)t);
+	hex_convert((unsigned char*)&t, sizeof(time_t), nonce, sizeof(time_t) * 2);
+
+	if (sizeof(time_t) == 4) /* 32 bit */
+	{
+		memset(nonce + 8, 0x30, 8);
+	}
+
+	MD5_Update(&ctx, nonce, 16); /* time */
+	MD5_Update(&ctx, &c, 1);
+	MD5_Update(&ctx, noncekey, noncekey_len);
+	MD5_Final(md_buf, &ctx); 
+	/* add MD5 at the end of the nonce */
+	hex_convert(md_buf, MD5_DIGEST_LENGTH, nonce + 16, len - 16); 
+	return nonce;
 }
 
 

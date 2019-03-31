@@ -68,6 +68,8 @@ public:
 
 	void turn_error_response_437(int requestMethod, const uint8_t * transactionID);
 
+	void turn_error_response_438(int requestMethod, const uint8_t * transactionID, const char * realm, const uint8_t * nonce);
+
 	void turn_error_response_440(int requestMethod, const uint8_t * transactionID);
 
 	void turn_error_response_441(int requestMethod, const uint8_t * transactionID);
@@ -90,6 +92,8 @@ public:
 
 	int turn_attr_software_create(const char * software);
 
+	int turn_nonce_is_stale(const char * noncekey);
+
 	int turn_add_message_integrity(const unsigned char * key, size_t key_len, int add_fingerprint);
 
 	int turn_attr_message_integrity_create(const uint8_t * hmac);
@@ -103,6 +107,7 @@ public:
 	int turn_attr_nonce_create(const uint8_t * nonce);
 	int turn_attr_fingerprint_create(uint32_t fingerprint);
 	uint32_t turn_calculate_fingerprint();
+	uint8_t * turn_generate_nonce(const char * noncekey);
 	turn_message * getMessageData();
 	~StunProtocol();
 
