@@ -291,6 +291,11 @@ unsigned char* StunProtocol::get_generate_nonce(char* key, size_t key_len)
 	return result;
 }
 
+void  StunProtocol::turn_error_response_400(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(400, STUN_ERROR_400);
+}
 void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint8_t* transactionID, char* realmstr, unsigned char* nonce)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
@@ -299,7 +304,115 @@ void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint
 	this->turn_attr_nonce_create((const uint8_t*)nonce);
 }
 
+void  StunProtocol::turn_error_response_420(int requestMethod, const uint8_t* transactionID, const uint16_t* unknown, size_t unknown_size)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(420, STUN_ERROR_420);
+	this->turn_attr_unknown_attributes_create(unknown, unknown_size);
+}
 
+void  StunProtocol::turn_error_response_403(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(403, TURN_ERROR_403);
+}
+
+
+void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(437, TURN_ERROR_437);
+}
+
+void  StunProtocol::turn_error_response_440(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(440, TURN_ERROR_440);
+
+}
+
+void  StunProtocol::turn_error_response_441(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(441, TURN_ERROR_441);
+}
+
+void  StunProtocol::turn_error_response_442(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(442, TURN_ERROR_442);
+
+}
+
+void  StunProtocol::turn_error_response_443(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(443, TURN_ERROR_443);
+
+}
+
+void  StunProtocol::turn_error_response_446(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(446, TURN_ERROR_446);
+
+}
+
+void  StunProtocol::turn_error_response_447(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(447, TURN_ERROR_447);
+}
+
+void  StunProtocol::turn_error_response_486(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(486, TURN_ERROR_486);
+
+}
+
+void  StunProtocol::turn_error_response_500(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(500, STUN_ERROR_500);
+}
+void  StunProtocol::turn_error_response_508(int requestMethod, const uint8_t* transactionID)
+{
+	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
+	this->turn_attr_error_create(508, TURN_ERROR_508);
+
+}
+
+void  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size)
+{
+	size_t len = 0;
+	size_t tmp_len = 0;
+	size_t i = 0;
+	uint16_t* ptr = NULL;
+	/* length of the attributes MUST be a multiple of 4 bytes
+	 * so it must be a pair number of attributes
+	 */
+	len = attr_size + (attr_size % 2);
+
+	this->unknown_attribute->turn_attr_type = htons(STUN_ATTR_UNKNOWN_ATTRIBUTES);
+	this->unknown_attribute->turn_attr_len = htons(attr_size);
+	ptr = (uint16_t*)this->unknown_attribute->turn_attr_attributes;
+	tmp_len = len;
+
+	for (i = 0; i < attr_size; i++)
+	{
+		*ptr = htons(unknown_attributes[i]);
+		tmp_len--;
+		ptr++;
+	}
+
+	if (tmp_len)
+	{
+		/* take last attribute value */
+		i--;
+		*ptr = htons(unknown_attributes[i]);
+	}
+}
 int  StunProtocol::turn_attr_software_create(const char* software)
 {
 	uint16_t softwareSize = sizeof(software);
@@ -325,6 +438,117 @@ int  StunProtocol::turn_attr_software_create(const char* software)
 }
 
 
+int StunProtocol::turn_add_message_integrity(const unsigned char* key, size_t key_len, int add_fingerprint)
+{
+	this->turn_attr_message_integrity_create(NULL);
+	/* do not take into account the attribute itself */
+	this->turn_calculate_integrity_hmac_iov(key, key_len);
+	if (add_fingerprint)
+	{
+		this->turn_attr_fingerprint_create(0);
+	}
+	return 0;
+}
+
+int StunProtocol::turn_attr_message_integrity_create(const uint8_t* hmac)
+{
+	this->message_integrity->turn_attr_type = htons(STUN_ATTR_MESSAGE_INTEGRITY);
+	this->message_integrity->turn_attr_len = htons(20);
+
+	if (hmac)
+	{
+		memcpy(this->message_integrity->turn_attr_hmac, hmac, 20);
+	}
+	else
+	{
+		memset(this->message_integrity->turn_attr_hmac, 0x00, 20);
+	}
+	return 1;
+}
+
+int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, size_t key_len)
+{
+	HMAC_CTX ctx;
+	unsigned int md_len = SHA_DIGEST_LENGTH;
+	size_t i = 0;
+
+	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
+	HMAC_CTX_init(&ctx);
+	HMAC_Init(&ctx, key, key_len, EVP_sha1());
+
+	if (this->reuqestHeader) {
+		HMAC_Update(&ctx, (const unsigned char *)this->reuqestHeader, sizeof(this->reuqestHeader));
+	}
+	if (this->mapped_addr) {
+		HMAC_Update(&ctx, (const unsigned char *)this->mapped_addr, sizeof(this->mapped_addr));
+	}
+	if (this->xor_mapped_addr) {
+		HMAC_Update(&ctx, (const unsigned char *)this->xor_mapped_addr, sizeof(this->xor_mapped_addr));
+	}
+	if (this->alternate_server) {
+		HMAC_Update(&ctx, (const unsigned char *)this->alternate_server, sizeof(this->alternate_server));
+	}
+	if (this->nonce) {
+		HMAC_Update(&ctx, (const unsigned char *)this->nonce, sizeof(this->nonce));
+	}
+	if (this->realm) {
+		HMAC_Update(&ctx, (const unsigned char *)this->realm, sizeof(this->realm));
+	}
+	if (this->username) {
+		HMAC_Update(&ctx, (const unsigned char *)this->username, sizeof(this->username));
+	}
+	if (this->error_code) {
+		HMAC_Update(&ctx, (const unsigned char *)this->error_code, sizeof(this->error_code));
+	}
+	if (this->unknown_attribute) {
+		HMAC_Update(&ctx, (const unsigned char *)this->unknown_attribute, sizeof(this->unknown_attribute));
+	}
+	if (this->message_integrity) {
+		HMAC_Update(&ctx, (const unsigned char *)this->message_integrity, sizeof(this->message_integrity));
+	}
+	if (this->software) {
+		HMAC_Update(&ctx, (const unsigned char *)this->software, sizeof(this->software));
+	}
+	if (this->channel_number) {
+		HMAC_Update(&ctx, (const unsigned char *)this->channel_number, sizeof(this->channel_number));
+	}
+	if (this->lifetime) {
+		HMAC_Update(&ctx, (const unsigned char *)this->lifetime, sizeof(this->lifetime));
+	}
+	if (this->peer_addr) {
+		HMAC_Update(&ctx, (const unsigned char *)this->peer_addr, sizeof(this->peer_addr));
+	}
+	if (this->data) {
+		HMAC_Update(&ctx, (const unsigned char *)this->data, sizeof(this->data));
+	}
+	if (this->relayed_addr) {
+		HMAC_Update(&ctx, (const unsigned char *)this->relayed_addr, sizeof(this->relayed_addr));
+	}
+	if (this->even_port) {
+		HMAC_Update(&ctx, (const unsigned char *)this->even_port, sizeof(this->even_port));
+	}
+	if (this->requested_transport) {
+		HMAC_Update(&ctx, (const unsigned char *)this->requested_transport, sizeof(this->requested_transport));
+	}
+	if (this->dont_fragment) {
+		HMAC_Update(&ctx, (const unsigned char *)this->dont_fragment, sizeof(this->dont_fragment));
+	}
+	if (this->reservation_token) {
+		HMAC_Update(&ctx, (const unsigned char *)this->reservation_token, sizeof(this->reservation_token));
+	}
+	if (this->requested_addr_family) {
+		HMAC_Update(&ctx, (const unsigned char *)this->requested_addr_family, sizeof(this->requested_addr_family));
+	}
+	if (this->connection_id) {
+		HMAC_Update(&ctx, (const unsigned char *)this->connection_id, sizeof(this->connection_id));
+	}
+
+	HMAC_Final(&ctx, this->message_integrity->turn_attr_hmac, &md_len); /* HMAC-SHA1 is 20 bytes length */
+
+	HMAC_CTX_cleanup(&ctx);
+
+	return 0;
+}
 //创建回复的消息头
 void  StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)
 {
@@ -435,7 +659,7 @@ int  StunProtocol::turn_attr_fingerprint_create(uint32_t fingerprint)
 	this->fingerprint->turn_attr_len = htons(4);
 	this->fingerprint->turn_attr_crc = htonl(fingerprint);
 	/* do not take into account the attribute itself */
-	this->fingerprint->turn_attr_crc = htonl(turn_calculate_fingerprint();
+	this->fingerprint->turn_attr_crc = htonl(turn_calculate_fingerprint());
 	this->fingerprint->turn_attr_crc ^= htonl(STUN_FINGERPRINT_XOR_VALUE);
 	return 1;
 }
@@ -444,12 +668,94 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 {
 	uint32_t crc = 0;
 	if (this->reuqestHeader) {
-		计算长度不好弄，因为有动态数组
+
 		crc = crc32_generate((uint8_t*)this->reuqestHeader, sizeof(this->reuqestHeader), crc);
 	}
+	if (this->mapped_addr) {
 
+		crc = crc32_generate((uint8_t*)this->mapped_addr, sizeof(this->mapped_addr), crc);
+	}
+	if (this->xor_mapped_addr) {
 
+		crc = crc32_generate((uint8_t*)this->xor_mapped_addr, sizeof(this->xor_mapped_addr), crc);
+	}
+	if (this->alternate_server) {
 
+		crc = crc32_generate((uint8_t*)this->alternate_server, sizeof(this->alternate_server), crc);
+	}
+	if (this->nonce) {
+
+		crc = crc32_generate((uint8_t*)this->nonce, sizeof(this->nonce), crc);
+	}
+	if (this->realm) {
+
+		crc = crc32_generate((uint8_t*)this->realm, sizeof(this->realm), crc);
+	}
+	if (this->username) {
+
+		crc = crc32_generate((uint8_t*)this->username, sizeof(this->username), crc);
+	}
+	if (this->error_code) {
+
+		crc = crc32_generate((uint8_t*)this->error_code, sizeof(this->error_code), crc);
+	}
+	if (this->unknown_attribute) {
+
+		crc = crc32_generate((uint8_t*)this->unknown_attribute, sizeof(this->unknown_attribute), crc);
+	}
+	if (this->message_integrity) {
+
+		crc = crc32_generate((uint8_t*)this->message_integrity, sizeof(this->message_integrity), crc);
+	}
+	if (this->software) {
+
+		crc = crc32_generate((uint8_t*)this->software, sizeof(this->software), crc);
+	}
+	if (this->channel_number) {
+
+		crc = crc32_generate((uint8_t*)this->channel_number, sizeof(this->channel_number), crc);
+	}
+	if (this->lifetime) {
+
+		crc = crc32_generate((uint8_t*)this->lifetime, sizeof(this->lifetime), crc);
+	}
+	if (this->peer_addr) {
+
+		crc = crc32_generate((uint8_t*)this->peer_addr, sizeof(this->peer_addr), crc);
+	}
+	if (this->data) {
+
+		crc = crc32_generate((uint8_t*)this->data, sizeof(this->data), crc);
+	}
+	if (this->relayed_addr) {
+
+		crc = crc32_generate((uint8_t*)this->relayed_addr, sizeof(this->relayed_addr), crc);
+	}
+	if (this->even_port) {
+
+		crc = crc32_generate((uint8_t*)this->even_port, sizeof(this->even_port), crc);
+	}
+	if (this->requested_transport) {
+
+		crc = crc32_generate((uint8_t*)this->requested_transport, sizeof(this->requested_transport), crc);
+	}
+	if (this->dont_fragment) {
+
+		crc = crc32_generate((uint8_t*)this->dont_fragment, sizeof(this->dont_fragment), crc);
+	}
+	if (this->reservation_token) {
+
+		crc = crc32_generate((uint8_t*)this->reservation_token, sizeof(this->reservation_token), crc);
+	}
+	if (this->requested_addr_family) {
+
+		crc = crc32_generate((uint8_t*)this->requested_addr_family, sizeof(this->requested_addr_family), crc);
+	}
+
+	if (this->connection_id) {
+
+		crc = crc32_generate((uint8_t*)this->connection_id, sizeof(this->connection_id), crc);
+	}
 	return crc;
 }
 #pragma endregion

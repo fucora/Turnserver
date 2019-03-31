@@ -108,25 +108,24 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		 */
 		if (!protocol.message_integrity)
 		{ 
-			StunProtocol* errorMessage;
+			StunProtocol errorMessage;
 			unsigned char*  nonce = protocol.get_generate_nonce(nonce_key, strlen(nonce_key));
 			try
 			{
 				debug(DBG_ATTR, "No message integrity\n");
-				errorMessage->create_error_response_401(requestMethod, protocol.reuqestHeader->turn_msg_id, realmstr, nonce);
+				errorMessage.create_error_response_401(requestMethod, protocol.reuqestHeader->turn_msg_id, realmstr, nonce);
 			}
 			catch (const std::exception&)
 			{
 				//turnserver_send_error(transport_protocol, sock, requestMethod, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 			} 
-			errorMessage->turn_attr_software_create(SOFTWARE_DESCRIPTION); 
+			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION); 
 		
-			errorMessage->turn_attr_fingerprint_create(0); 
+			errorMessage.turn_attr_fingerprint_create(0); 
 			/* convert to big endian */
-			errorMessage->reuqestHeader->turn_msg_len = htons(errorMessage->reuqestHeader->turn_msg_len);
-
-		写到了这里
-			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, ntohs(error->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+			errorMessage.reuqestHeader->turn_msg_len = htons(errorMessage.reuqestHeader->turn_msg_len);
+			 
+			if (this->turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -3547,20 +3546,19 @@ void turn_server::turnserver_unblock_realtime_signal(void)
 #pragma region 发送socket
 
 int turn_server::turn_send_message(int transport_protocol, socket_base* sock,
-	const address_type* remoteaddr, int remoteAddrSize, size_t total_len,
-	const  iovec* iov, size_t iovlen)
+	const address_type* remoteaddr, int remoteAddrSize, StunProtocol* protocol)
 {
 	if (transport_protocol == IPPROTO_UDP)
 	{
-		return turn_udp_send(sock, remoteaddr, remoteAddrSize, iov, iovlen);
+		return this->turn_udp_send(sock, remoteaddr, protocol);
 	}
 	else /* TCP */
 	{
-		return turn_tcp_send(sock, iov, iovlen);
+		return turn_tcp_send(sock, protocol);
 	}
 }
 
-int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr, int remoteAddrSize, const struct iovec* iov, size_t iovlen)
+int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr,StunProtocol* protocol)
 {
 	ssize_t len = -1;
 	struct msghdr msg;
@@ -3575,7 +3573,7 @@ int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr
 	return len;
 }
 
-int turn_server::turn_tcp_send(socket_base* sock, const struct iovec* iov, size_t iovlen)
+int turn_server::turn_tcp_send(socket_base* sock, StunProtocol* protocol)
 {
 	ssize_t len = -1;
 	struct msghdr msg;
@@ -3637,91 +3635,66 @@ int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* add
 int  turn_server::turnserver_send_error(int transport_protocol, socket_base* sock, int method,
 	const uint8_t* id, int error, const address_type* saddr,
 	socklen_t saddr_size, unsigned char* key)
-{
-	struct iovec iov[16]; /* should be sufficient */
-	struct turn_msg_hdr* hdr = NULL;
-	struct turn_attr_hdr* attr = NULL;
-	size_t idx = 0;
-
+{ 
+	StunProtocol protocol;
 	switch (error)
 	{
 	case 400: /* Bad request */
-		hdr = turn_error_response_400(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_400(method, id);
 		break;
 	case 403: /* Forbidden */
-		hdr = turn_error_response_403(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_403(method, id);
 		break;
 	case 437: /* Alocation mismatch */
-		hdr = turn_error_response_437(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_437(method, id);
 		break;
 	case 440: /* Address family not supported */
-		hdr = turn_error_response_440(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_440(method, id);
 		break;
 	case 441: /* Wrong credentials */
-		hdr = turn_error_response_441(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_441(method, id);
 		break;
 	case 442: /* Unsupported transport protocol */
-		hdr = turn_error_response_442(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_442(method, id);
 		break;
 	case 443: /* Peer address family mismatch */
-		hdr = turn_error_response_443(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_443(method, id);
 		break;
 	case 446: /* Connection already exists (RFC6062) */
-		hdr = turn_error_response_446(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_446(method, id);
 		break;
 	case 447: /* Connection timeout or failure (RFC6062) */
-		hdr = turn_error_response_447(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_447(method, id);
 		break;
 	case 486: /* Allocation quota reached */
-		hdr = turn_error_response_486(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_486(method, id);
 		break;
 	case 500: /* Server error */
-		hdr = turn_error_response_500(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_500(method, id);
 		break;
 	case 508: /* Insufficient port capacity */
-		hdr = turn_error_response_508(method, id, &iov[idx], &idx);
+		protocol.turn_error_response_508(method, id);
 		break;
 	default:
 		break;
-	}
-
-	if (!hdr)
+	} 
+	if (!protocol.reuqestHeader)
 	{
 		return -1;
 	}
-
-	/* software (not fatal if it cannot be allocated) */
-	if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION,
-		sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
-	{
-		hdr->turn_msg_len += iov[idx].iov_len;
-		idx++;
-	}
-
+	protocol.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+ 
 	if (key)
-	{
-		if (turn_add_message_integrity(iov, &idx, key, 16, 1) == -1)
-		{
-			/* MESSAGE-INTEGRITY option has to be in message, so
-			 * deallocate ressources and return
-			 */
-			iovec_free_data(iov, idx);
-			return -1;
-		}
-		/* function above already set turn_msg_len field to big endian */
+	{ 
+		protocol.turn_add_message_integrity(key, 16,1);
 	}
 	else
 	{
-		turn_add_fingerprint(iov, &idx); /* not fatal if not successful */
-
-		/* convert to big endian */
-		hdr->turn_msg_len = htons(hdr->turn_msg_len);
+		protocol.turn_attr_fingerprint_create(0); 
 	}
 
 	/* finally send the response */
-	if (turn_send_message(transport_protocol, sock, saddr, saddr_size,
-		ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx)
-		== -1)
+	if (turn_send_message(transport_protocol, sock, saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}

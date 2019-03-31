@@ -59,9 +59,42 @@ public:
 public:
 	StunProtocol();
 	StunProtocol(buffer_type data, int length);  
+	void turn_error_response_400(int requestMethod, const uint8_t * transactionID);
 	void create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char * realmstr, unsigned char * nonce);
 
+	void turn_error_response_420(int requestMethod, const uint8_t * transactionID, const uint16_t * unknown, size_t unknown_size);
+
+	void turn_error_response_403(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_437(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_440(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_441(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_442(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_443(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_446(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_447(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_486(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_500(int requestMethod, const uint8_t * transactionID);
+
+	void turn_error_response_508(int requestMethod, const uint8_t * transactionID);
+
+	void turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size);
+
 	int turn_attr_software_create(const char * software);
+
+	int turn_add_message_integrity(const unsigned char * key, size_t key_len, int add_fingerprint);
+
+	int turn_attr_message_integrity_create(const uint8_t * hmac);
+
+	int turn_calculate_integrity_hmac_iov(const unsigned char * key, size_t key_len);
 
 	void turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t * transactionID);
 	int turn_attr_realm_create(const char * realm);

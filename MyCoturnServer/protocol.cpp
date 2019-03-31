@@ -1027,8 +1027,7 @@ struct turn_attr_hdr* turn_attr_unknown_attributes_create(const uint16_t* unknow
 		*ptr = htons(unknown_attributes[i]);
 		tmp_len--;
 		ptr++;
-	}
-
+	} 
 	if (tmp_len)
 	{
 		/* take last attribute value */

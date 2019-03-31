@@ -58,14 +58,14 @@ public:
 	void turnserver_unblock_realtime_signal(void);
 
  
-	int turn_send_message(int transport_protocol, socket_base * sock, const address_type * remoteaddr, int remoteAddrSize, size_t total_len, const iovec * iov, size_t iovlen);
-
-	int turn_udp_send(socket_base * sock,const address_type * remoteaddr, int remoteAddrSize, const iovec * iov, size_t iovlen);
 	 
 
-	int turn_tcp_send(socket_base * sock, const iovec * iov, size_t iovlen);
-
  
+	int turn_send_message(int transport_protocol, socket_base * sock, const address_type * remoteaddr, int remoteAddrSize, StunProtocol * protocol);
+
+	int turn_udp_send(socket_base * sock, const address_type * remoteaddr, StunProtocol * protocol);
+
+	int turn_tcp_send(socket_base * sock, StunProtocol * protocol);
 
 	int turn_tls_send(tls_peer * peer, const sockaddr * addr, socklen_t addr_size, size_t total_len, const iovec * iov, size_t iovlen);
 
