@@ -103,6 +103,7 @@ public:
 	int turn_attr_nonce_create(const uint8_t * nonce);
 	int turn_attr_fingerprint_create(uint32_t fingerprint);
 	uint32_t turn_calculate_fingerprint();
+	turn_message * getMessageData();
 	~StunProtocol();
 
 private:

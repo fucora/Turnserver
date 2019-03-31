@@ -203,7 +203,6 @@ uint16_t StunProtocol::getResponseType()
 	return (requesttype) & 0x0110;
 }
 
-
 //是否是错误的请求
 bool StunProtocol::IsErrorRequest()
 {
@@ -256,7 +255,7 @@ bool StunProtocol::IsErrorRequest()
 	return false;
 }
 
-///根据nonce_key 生成一个随机数
+//根据nonce_key 生成一个随机数
 unsigned char* StunProtocol::get_generate_nonce(char* key, size_t key_len)
 {
 	unsigned char * result;
@@ -316,8 +315,6 @@ void  StunProtocol::turn_error_response_403(int requestMethod, const uint8_t* tr
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(403, TURN_ERROR_403);
 }
-
-
 void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t* transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
@@ -578,7 +575,6 @@ int StunProtocol::turn_attr_realm_create(const char* realm)
 	memcpy(this->realm->turn_attr_realm, realm, realmlen);
 	return 1;
 }
-
 //创建错误消息
 int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 {
@@ -630,7 +626,6 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 	strncpy((char*)this->error_code->turn_attr_reason, reason, real_len);
 	return 1;
 }
-
 //创建随机数消息
 int  StunProtocol::turn_attr_nonce_create(const uint8_t* nonce)
 {
@@ -758,9 +753,41 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 	}
 	return crc;
 }
+
+
+turn_message* StunProtocol::getMessageData()
+{
+	turn_message* result = (turn_message*)malloc(sizeof(struct turn_message));
+	result->mapped_addr = this->mapped_addr;
+	result->xor_mapped_addr = this->xor_mapped_addr;
+	result->alternate_server = this->alternate_server;
+	result->nonce = this->nonce;
+	result->realm = this->realm;
+	result->username = this->username;
+	result->error_code = this->error_code;
+	result->unknown_attribute = this->unknown_attribute;
+	result->message_integrity = this->message_integrity;
+	result->fingerprint = this->fingerprint;
+	result->software = this->software;
+	result->channel_number = this->channel_number;
+	result->lifetime = this->lifetime;
+	result->peer_addr[0] = this->peer_addr[0];
+	result->peer_addr[1] = this->peer_addr[1];
+	result->peer_addr[2] = this->peer_addr[2];
+	result->peer_addr[3] = this->peer_addr[3];
+	result->peer_addr[4] = this->peer_addr[4];
+	result->data = this->data;
+	result->relayed_addr = this->relayed_addr;
+	result->even_port = this->even_port;
+	result->requested_transport = this->requested_transport;
+	result->dont_fragment = this->dont_fragment;
+	result->reservation_token = this->reservation_token;
+	result->requested_addr_family = this->requested_addr_family;
+	result->connection_id = this->connection_id;
+	result->xor_peer_addr_overflow = this->xor_peer_addr_overflow;
+}
+
 #pragma endregion
-
-
 
 StunProtocol::~StunProtocol()
 {

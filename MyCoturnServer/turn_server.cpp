@@ -45,7 +45,7 @@ socketListener manager(8888);
 
 turn_server::turn_server()
 {
- 
+
 
 }
 
@@ -107,7 +107,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		 * binding request
 		 */
 		if (!protocol.message_integrity)
-		{ 
+		{
 			StunProtocol errorMessage;
 			unsigned char*  nonce = protocol.get_generate_nonce(nonce_key, strlen(nonce_key));
 			try
@@ -118,13 +118,13 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			catch (const std::exception&)
 			{
 				//turnserver_send_error(transport_protocol, sock, requestMethod, message.msg->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
-			} 
-			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION); 
-		
-			errorMessage.turn_attr_fingerprint_create(0); 
+			}
+			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+
+			errorMessage.turn_attr_fingerprint_create(0);
 			/* convert to big endian */
 			errorMessage.reuqestHeader->turn_msg_len = htons(errorMessage.reuqestHeader->turn_msg_len);
-			 
+
 			if (this->turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
@@ -1378,7 +1378,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
 	return 0;
-	}
+}
 
 
 /**
@@ -1815,7 +1815,7 @@ int turn_server::turnserver_process_send_indication(const struct turn_message* m
 		default:
 			return -1;
 			break;
-	}
+		}
 
 		/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 		 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
@@ -1882,7 +1882,7 @@ int turn_server::turnserver_process_send_indication(const struct turn_message* m
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
-}
+	}
 
 	return 0;
 }
@@ -2156,7 +2156,7 @@ int  turn_server::turnserver_process_connect_request(int transport_protocol, soc
 	}
 
 	return -1;
-	}
+}
 
 
 /**
@@ -3558,17 +3558,10 @@ int turn_server::turn_send_message(int transport_protocol, socket_base* sock,
 	}
 }
 
-int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr,StunProtocol* protocol)
+int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr, StunProtocol* protocol)
 {
 	ssize_t len = -1;
-	struct msghdr msg;
-	memset(&msg, 0x00, sizeof(struct msghdr));
-
-	msg.msg_name = (struct sockaddr*)(&remoteaddr);//此处的转换可能无效，日后调试需注意
-	msg.msg_namelen = remoteAddrSize;
-	msg.msg_iov = (struct iovec*)iov;
-	msg.msg_iovlen = iovlen;
-
+	auto data = protocol->getMessageData();
 	len = manager.udp_send(&msg, (udp_socket*)sock);
 	return len;
 }
@@ -3576,10 +3569,7 @@ int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr
 int turn_server::turn_tcp_send(socket_base* sock, StunProtocol* protocol)
 {
 	ssize_t len = -1;
-	struct msghdr msg;
-	memset(&msg, 0x00, sizeof(struct msghdr));
-	msg.msg_iov = (struct iovec*)iov;
-	msg.msg_iovlen = iovlen;
+	auto data = protocol->getMessageData();
 	///////////
 	len = manager.tcp_send(&msg, (tcp_socket*)sock);
 	return len;
@@ -3635,7 +3625,7 @@ int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* add
 int  turn_server::turnserver_send_error(int transport_protocol, socket_base* sock, int method,
 	const uint8_t* id, int error, const address_type* saddr,
 	socklen_t saddr_size, unsigned char* key)
-{ 
+{
 	StunProtocol protocol;
 	switch (error)
 	{
@@ -3677,20 +3667,20 @@ int  turn_server::turnserver_send_error(int transport_protocol, socket_base* soc
 		break;
 	default:
 		break;
-	} 
+	}
 	if (!protocol.reuqestHeader)
 	{
 		return -1;
 	}
 	protocol.turn_attr_software_create(SOFTWARE_DESCRIPTION);
- 
+
 	if (key)
-	{ 
-		protocol.turn_add_message_integrity(key, 16,1);
+	{
+		protocol.turn_add_message_integrity(key, 16, 1);
 	}
 	else
 	{
-		protocol.turn_attr_fingerprint_create(0); 
+		protocol.turn_attr_fingerprint_create(0);
 	}
 
 	/* finally send the response */
