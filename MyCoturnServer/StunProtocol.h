@@ -15,6 +15,7 @@ public:
 
 	uint16_t* unknown;
 	size_t unknown_size;
+
 	turn_attr_mapped_address* mapped_addr; /**< MAPPED-ADDRESS attribute */
 	turn_attr_xor_mapped_address* xor_mapped_addr; /**< XOR-MAPPED-ADDRESS attribute */
 	turn_attr_alternate_server* alternate_server; /**< ALTERNATE-SERVER attribute */
@@ -99,6 +100,10 @@ public:
 	int turn_attr_message_integrity_create(const uint8_t * hmac);
 
 	int turn_calculate_integrity_hmac_iov(const unsigned char * key, size_t key_len);
+
+	unsigned char * turn_calculate_integrity_hmac(const unsigned char * buf, unsigned char * userAcountHashkey);
+	 
+	 
 
 	void turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t * transactionID);
 	int turn_attr_realm_create(const char * realm);

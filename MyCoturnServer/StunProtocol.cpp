@@ -254,7 +254,7 @@ bool StunProtocol::IsErrorRequest()
 
 	return false;
 }
-  
+
 void  StunProtocol::turn_error_response_400(int requestMethod, const uint8_t* transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
@@ -287,12 +287,12 @@ void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t* tr
 }
 
 void  StunProtocol::turn_error_response_438(int requestMethod, const uint8_t* transactionID, const char* realm, const uint8_t* nonce)
-{ 
+{
 	size_t nonce_size = sizeof(nonce);
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(438, STUN_ERROR_438);
 	this->turn_attr_realm_create(realm);
-	this->turn_attr_nonce_create(nonce); 
+	this->turn_attr_nonce_create(nonce);
 }
 void  StunProtocol::turn_error_response_440(int requestMethod, const uint8_t* transactionID)
 {
@@ -406,7 +406,7 @@ int  StunProtocol::turn_attr_software_create(const char* software)
 	memcpy(this->software->turn_attr_software, software, softwareSize);
 	return 1;
 }
- 
+
 int StunProtocol::turn_nonce_is_stale(const char* noncekey)
 {
 	size_t noncekey_len = strlen(noncekey);
@@ -571,21 +571,33 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 	return 0;
 }
 
-unsigned char* turn_calculate_integrity_hmac(const unsigned char* buf, size_t len, const unsigned char* key, size_t key_len)
+unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* buf, unsigned char* userAcountHashkey)
 {
-	unsigned char integrity[20];
+	size_t bufferdatalen = sizeof(buf);
+	if (this->fingerprint)
+	{
 
+	}
+	else
+	{
+
+	}
+	 
+	char key[16];
+	memcpy(key, userAcountHashkey, 16);
+	size_t	keysize = sizeof(key); 
+
+	unsigned char integrity[20];
 	HMAC_CTX ctx;
 	unsigned int md_len = SHA_DIGEST_LENGTH;
 	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
 	HMAC_CTX_init(&ctx);
-	HMAC_Init(&ctx, key, key_len, EVP_sha1());
-	HMAC_Update(&ctx, buf, len);
-	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
+	HMAC_Init(&ctx, key, keysize, EVP_sha1());
+	HMAC_Update(&ctx, buf, strlen((char*)buf));
 
-	HMAC_CTX_cleanup(&ctx);
-
-	return 0;
+	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */ 
+	HMAC_CTX_cleanup(&ctx); 
+	return integrity;
 }
 
 
@@ -829,9 +841,9 @@ uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 	MD5_Update(&ctx, nonce, 16); /* time */
 	MD5_Update(&ctx, &c, 1);
 	MD5_Update(&ctx, noncekey, noncekey_len);
-	MD5_Final(md_buf, &ctx); 
+	MD5_Final(md_buf, &ctx);
 	/* add MD5 at the end of the nonce */
-	hex_convert(md_buf, MD5_DIGEST_LENGTH, nonce + 16, len - 16); 
+	hex_convert(md_buf, MD5_DIGEST_LENGTH, nonce + 16, len - 16);
 	return nonce;
 }
 
