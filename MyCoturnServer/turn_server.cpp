@@ -101,7 +101,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	}
 	auto requestType = protocol.getRequestType();
 	auto requestMethod = protocol.getRequestMethod();
-	unsigned char userAcountHashkey[16]; /**< MD5 hash */
+	account_desc* account = NULL; 
 
 	if (STUN_IS_REQUEST(requestType) && requestMethod != STUN_METHOD_BINDING) {
 		/* check long-term authentication for all requests except for a STUN
@@ -177,12 +177,13 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 				return -1;
 			}
 
-			strncpy(username, (char*)protocol.username->turn_attr_username, username_len);
+			strncpy(account->username, (char*)protocol.username->turn_attr_username, username_len);
 			username[username_len - 1] = 0x00;
-			strncpy(user_realm, (char*)protocol.realm->turn_attr_realm, realm_len);
+			strncpy(account->realm, (char*)protocol.realm->turn_attr_realm, realm_len);
 			user_realm[realm_len - 1] = 0x00;
-
-
+			memcpy(account->key, "1111111111111111", 16);
+			account->allocations = 5;
+			 
 			bool isUser = true;//检查用户合法性
 
 			if (!isUser)
@@ -216,13 +217,13 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		}
 		/* compute HMAC-SHA1 and compare with the value in message_integrity */
 		{
-			uint8_t hash[20]; 
-			auto newhash = protocol.turn_calculate_integrity_hmac((const unsigned char*)data, userAcountHashkey);
-			memcpy(hash, newhash, 20); 
+			uint8_t hash[20];
+			auto newhash = protocol.turn_calculate_integrity_hmac((const unsigned char*)data, account->key);
+			memcpy(hash, newhash, 20);
 
 			if (memcmp(hash, protocol.message_integrity->turn_attr_hmac, 20) != 0)
 			{
-		 
+
 				uint8_t nonce[48];
 
 				debug(DBG_ATTR, "Hash mismatch\n");
@@ -243,14 +244,14 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 				catch (const std::exception&)
 				{
 					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
-				} 
+				}
 				/* software (not fatal if it cannot be allocated) */
 				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
-				errorMessage.turn_attr_fingerprint_create(0); 
+				errorMessage.turn_attr_fingerprint_create(0);
 				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
 				{
 					debug(DBG_ATTR, "turn_send_message failed\n");
-				} 
+				}
 				return 0;
 			}
 		}
@@ -259,7 +260,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	/* check if there are unknown comprehension-required attributes */
 	if (protocol.unknown_size)
 	{
-		StunProtocol errorMessage; 
+		StunProtocol errorMessage;
 		/* if not a request, message is discarded */
 		if (!STUN_IS_REQUEST(requestType))
 		{
@@ -276,12 +277,12 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
 		}
 		errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
-		 
+
 		if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
-		 
+
 		return 0;
 	}
 
@@ -291,7 +292,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 	debug(DBG_ATTR, "OK basic validation are done, process the TURN message\n");
 	return turnserver_process_turn(transport_protocol, sock, &message, remoteaddr, localaddr, remoteAddrSize, account);
 }
- 
+
 /**
  * \brief Process a TURN request.
  * \param transport_protocol transport protocol used
@@ -465,7 +466,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 	return 0;
 }
 
- 
+
 /**
  * \brief Process a TURN request.
  * \param transport_protocol transport protocol used
@@ -785,7 +786,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-		}
+}
 #else
 		/* avoid compilation warning */
 		optval = 0;
@@ -1281,7 +1282,7 @@ int turn_server::turnserver_process_send_indication(const struct turn_message* m
 				 * sending message in case getsockopt failed
 				 */
 				optlen = 0;
-			}
+		}
 #else
 	  /* avoid compilation warning */
 			optval = 0;
@@ -1308,7 +1309,7 @@ int turn_server::turnserver_process_send_indication(const struct turn_message* m
 			/* restore original value */
 			setsockopt(desc->relayed_sock, IPPROTO_IP, IP_MTU_DISCOVER, &save_val,
 				sizeof(int));
-		}
+}
 #endif
 
 		if (nb == -1)
@@ -1554,7 +1555,7 @@ int  turn_server::turnserver_process_connect_request(int transport_protocol, soc
 	if ((flags = fcntl(peer_sock, F_GETFL, NULL)) == -1)
 	{
 		return -1;
-}
+	}
 
 	flags |= O_NONBLOCK;
 
