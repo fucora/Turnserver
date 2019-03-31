@@ -3684,12 +3684,10 @@ int  turn_server::turnserver_send_error(int transport_protocol, socket_base* soc
 	}
 
 	/* finally send the response */
-	if (turn_send_message(transport_protocol, sock, saddr, saddr_size, ntohs(hdr->turn_msg_len) + sizeof(struct turn_msg_hdr), iov, idx) == -1)
+	if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &protocol) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
-	}
-
-	iovec_free_data(iov, idx);
+	} 
 	return 0;
 }
 
