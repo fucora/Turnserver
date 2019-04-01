@@ -15,6 +15,8 @@ size_t unknown_idx = 0;
 size_t xor_peer_address_nb = 0;
 StunProtocol::StunProtocol(buffer_type data, int length)
 {
+
+
 	if (length < 20) {
 		return;
 	}
