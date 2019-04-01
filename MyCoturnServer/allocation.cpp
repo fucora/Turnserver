@@ -164,8 +164,7 @@ struct allocation_permission* allocation_desc_find_permission(struct allocation_
 
 	list_iterate_safe(get, n, &desc->peers_permissions)
 	{
-		struct allocation_permission* tmp = list_get(get,
-			struct allocation_permission, list);
+		struct allocation_permission* tmp = list_get(get, struct allocation_permission, list);
 
 		/* check only the network address (not the port) */
 		if (tmp->family != family)
@@ -173,8 +172,7 @@ struct allocation_permission* allocation_desc_find_permission(struct allocation_
 			continue;
 		}
 
-		if (tmp->family == family && !memcmp(tmp->peer_addr, peer_addr,
-			family == AF_INET ? 4 : 16))
+		if (tmp->family == family && !memcmp(tmp->peer_addr, peer_addr, family == AF_INET ? 4 : 16))
 		{
 			return tmp;
 		}

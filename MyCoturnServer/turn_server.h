@@ -34,11 +34,13 @@ public:
 	 
 	int turnserver_process_channelbind_request(int transport_protocol, socket_base * sock, StunProtocol * protocol, const address_type * saddr, socklen_t saddr_size, allocation_desc * desc);
 
-	int turnserver_process_send_indication(const turn_message * message, allocation_desc * desc);
+	int turnserver_process_send_indication(StunProtocol * protocol, allocation_desc * desc);
+
+ 
 
 	int turnserver_is_ipv6_tunneled_address(const uint8_t * addr, size_t addrlen);
- 
-	int turnserver_process_connect_request(int transport_protocol, socket_base * sock, const turn_message * message, const address_type * saddr, socklen_t saddr_size, allocation_desc * desc);
+  
+	int turnserver_process_connect_request(int transport_protocol, socket_base * sock, StunProtocol * protocol, const address_type * saddr, socklen_t saddr_size, allocation_desc * desc);
 
 	int turnserver_process_binding_request(int transport_protocol, socket_base * sock, StunProtocol * protocol, const address_type * saddr, socklen_t saddr_size);
 	  

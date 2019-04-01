@@ -89,6 +89,12 @@ public:
 
 	void turn_error_response_508(int requestMethod, const uint8_t * transactionID);
 
+	void turn_attr_xor_mapped_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
+
+	void turn_attr_xor_address_create(uint16_t type, const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
+
+	void turn_msg_channelbind_response_create(const uint8_t * id);
+
 	void turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size);
 
 	int turn_attr_software_create(const char * software);
@@ -110,6 +116,8 @@ public:
 	 
 
 	void turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t * transactionID);
+	void turn_attr_connection_id_create(uint32_t id);
+	void turn_msg_connectionbind_response_create(const uint8_t * id);
 	int turn_attr_realm_create(const char * realm);
 
 	int turn_attr_error_create(uint16_t code, const char * reason);
@@ -124,5 +132,4 @@ private:
 	int getAttr(const char * bufferPtr, uint16_t attrtype);
 
 };
-
-turn_attr_hdr * turn_attr_realm_create(const char * realm);
+ 

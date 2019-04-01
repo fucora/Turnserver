@@ -352,7 +352,102 @@ void  StunProtocol::turn_error_response_508(int requestMethod, const uint8_t* tr
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(508, TURN_ERROR_508);
+}
 
+void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+{
+	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, sock, transport_protocol, cookie, id);
+}
+
+
+/**
+ * \brief Helper function to create XOR-MAPPED-ADDRESS like.
+ * \param type type
+ * \param address network address
+ * \param cookie magic cookie
+ * \param id 96 bit transaction ID
+ * \param iov vector
+ * \return pointer on turn_attr_hdr or NULL if problem
+ */
+void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+{
+	/* XOR-MAPPED-ADDRESS are the same as XOR-PEER-ADDRESS and
+	 * XOR-RELAYED-ADDRESS
+	 */
+	size_t len = 0;
+	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
+	uint8_t* p = (uint8_t*)&cookie;
+	size_t i = 0;
+	uint16_t port = 0;
+	uint8_t family = 0;
+	uint16_t msb_cookie = 0;
+
+
+	if (transport_protocol == IPPROTO_TCP)
+	{
+		auto sockett = (tcp_socket*)sock;
+		//ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());
+		port = sockett->remote_endpoint().port();
+		if (sockett->remote_endpoint().address().is_v4())
+		{
+			family = STUN_ATTR_FAMILY_IPV4;
+			len = 4;
+		}
+		else
+		{
+			family = STUN_ATTR_FAMILY_IPV6;
+			len = 16;
+		}
+	}
+	else
+	{
+		auto sockett = (udp_socket*)sock;
+		/*	ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());*/
+		port = sockett->remote_endpoint().port();
+		if (sockett->remote_endpoint().address().is_v4())
+		{
+			family = STUN_ATTR_FAMILY_IPV4;
+			len = 4;
+		}
+		else
+		{
+			family = STUN_ATTR_FAMILY_IPV6;
+			len = 16;
+		}
+	}
+
+
+	/* XOR the address and port */
+
+	/* host order port XOR most-significant 16 bits of the cookie */
+	cookie = htonl(cookie);
+	msb_cookie = ((uint8_t*)&cookie)[0] << 8 | ((uint8_t*)&cookie)[1];
+	port ^= msb_cookie;
+
+	/* IPv4/IPv6 XOR cookie (just the first four bytes of IPv6 address) */
+	for (i = 0; i < 4; i++)
+	{
+		ptr[i] ^= p[i];
+	}
+
+	/* end of IPv6 address XOR transaction ID */
+	for (i = 4; i < len; i++)
+	{
+		ptr[i] ^= id[i - 4];
+	}
+
+	this->xor_mapped_addr->turn_attr_type = htons(type);
+	/* reserved (1)  + family (1) + port (2) + address (variable) */
+	this->xor_mapped_addr->turn_attr_len = htons(4 + len);
+	this->xor_mapped_addr->turn_attr_reserved = 0;
+	this->xor_mapped_addr->turn_attr_family = family;
+	this->xor_mapped_addr->turn_attr_port = htons(port);
+	memcpy(this->xor_mapped_addr->turn_attr_address, ptr, len);
+}
+
+void  StunProtocol::turn_msg_channelbind_response_create(const uint8_t* id)
+{
+	return turn_msg_create(TURN_METHOD_CHANNELBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
 void  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size)
@@ -621,6 +716,18 @@ void  StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseTyp
 	this->reuqestHeader->turn_msg_len = htons(messagelen);
 	this->reuqestHeader->turn_msg_cookie = htonl(STUN_MAGIC_COOKIE);
 	memcpy(this->reuqestHeader->turn_msg_id, transactionID, 12);
+}
+
+ 
+void  StunProtocol::turn_attr_connection_id_create(uint32_t id)
+{
+	this->connection_id->turn_attr_type = htons(TURN_ATTR_CONNECTION_ID);
+	this->connection_id->turn_attr_len = htons(4);
+	this->connection_id->turn_attr_id = id;
+}
+void  StunProtocol::turn_msg_connectionbind_response_create(const uint8_t* id)
+{
+	this->turn_msg_create(TURN_METHOD_CONNECTIONBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
 int StunProtocol::turn_attr_realm_create(const char* realm)
