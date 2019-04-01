@@ -584,10 +584,10 @@ unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* 
 	{
 
 	}
-	 
+
 	char key[16];
 	memcpy(key, userAcountHashkey, 16);
-	size_t	keysize = sizeof(key); 
+	size_t	keysize = sizeof(key);
 
 	unsigned char integrity[20];
 	HMAC_CTX ctx;
@@ -597,11 +597,22 @@ unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* 
 	HMAC_Init(&ctx, key, keysize, EVP_sha1());
 	HMAC_Update(&ctx, buf, strlen((char*)buf));
 
-	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */ 
-	HMAC_CTX_cleanup(&ctx); 
+	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
+	HMAC_CTX_cleanup(&ctx);
 	return integrity;
 }
 
+void  StunProtocol::turn_msg_refresh_response_create(const uint8_t* transactionID)
+{
+	this->turn_msg_create(TURN_METHOD_REFRESH, STUN_SUCCESS_RESP, 0, transactionID);
+}
+
+void  StunProtocol::turn_attr_lifetime_create(uint32_t lifetime)
+{
+	this->lifetime->turn_attr_type = htons(TURN_ATTR_LIFETIME);
+	this->lifetime->turn_attr_len = htons(4);
+	this->lifetime->turn_attr_lifetime = htonl(lifetime);
+}
 
 //创建回复的消息头
 void  StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)

@@ -102,6 +102,10 @@ public:
 	int turn_calculate_integrity_hmac_iov(const unsigned char * key, size_t key_len);
 
 	unsigned char * turn_calculate_integrity_hmac(const unsigned char * buf, unsigned char * userAcountHashkey);
+
+	void turn_msg_refresh_response_create(const uint8_t * transactionID);
+
+	void turn_attr_lifetime_create(uint32_t lifetime);
 	 
 	 
 
