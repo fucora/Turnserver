@@ -76,11 +76,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <IncludePath>$(IncludePath)</IncludePath>
-    <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
+    <RemoteCCompileToolExe> gcc</RemoteCCompileToolExe>
+    <RemoteCppCompileToolExe> g++</RemoteCppCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <IncludePath>$(IncludePath)</IncludePath>
-    <RemoteCCompileToolExe>gcc</RemoteCCompileToolExe>
+    <RemoteCCompileToolExe> gcc</RemoteCCompileToolExe>
+    <RemoteCppCompileToolExe> g++</RemoteCppCompileToolExe>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="allocation.cpp" />

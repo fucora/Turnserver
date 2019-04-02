@@ -5,7 +5,7 @@
 #include "allocation.h"  
 #include "turn.h"
 #include "socketListener.h"
-#include "protocol.h"
+//#include "protocol.h"
 #include "StunProtocol.h"
 
 class turn_server
@@ -50,7 +50,7 @@ public:
 
 	int turnserver_process_refresh_request(int transport_protocol, socket_base * sock, StunProtocol * protocol, const address_type * saddr, socklen_t saddr_size, allocation_desc * desc, account_desc * account);
 	  
-	int socket_create(protocol_type type, const char * addr, uint16_t port, int reuse, int nodelay);
+	int socket_create(enum protocol_type type, const char* addr, uint16_t port, int reuse, int nodelay);
 	 
 	void turnserver_block_realtime_signal(void);
 

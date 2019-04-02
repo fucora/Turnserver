@@ -130,6 +130,7 @@ public:
 	int turn_attr_fingerprint_create(uint32_t fingerprint);
 	uint32_t turn_calculate_fingerprint();
 	uint8_t * turn_generate_nonce(const char * noncekey);
+	int turn_xor_address_cookie(int family, uint8_t * peer_addr, uint16_t * peer_port, const uint8_t * cookie, const uint8_t * msg_id);
 	turn_message * getMessageData();
 	~StunProtocol();
 
