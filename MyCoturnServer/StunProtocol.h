@@ -51,9 +51,7 @@ public:
 	   uint16_t getResponseType();
 
 	   bool IsErrorRequest();
-
-	   unsigned char * get_generate_nonce(char * key, size_t key_len);
-
+ 
 
 #pragma endregion
 
@@ -85,11 +83,17 @@ public:
 
 	void turn_error_response_486(int requestMethod, const uint8_t * transactionID);
 
+	void turn_msg_createpermission_response_create(const uint8_t * id);
+
+	void turn_attr_reservation_token_create(const uint8_t * token);
+
 	void turn_error_response_500(int requestMethod, const uint8_t * transactionID);
 
 	void turn_error_response_508(int requestMethod, const uint8_t * transactionID);
 
 	void turn_attr_xor_mapped_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
+
+	void turn_attr_xor_relayed_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
 
 	void turn_attr_xor_address_create(uint16_t type, const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
 
@@ -118,6 +122,7 @@ public:
 	void turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t * transactionID);
 	void turn_attr_connection_id_create(uint32_t id);
 	void turn_msg_connectionbind_response_create(const uint8_t * id);
+	void turn_msg_allocate_response_create(const uint8_t * id);
 	int turn_attr_realm_create(const char * realm);
 
 	int turn_attr_error_create(uint16_t code, const char * reason);

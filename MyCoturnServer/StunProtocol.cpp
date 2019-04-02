@@ -339,8 +339,18 @@ void  StunProtocol::turn_error_response_447(int requestMethod, const uint8_t* tr
 void  StunProtocol::turn_error_response_486(int requestMethod, const uint8_t* transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
-	this->turn_attr_error_create(486, TURN_ERROR_486);
+	this->turn_attr_error_create(486, TURN_ERROR_486); 
+}
 
+void  StunProtocol::turn_msg_createpermission_response_create(const uint8_t* id )
+{
+	this->turn_msg_create(TURN_METHOD_CREATEPERMISSION , STUN_SUCCESS_RESP, 0, id);
+}
+void  StunProtocol::turn_attr_reservation_token_create(const uint8_t* token)
+{ 
+	this->reservation_token->turn_attr_type = htons(TURN_ATTR_RESERVATION_TOKEN);
+	this->reservation_token->turn_attr_len = htons(8);
+	memcpy(this->reservation_token->turn_attr_token, token, 8);
 }
 
 void  StunProtocol::turn_error_response_500(int requestMethod, const uint8_t* transactionID)
@@ -358,7 +368,10 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base* sock,
 {
 	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, sock, transport_protocol, cookie, id);
 }
-
+void  StunProtocol::turn_attr_xor_relayed_address_create( const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+{
+	return this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, sock, transport_protocol, cookie, id);
+}
 
 /**
  * \brief Helper function to create XOR-MAPPED-ADDRESS like.
@@ -728,6 +741,11 @@ void  StunProtocol::turn_attr_connection_id_create(uint32_t id)
 void  StunProtocol::turn_msg_connectionbind_response_create(const uint8_t* id)
 {
 	this->turn_msg_create(TURN_METHOD_CONNECTIONBIND, STUN_SUCCESS_RESP, 0, id);
+}
+
+void  StunProtocol::turn_msg_allocate_response_create(const uint8_t* id)
+{
+	return this->turn_msg_create(TURN_METHOD_ALLOCATE , STUN_SUCCESS_RESP, 0, id);
 }
 
 int StunProtocol::turn_attr_realm_create(const char* realm)

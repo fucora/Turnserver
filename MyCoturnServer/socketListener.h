@@ -61,10 +61,6 @@ public:			int udp_send(char * senddata, udp_socket * udpsocket);
 public:			int tcp_send(char * senddata, tcp_socket * tcpsocket);
  
 
-public:			int udp_send(buffer_type senddata, udp_socket * udpsocket);
-
-public:			int tcp_send(buffer_type senddata, tcp_socket * tcpsocket);
-
 
 
 

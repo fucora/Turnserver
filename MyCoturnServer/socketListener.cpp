@@ -147,8 +147,8 @@ int socketListener::udp_send(char* senddata, udp_socket* udpsocket)
 {
 	buffer_type linshbuf;
 	memcpy(linshbuf, senddata, strlen(senddata)); //拷贝到新的数组中   
-	auto senddata = boost::asio::buffer(linshbuf); 
-	int sendlength = udpsocket->send(senddata);
+ 
+	int sendlength = udpsocket->send(boost::asio::buffer(linshbuf));
 	return sendlength;
 }
 
@@ -156,27 +156,10 @@ int socketListener::tcp_send(char* senddata, tcp_socket* tcpsocket)
 {
 	buffer_type linshbuf;
 	memcpy(linshbuf, senddata, strlen(senddata)); //拷贝到新的数组中   
-	auto senddata = boost::asio::buffer(linshbuf);
-	int sendlength = tcpsocket->write_some(senddata); 
+  
+	int sendlength = tcpsocket->write_some(boost::asio::buffer(linshbuf));
 	return sendlength;
 }
- 
-int socketListener::udp_send(buffer_type senddata, udp_socket* udpsocket)
-{
-	buffer_type linshbuf;
-	memcpy(linshbuf, senddata, strlen(senddata)); //拷贝到新的数组中   
-	auto senddata = boost::asio::buffer(linshbuf);
-	int sendlength = udpsocket->send(senddata);
-	return sendlength;
-}
-
-int socketListener::tcp_send(buffer_type senddata, tcp_socket* tcpsocket)
-{
-	buffer_type linshbuf;
-	memcpy(linshbuf, senddata, strlen(senddata)); //拷贝到新的数组中   
-	auto senddata = boost::asio::buffer(linshbuf);
-	int sendlength = tcpsocket->write_some(senddata);
-	return sendlength;
-}
+  
 
 

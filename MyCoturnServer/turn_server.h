@@ -73,7 +73,7 @@ public:
  
 	int   turnserver_is_address_denied(const uint8_t* addr, size_t addrlen, uint16_t port);
 
-	int  turn_server::turnserver_process_connectionbind_request(int transport_protocol,
+	int  turnserver_process_connectionbind_request(int transport_protocol,
 		socket_base* sock, StunProtocol* protocol, const address_type* saddr,
 		socklen_t saddr_size, struct account_desc* account,
 		struct list_head* allocation_list);

@@ -114,7 +114,7 @@
       <Trace>true</Trace>
     </Link>
     <ClCompile>
-      <Verbose>false</Verbose>
+      <Verbose>true</Verbose>
       <CppLanguageStandard>c++11</CppLanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -125,7 +125,7 @@
       <Trace>true</Trace>
     </Link>
     <ClCompile>
-      <Verbose>false</Verbose>
+      <Verbose>true</Verbose>
       <CppLanguageStandard>c++11</CppLanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
