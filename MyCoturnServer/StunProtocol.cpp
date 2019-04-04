@@ -1,4 +1,4 @@
-#include "StunProtocol.h"
+ï»¿#include "StunProtocol.h"
 
 #define STUN_HEADER_LENGTH (20)
 int turn_tcp = 1;
@@ -9,7 +9,7 @@ StunProtocol::StunProtocol()
 }
 
 
-#pragma region ½âÎöĞ­ÒéµÄ·½·¨
+#pragma region è§£æåè®®çš„æ–¹æ³•
 size_t unknown_idx = 0;
 /* count of XOR-PEER-ADDRESS attribute */
 size_t xor_peer_address_nb = 0;
@@ -21,16 +21,16 @@ StunProtocol::StunProtocol(buffer_type data, int length)
 		return;
 	}
 	char* allBuffer = data;
-	//»ñÈ¡ÏûÏ¢ÀàĞÍ£¬ËüÔÚÇ°0-1×Ö½Ú 
+	//è·å–æ¶ˆæ¯ç±»å‹ï¼Œå®ƒåœ¨å‰0-1å­—èŠ‚ 
 	memcpy(&reuqestHeader->turn_msg_type, allBuffer, 2);
 	allBuffer += 2;
-	//»ñÈ¡ÏûÏ¢³¤¶È£¬ËüÔÚÇ°2-3×Ö½Ú
+	//è·å–æ¶ˆæ¯é•¿åº¦ï¼Œå®ƒåœ¨å‰2-3å­—èŠ‚
 	memcpy(&reuqestHeader->turn_msg_len, allBuffer, 2);
 	allBuffer += 2;
-	//»ñÈ¡magic_cookie£¬ËüÔÚ4-7×Ö½Ú 
+	//è·å–magic_cookieï¼Œå®ƒåœ¨4-7å­—èŠ‚ 
 	memcpy(&reuqestHeader->turn_msg_cookie, allBuffer, 4);
 	allBuffer += 4;
-	//»ñÈ¡transactionID£¬ËüÔÚ8-19×Ö½Ú
+	//è·å–transactionIDï¼Œå®ƒåœ¨8-19å­—èŠ‚
 	memcpy(&reuqestHeader->turn_msg_id, allBuffer, 12);
 	allBuffer += 12;
 
@@ -38,13 +38,13 @@ StunProtocol::StunProtocol(buffer_type data, int length)
 	while (startArrIndex < length)
 	{
 		uint16_t attr_type;
-		//»ñÈ¡attribute type
+		//è·å–attribute type
 		memcpy(&attr_type, allBuffer, 2);
 		getAttr(allBuffer, attr_type);
 		allBuffer += 2;
 		startArrIndex += 2;
 
-		//»ñÈ¡attribute length
+		//è·å–attribute length
 		uint16_t attr_len;
 		memcpy(&attr_len, allBuffer, 2);
 		allBuffer += 2;
@@ -71,7 +71,7 @@ StunProtocol::StunProtocol(buffer_type data, int length)
 	}
 	unknown_size = unknown_idx;
 }
-//»ñÈ¡Ğ­ÒéÀïµÄattribute
+//è·å–åè®®é‡Œçš„attribute
 int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
 {
 	switch (ntohs(attrtype))
@@ -176,18 +176,18 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
 #pragma endregion
 
 
-#pragma region ¶ÔÍâ·½·¨
-//ÊÇ·ñÊÇÊı¾İ¹ÜµÀµÄÊı¾İ
+#pragma region å¯¹å¤–æ–¹æ³•
+//æ˜¯å¦æ˜¯æ•°æ®ç®¡é“çš„æ•°æ®
 bool StunProtocol::IsChannelData()
 {
 	return TURN_IS_CHANNELDATA(this->reuqestHeader->turn_msg_type);
 }
-//»ñÈ¡ÇëÇóÀàĞÍ£¬REQUEST£¬INDICATION,SUCCESS_RESP,ERROR_RESP
+//è·å–è¯·æ±‚ç±»å‹ï¼ŒREQUESTï¼ŒINDICATION,SUCCESS_RESP,ERROR_RESP
 uint16_t StunProtocol::getRequestType()
 {
 	return ntohs(this->reuqestHeader->turn_msg_type);
 }
-//»ñÈ¡ÇëÇóµÄÏûÏ¢×Ü³¤¶È
+//è·å–è¯·æ±‚çš„æ¶ˆæ¯æ€»é•¿åº¦
 uint16_t StunProtocol::getRequestLength()
 {
 	return	ntohs(this->reuqestHeader->turn_msg_len) + STUN_HEADER_LENGTH;
@@ -198,29 +198,29 @@ uint16_t StunProtocol::getRequestMethod()
 	auto requesttype = getRequestType();
 	return STUN_GET_METHOD(requesttype);
 }
-//»ñÈ¡ÏûÏ¢µÄÀàĞÍ£¨REQUEST£¬INDICATION£¬SUCCESS_RESP£¬ERROR_RESP£©
+//è·å–æ¶ˆæ¯çš„ç±»å‹ï¼ˆREQUESTï¼ŒINDICATIONï¼ŒSUCCESS_RESPï¼ŒERROR_RESPï¼‰
 uint16_t StunProtocol::getResponseType()
 {
 	auto requesttype = getRequestType();
 	return (requesttype) & 0x0110;
 }
 
-//ÊÇ·ñÊÇ´íÎóµÄÇëÇó
+//æ˜¯å¦æ˜¯é”™è¯¯çš„è¯·æ±‚
 bool StunProtocol::IsErrorRequest()
 {
-	//¼ì²éÊÇ·ñÊÇÊı¾İ
+	//æ£€æŸ¥æ˜¯å¦æ˜¯æ•°æ®
 	auto ischanneldata = IsChannelData();
 	if (ischanneldata == true) {
 		return false;
 	}
-	//¼ì²éÇëÇóÀàĞÍÊÇ·ñºÏ·¨
+	//æ£€æŸ¥è¯·æ±‚ç±»å‹æ˜¯å¦åˆæ³•
 	auto responseType = getResponseType();
 	if (responseType != STUN_REQUEST && responseType != STUN_INDICATION && responseType != STUN_SUCCESS_RESP && responseType != STUN_ERROR_RESP)
 	{
 		debug(DBG_ATTR, "Unknown message class\n");
 		return true;
 	}
-	//¼ì²éÇëÇó·½·¨ÊÇ·ñºÏ·¨
+	//æ£€æŸ¥è¯·æ±‚æ–¹æ³•æ˜¯å¦åˆæ³•
 	auto requestmethod = getRequestMethod();
 	if (requestmethod != STUN_METHOD_BINDING &&
 		requestmethod != TURN_METHOD_ALLOCATE &&
@@ -235,7 +235,7 @@ bool StunProtocol::IsErrorRequest()
 		debug(DBG_ATTR, "Unknown method\n");
 		return true;
 	}
-	//¼ì²émagic_cookieÊÇ·ñºÏ·¨
+	//æ£€æŸ¥magic_cookieæ˜¯å¦åˆæ³•
 	if (this->reuqestHeader->turn_msg_cookie != htonl(STUN_MAGIC_COOKIE))
 	{
 		debug(DBG_ATTR, "Bad magic cookie\n");
@@ -722,7 +722,7 @@ void  StunProtocol::turn_attr_lifetime_create(uint32_t lifetime)
 	this->lifetime->turn_attr_lifetime = htonl(lifetime);
 }
 
-//´´½¨»Ø¸´µÄÏûÏ¢Í·
+//åˆ›å»ºå›å¤çš„æ¶ˆæ¯å¤´
 void  StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)
 {
 	this->reuqestHeader->turn_msg_type = htons(requestMethod | responseType);
@@ -768,7 +768,7 @@ int StunProtocol::turn_attr_realm_create(const char* realm)
 	memcpy(this->realm->turn_attr_realm, realm, realmlen);
 	return 1;
 }
-//´´½¨´íÎóÏûÏ¢
+//åˆ›å»ºé”™è¯¯æ¶ˆæ¯
 int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 {
 	size_t reasonsize = sizeof(reason);
@@ -819,7 +819,7 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 	strncpy((char*)this->error_code->turn_attr_reason, reason, real_len);
 	return 1;
 }
-//´´½¨Ëæ»úÊıÏûÏ¢
+//åˆ›å»ºéšæœºæ•°æ¶ˆæ¯
 int  StunProtocol::turn_attr_nonce_create(const uint8_t* nonce)
 {
 	size_t nonceSize = sizeof(nonce);
@@ -851,7 +851,7 @@ int  StunProtocol::turn_attr_fingerprint_create(uint32_t fingerprint)
 	this->fingerprint->turn_attr_crc ^= htonl(STUN_FINGERPRINT_XOR_VALUE);
 	return 1;
 }
-//¼ÆËãÕû¸öÏûÏ¢µÄC32Öµ£¬È·¶¨ÏûÏ¢µÄÎ¨Ò»ĞÔ
+//è®¡ç®—æ•´ä¸ªæ¶ˆæ¯çš„C32å€¼ï¼Œç¡®å®šæ¶ˆæ¯çš„å”¯ä¸€æ€§
 uint32_t StunProtocol::turn_calculate_fingerprint()
 {
 	uint32_t crc = 0;
@@ -947,7 +947,7 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 	return crc;
 }
 
-//48×Ö½Ú³¤¶ÈµÄËæ»úÊı
+//48å­—èŠ‚é•¿åº¦çš„éšæœºæ•°
 uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 {
 	uint8_t* nonce;

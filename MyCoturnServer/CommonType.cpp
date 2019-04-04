@@ -1,4 +1,16 @@
-﻿#include "commonTypes.h"
+#include "CommonType.h"
+
+
+
+CommonType::CommonType()
+{
+}
+
+
+CommonType::~CommonType()
+{
+}
+
 
 
 uint32_t crc32_generate(const uint8_t* data, size_t len, uint32_t prev)
@@ -183,7 +195,7 @@ void digest_print(const unsigned char* buf, size_t len)
 }
 
 
-struct account_desc* account_list_find(struct list_head* list,const char* username, const char* realm)
+struct account_desc* account_list_find(struct list_head* list, const char* username, const char* realm)
 {
 	struct list_head* get = NULL;
 	struct list_head* n = NULL;
@@ -212,7 +224,7 @@ int random_bytes_generate(uint8_t* id, size_t len)
 	if (!RAND_bytes(id, len))
 	{
 		return -1;
-	} 
+	}
 	return 0;
 }
 

@@ -111,7 +111,7 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_serialization.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(AdditionalDependencies)</AdditionalDependencies>
       <VerboseOutput>true</VerboseOutput>
       <Trace>true</Trace>
     </Link>
@@ -122,7 +122,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_serialization.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(AdditionalDependencies)</AdditionalDependencies>
       <VerboseOutput>true</VerboseOutput>
       <Trace>true</Trace>
     </Link>

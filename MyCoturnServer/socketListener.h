@@ -1,9 +1,9 @@
-#pragma once
+ï»¿#pragma once
+#ifndef SOCKETLISTENER_H
+#define SOCKETLISTENER_H
 
 #include "commonTypes.h"
-
-
-
+ 
 class socketListener
 {
 	typedef boost::shared_ptr<tcp_socket> sock_ptr;
@@ -16,7 +16,7 @@ private:	buffer_type tcp_buffer;
 private:	udp_socket* udp_listener;
 private:	udp_endpoint udp_remot_endpoint;
 private:	buffer_type udp_buffer;
-			//µÚÒ»¸övoidÊÇ·µ»ØÖµÀàÐÍ
+			//ç¬¬ä¸€ä¸ªvoidæ˜¯è¿”å›žå€¼ç±»åž‹
 public:     CMultiDelegate<void, tcp_socket*> onTcpconnected;
 public:  	CMultiDelegate<void, buffer_type*, int, tcp_socket*> onTcpReciveData;
 public:  	CMultiDelegate<void, buffer_type*, int, udp_socket*> onUdpReciveData;
@@ -59,36 +59,7 @@ public:  	void StartSocketListen();
 public:			int udp_send(char * senddata, udp_socket * udpsocket);
 
 public:			int tcp_send(char * senddata, tcp_socket * tcpsocket);
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
 };
-
-
+ 
+#endif

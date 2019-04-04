@@ -1,11 +1,11 @@
-
+ï»¿
 
 
 //****************************************************Demo
 // 
 //void NormalFunc(int a)
 //{
-//	printf("ÕâÀïÊÇÆÕÍ¨º¯Êı £º%d\n", a);
+//	printf("è¿™é‡Œæ˜¯æ™®é€šå‡½æ•° ï¼š%d\n", a);
 //}
 //
 //class A
@@ -13,24 +13,24 @@
 //public:
 //	static void StaticFunc(int a)
 //	{
-//		printf("ÕâÀïÊÇ³ÉÔ±¾²Ì¬º¯Êı £º %d\n", a);
+//		printf("è¿™é‡Œæ˜¯æˆå‘˜é™æ€å‡½æ•° ï¼š %d\n", a);
 //	}
 //	void MemberFunc(int a)
 //	{
-//		printf("ÕâÀïÊÇ³ÉÔ±·Ç¾²Ì¬º¯Êı £º %d\n", a);
+//		printf("è¿™é‡Œæ˜¯æˆå‘˜éé™æ€å‡½æ•° ï¼š %d\n", a);
 //	}
 //};
 //int main()
 //{
-//	//Ê×ÏÈ´´½¨ÁËÒ»¸ö·µ»ØÖµÎª void ,²ÎÊıÎªint µÄÒ»¸öÎ¯ÍĞ
+//	//é¦–å…ˆåˆ›å»ºäº†ä¸€ä¸ªè¿”å›å€¼ä¸º void ,å‚æ•°ä¸ºint çš„ä¸€ä¸ªå§”æ‰˜
 //	CMultiDelegate<void, int> e;
 //
-//	//½«Èı¸öº¯Êı×¢²áµ½¸ÃÎ¯ÍĞÖĞ  
+//	//å°†ä¸‰ä¸ªå‡½æ•°æ³¨å†Œåˆ°è¯¥å§”æ‰˜ä¸­  
 //	e += newDelegate(NormalFunc);
 //	e += newDelegate(A::StaticFunc);
 //	e += newDelegate(&A(), &A::MemberFunc);
 //
-//	//µ÷ÓÃ  
+//	//è°ƒç”¨  
 //	e(1);
 //
 //	return 0;
@@ -52,7 +52,7 @@ public:
 	virtual bool compare(IDelegate<ReturnType, ParamType...> *_delegate) const = 0;
 };
 
-//StaticDelegate ÆÕÍ¨º¯ÊıµÄÎ¯ÍĞ
+//StaticDelegate æ™®é€šå‡½æ•°çš„å§”æ‰˜
 
 template<typename ReturnType, typename ...ParamType>
 class CStaticDelegate :
@@ -74,7 +74,7 @@ private:
 	Func mFunc;
 };
 
-//³ÉÔ±º¯ÊıÎ¯ÍĞ
+//æˆå‘˜å‡½æ•°å§”æ‰˜
 template<typename T, typename ReturnType, typename ...ParamType>
 class CMethodDelegate :
 	public IDelegate<ReturnType, ParamType...>
@@ -101,7 +101,7 @@ private:
 	Method mMethod;
 };
 
-//¶à²¥Î¯ÍĞ
+//å¤šæ’­å§”æ‰˜
 template<typename ReturnType, typename ...ParamType>
 class CMultiDelegate
 {
@@ -152,7 +152,7 @@ public:
 		{
 			if ((*iter) && (*iter)->compare(_delegate))
 			{
-				if ((*iter) != _delegate) delete (*iter);       //±ÜÃâÍ¬Ò»¸öµØÖ·±»deleteÁ½´Î
+				if ((*iter) != _delegate) delete (*iter);       //é¿å…åŒä¸€ä¸ªåœ°å€è¢«deleteä¸¤æ¬¡
 				(*iter) = 0;
 				break;
 			}
@@ -187,13 +187,13 @@ private:
 	ListDelegate mListDelegates;
 };
 
-//ÆÕÍ¨º¯ÊıµÄÎ¯ÍĞÌØ»¯°æ±¾
+//æ™®é€šå‡½æ•°çš„å§”æ‰˜ç‰¹åŒ–ç‰ˆæœ¬
 template<typename ReturnType, typename ...ParamType>
 class CStaticDelegate<ReturnType(*)(ParamType ...)> :
 	public IDelegate<ReturnType, ParamType ...>
 {
 public:
-	//¶¨Òå Func Îª void (void) º¯ÊıÀàĞÍÖ¸Õë¡£
+	//å®šä¹‰ Func ä¸º void (void) å‡½æ•°ç±»å‹æŒ‡é’ˆã€‚
 	typedef  ReturnType(*Func)(ParamType...);
 	CStaticDelegate(Func _func) : mFunc(_func) { }
 	virtual bool isType(const std::type_info& _type) { return typeid(CStaticDelegate<ReturnType(*)(ParamType ...)>) == _type; }
@@ -211,7 +211,7 @@ private:
 	Func mFunc;
 };
 
-//³ÉÔ±º¯ÊıÎ¯ÍĞÌØ»¯
+//æˆå‘˜å‡½æ•°å§”æ‰˜ç‰¹åŒ–
 template<typename T, typename ReturnType, typename ...ParamType>
 class CMethodDelegate<T, ReturnType(T:: *)(ParamType...)> :
 	public IDelegate<ReturnType, ParamType...>
@@ -305,7 +305,7 @@ public:
 		{
 			if ((*iter) && (*iter)->compare(_delegate))
 			{
-				if ((*iter) != _delegate) delete (*iter);       //±ÜÃâÍ¬Ò»¸öµØÖ·±»deleteÁ½´Î
+				if ((*iter) != _delegate) delete (*iter);       //é¿å…åŒä¸€ä¸ªåœ°å€è¢«deleteä¸¤æ¬¡
 				(*iter) = 0;
 				break;
 			}

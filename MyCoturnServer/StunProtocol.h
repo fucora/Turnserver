@@ -1,13 +1,16 @@
-#pragma once
+ï»¿#pragma once
+#ifndef STUNPRPTOCAL_H
+#define STUNPRPTOCAL_H
+
 #include "commonTypes.h"
 #include "turn.h"
 
 class StunProtocol
 {
 
-#pragma region Ô­Ê¼Ğ­Òé
+#pragma region åŸå§‹åè®®
 public:
-	//uint16_t requestType_Original;//ÀïÃæ°üº¬ÁËÇëÇó·½·¨ÀàĞÍ(RequestType),·µ»ØÏûÏ¢ÀàĞÍ(ResponseType)
+	//uint16_t requestType_Original;//é‡Œé¢åŒ…å«äº†è¯·æ±‚æ–¹æ³•ç±»å‹(RequestType),è¿”å›æ¶ˆæ¯ç±»å‹(ResponseType)
 	//uint16_t requestLength_Original;
 	//uint32_t magic_cookie;
 	//uint8_t transactionID_Original[12];
@@ -42,7 +45,7 @@ public:
 #pragma endregion
 
 
-#pragma region Ğ­Òé
+#pragma region åè®®
 public:
 	   bool IsChannelData();
 	   uint16_t getRequestType();
@@ -138,4 +141,5 @@ private:
 	int getAttr(const char * bufferPtr, uint16_t attrtype);
 
 };
+#endif
  

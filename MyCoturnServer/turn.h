@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  TurnServer - TURN server implementation.
  *  Copyright (C) 2008-2009 Sebastien Vincent <sebastien.vincent@turnserver.org>
  *

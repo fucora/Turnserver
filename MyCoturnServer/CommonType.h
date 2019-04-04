@@ -1,6 +1,7 @@
-﻿#pragma once
-#ifndef COMMONTYPES_H
-#define COMMONTYPES_H
+#pragma once
+
+#ifndef commonTypes
+#define commonTypes
 
 #include <cstdio>  
 #include <stdint.h>
@@ -19,9 +20,10 @@
 #include <sys/types.h>
 //////////// 
 #include "myDeletegate.h"
-#include "dbg.h"
-#include "list.h"
-/////////////
+
+#include "list.h" 
+
+///////////// 
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 #include <openssl/md5.h>
@@ -32,8 +34,6 @@
 #include <boost/asio/placeholders.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/bind/bind.hpp> 
-
-
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/signals2.hpp>  
 #include <boost/utility/result_of.hpp>
@@ -42,29 +42,28 @@
 #include <boost/ref.hpp>
 #include <boost/function.hpp>  
 #include <boost/asio/basic_socket.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/export.hpp> 
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/access.hpp> 
-#include <boost/serialization/map.hpp>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/binary_object.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/export.hpp> 
 
- 
 
 
 using namespace boost::asio;
 using namespace std;
 
 typedef char buffer_type[4096];
+
 typedef ip::tcp::endpoint tcp_endpoint;
 typedef ip::udp::endpoint udp_endpoint;
+
 typedef ip::tcp::socket tcp_socket;
 typedef ip::udp::socket udp_socket;
 typedef ip::address address_type;
+
+
+
 
 
 #ifndef MAX
@@ -379,4 +378,15 @@ struct socket_desc
 	 */
 #define SIGRT_EXPIRE_TCP_RELAY (SIGRTMIN + 4)
 
+
+class CommonType
+{
+public:
+	CommonType();
+	~CommonType();
+};
+
+
+
 #endif
+
