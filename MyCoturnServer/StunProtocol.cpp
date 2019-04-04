@@ -15,7 +15,12 @@ size_t unknown_idx = 0;
 size_t xor_peer_address_nb = 0;
 StunProtocol::StunProtocol(buffer_type data, int length)
 {
+	this->reuqestHeader = (struct turn_msg_hdr*)malloc(sizeof(struct turn_msg_hdr));
 
+	if (this->reuqestHeader == NULL)
+	{
+		return;
+	}
 
 	if (length < 20) {
 		return;
@@ -40,7 +45,7 @@ StunProtocol::StunProtocol(buffer_type data, int length)
 		uint16_t attr_type;
 		//获取attribute type
 		memcpy(&attr_type, allBuffer, 2);
-		getAttr(allBuffer, attr_type);
+		this->getAttr(allBuffer, attr_type);
 		allBuffer += 2;
 		startArrIndex += 2;
 
@@ -175,7 +180,9 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
 }
 #pragma endregion
 
-
+void StunProtocol::addHeaderMsgLength(uint16_t ntohsVal) {
+	this->reuqestHeader->turn_msg_len = htons(ntohs(this->reuqestHeader->turn_msg_len) + ntohsVal);
+}
 #pragma region 对外方法
 //是否是数据管道的数据
 bool StunProtocol::IsChannelData()
@@ -204,6 +211,8 @@ uint16_t StunProtocol::getResponseType()
 	auto requesttype = getRequestType();
 	return (requesttype) & 0x0110;
 }
+
+
 
 //是否是错误的请求
 bool StunProtocol::IsErrorRequest()
@@ -339,15 +348,15 @@ void  StunProtocol::turn_error_response_447(int requestMethod, const uint8_t* tr
 void  StunProtocol::turn_error_response_486(int requestMethod, const uint8_t* transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
-	this->turn_attr_error_create(486, TURN_ERROR_486); 
+	this->turn_attr_error_create(486, TURN_ERROR_486);
 }
 
-void  StunProtocol::turn_msg_createpermission_response_create(const uint8_t* id )
+void  StunProtocol::turn_msg_createpermission_response_create(const uint8_t* id)
 {
-	this->turn_msg_create(TURN_METHOD_CREATEPERMISSION , STUN_SUCCESS_RESP, 0, id);
+	this->turn_msg_create(TURN_METHOD_CREATEPERMISSION, STUN_SUCCESS_RESP, 0, id);
 }
 void  StunProtocol::turn_attr_reservation_token_create(const uint8_t* token)
-{ 
+{
 	this->reservation_token->turn_attr_type = htons(TURN_ATTR_RESERVATION_TOKEN);
 	this->reservation_token->turn_attr_len = htons(8);
 	memcpy(this->reservation_token->turn_attr_token, token, 8);
@@ -368,7 +377,7 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base* sock,
 {
 	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, sock, transport_protocol, cookie, id);
 }
-void  StunProtocol::turn_attr_xor_relayed_address_create( const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+void  StunProtocol::turn_attr_xor_relayed_address_create(const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
 {
 	return this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, sock, transport_protocol, cookie, id);
 }
@@ -458,7 +467,7 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 	memcpy(this->xor_mapped_addr->turn_attr_address, ptr, len);
 }
 
-void  StunProtocol::turn_msg_channelbind_response_create(const uint8_t* id)
+int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t* id)
 {
 	return turn_msg_create(TURN_METHOD_CHANNELBIND, STUN_SUCCESS_RESP, 0, id);
 }
@@ -474,6 +483,10 @@ void  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_
 	 */
 	len = attr_size + (attr_size % 2);
 
+	this->unknown_attribute = (struct turn_attr_unknown_attribute*)malloc(sizeof(struct turn_attr_unknown_attribute) + (len * 2));
+	if (this->unknown_attribute == NULL) {
+		return;
+	}
 	this->unknown_attribute->turn_attr_type = htons(STUN_ATTR_UNKNOWN_ATTRIBUTES);
 	this->unknown_attribute->turn_attr_len = htons(attr_size);
 	ptr = (uint16_t*)this->unknown_attribute->turn_attr_attributes;
@@ -492,6 +505,8 @@ void  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_
 		i--;
 		*ptr = htons(unknown_attributes[i]);
 	}
+	this->unknown_attribute_totalLength_nothsVal = sizeof(struct turn_attr_unknown_attribute) + (len * 2);
+	this->addHeaderMsgLength(this->unknown_attribute_totalLength_nothsVal);
 }
 int  StunProtocol::turn_attr_software_create(const char* software)
 {
@@ -510,10 +525,18 @@ int  StunProtocol::turn_attr_software_create(const char* software)
 		real_len += (4 - (real_len % 4));
 	}
 
+	this->software = (struct turn_attr_software*)malloc(sizeof(struct turn_attr_software) + real_len);
+	if (this->software == NULL) {
+		return -1;
+	}
+
 	this->software->turn_attr_type = htons(STUN_ATTR_SOFTWARE);
 	this->software->turn_attr_len = htons(softwareSize);
 	memset(this->software->turn_attr_software, 0x00, real_len);
 	memcpy(this->software->turn_attr_software, software, softwareSize);
+
+	this->software_totalLength_nothsVal = sizeof(struct turn_attr_software) + real_len;
+	this->addHeaderMsgLength(this->software_totalLength_nothsVal);
 	return 1;
 }
 
@@ -717,35 +740,53 @@ void  StunProtocol::turn_msg_refresh_response_create(const uint8_t* transactionI
 
 void  StunProtocol::turn_attr_lifetime_create(uint32_t lifetime)
 {
+	this->lifetime = (struct turn_attr_lifetime*)malloc(sizeof(struct turn_attr_lifetime));
+	if (this->lifetime == NULL) {
+		return;
+	}
 	this->lifetime->turn_attr_type = htons(TURN_ATTR_LIFETIME);
 	this->lifetime->turn_attr_len = htons(4);
 	this->lifetime->turn_attr_lifetime = htonl(lifetime);
 }
 
 //创建回复的消息头
-void  StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)
+int StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)
 {
+	this->reuqestHeader = (struct turn_msg_hdr*)malloc(sizeof(struct turn_msg_hdr));
+	if (this->reuqestHeader == NULL) {
+		return -1;
+	}
 	this->reuqestHeader->turn_msg_type = htons(requestMethod | responseType);
 	this->reuqestHeader->turn_msg_len = htons(messagelen);
 	this->reuqestHeader->turn_msg_cookie = htonl(STUN_MAGIC_COOKIE);
 	memcpy(this->reuqestHeader->turn_msg_id, transactionID, 12);
+	this->reuqestHeader_totalLength_nothsVal = sizeof(struct turn_msg_hdr);
+	//消息头不需要调用addHeaderMsgLength方法
+	return 1;
 }
 
- 
-void  StunProtocol::turn_attr_connection_id_create(uint32_t id)
+
+int  StunProtocol::turn_attr_connection_id_create(uint32_t id)
 {
+	this->connection_id = (struct turn_attr_connection_id*)malloc(sizeof(struct turn_attr_connection_id));
+	if (this->connection_id == NULL) {
+		return -1;
+	}
 	this->connection_id->turn_attr_type = htons(TURN_ATTR_CONNECTION_ID);
 	this->connection_id->turn_attr_len = htons(4);
 	this->connection_id->turn_attr_id = id;
+	this->connection_id_totalLength_nothsVal = sizeof(struct turn_attr_connection_id);
+	this->addHeaderMsgLength(this->connection_id_totalLength_nothsVal);
+	return 1;
 }
 void  StunProtocol::turn_msg_connectionbind_response_create(const uint8_t* id)
 {
 	this->turn_msg_create(TURN_METHOD_CONNECTIONBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
-void  StunProtocol::turn_msg_allocate_response_create(const uint8_t* id)
+int  StunProtocol::turn_msg_allocate_response_create(const uint8_t* id)
 {
-	return this->turn_msg_create(TURN_METHOD_ALLOCATE , STUN_SUCCESS_RESP, 0, id);
+	return this->turn_msg_create(TURN_METHOD_ALLOCATE, STUN_SUCCESS_RESP, 0, id);
 }
 
 int StunProtocol::turn_attr_realm_create(const char* realm)
@@ -762,10 +803,14 @@ int StunProtocol::turn_attr_realm_create(const char* realm)
 	{
 		real_len += (4 - (real_len % 4));
 	}
+
+	this->realm = (struct turn_attr_realm*)malloc(sizeof(struct turn_attr_realm) + real_len);
 	this->realm->turn_attr_type = htons(STUN_ATTR_REALM);
 	this->realm->turn_attr_len = htons(realmlen);
 	memset(this->realm->turn_attr_realm, 0x00, real_len);
 	memcpy(this->realm->turn_attr_realm, realm, realmlen);
+	this->realm_totalLength_nothsVal = sizeof(struct turn_attr_realm) + real_len;
+	this->addHeaderMsgLength(this->realm_totalLength_nothsVal);
 	return 1;
 }
 //创建错误消息
@@ -773,7 +818,6 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 {
 	size_t reasonsize = sizeof(reason);
 
-	this->error_code = NULL;
 	uint8_t _class = code / 100;
 	uint8_t number = code % 100;
 	size_t real_len = reasonsize;
@@ -801,6 +845,10 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 		real_len += (4 - (real_len % 4));
 	}
 
+	this->error_code = (struct turn_attr_error_code*)malloc(sizeof(struct turn_attr_error_code) + real_len);
+	if (this->error_code == NULL) {
+		return -1;
+	}
 	this->error_code->turn_attr_type = htons(STUN_ATTR_ERROR_CODE);
 	this->error_code->turn_attr_len = htons(4 + real_len);
 
@@ -817,8 +865,12 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 	 * also no need to add final NULL character since length is known (TLV)
 	 */
 	strncpy((char*)this->error_code->turn_attr_reason, reason, real_len);
+	//增加协议头中的长度
+	this->error_code_totalLength_nothsVal = sizeof(struct turn_attr_error_code) + real_len;
+	this->addHeaderMsgLength(this->error_code_totalLength_nothsVal);
 	return 1;
 }
+
 //创建随机数消息
 int  StunProtocol::turn_attr_nonce_create(const uint8_t* nonce)
 {
@@ -834,18 +886,37 @@ int  StunProtocol::turn_attr_nonce_create(const uint8_t* nonce)
 	{
 		real_len += (4 - (real_len % 4));
 	}
+
+	this->nonce = (struct turn_attr_nonce*)malloc(sizeof(struct turn_attr_nonce) + real_len);
+	if (this->nonce == NULL) {
+		return -1;
+	}
+
+
 	this->nonce->turn_attr_type = htons(STUN_ATTR_NONCE);
 	this->nonce->turn_attr_len = htons(nonceSize);
 	memset(this->nonce->turn_attr_nonce, 0x00, real_len);
 	memcpy(this->nonce->turn_attr_nonce, nonce, nonceSize);
+
+	this->nonce_totalLength_nothsVal = sizeof(struct turn_attr_nonce) + real_len;
+	this->addHeaderMsgLength(this->nonce_totalLength_nothsVal);
 	return 1;
 }
 
 int  StunProtocol::turn_attr_fingerprint_create(uint32_t fingerprint)
 {
+	this->fingerprint = (struct turn_attr_fingerprint*)malloc(sizeof(struct turn_attr_fingerprint));
+	if (this->fingerprint == NULL) {
+		return -1;
+	}
+
 	this->fingerprint->turn_attr_type = htons(STUN_ATTR_FINGERPRINT);
 	this->fingerprint->turn_attr_len = htons(4);
 	this->fingerprint->turn_attr_crc = htonl(fingerprint);
+
+	this->fingerprint_totalLength_nothsVal = sizeof(struct turn_attr_fingerprint);
+	this->addHeaderMsgLength(this->fingerprint_totalLength_nothsVal);
+
 	/* do not take into account the attribute itself */
 	this->fingerprint->turn_attr_crc = htonl(turn_calculate_fingerprint());
 	this->fingerprint->turn_attr_crc ^= htonl(STUN_FINGERPRINT_XOR_VALUE);
@@ -857,92 +928,92 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 	uint32_t crc = 0;
 	if (this->reuqestHeader) {
 
-		crc = crc32_generate((uint8_t*)this->reuqestHeader, sizeof(this->reuqestHeader), crc);
+		crc = crc32_generate((uint8_t*)this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal, crc);
 	}
 	if (this->mapped_addr) {
 
-		crc = crc32_generate((uint8_t*)this->mapped_addr, sizeof(this->mapped_addr), crc);
+		crc = crc32_generate((uint8_t*)this->mapped_addr, this->mapped_addr_totalLength_nothsVal, crc);
 	}
 	if (this->xor_mapped_addr) {
 
-		crc = crc32_generate((uint8_t*)this->xor_mapped_addr, sizeof(this->xor_mapped_addr), crc);
+		crc = crc32_generate((uint8_t*)this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal, crc);
 	}
 	if (this->alternate_server) {
 
-		crc = crc32_generate((uint8_t*)this->alternate_server, sizeof(this->alternate_server), crc);
+		crc = crc32_generate((uint8_t*)this->alternate_server, this->alternate_server_totalLength_nothsVal, crc);
 	}
 	if (this->nonce) {
 
-		crc = crc32_generate((uint8_t*)this->nonce, sizeof(this->nonce), crc);
+		crc = crc32_generate((uint8_t*)this->nonce, this->nonce_totalLength_nothsVal, crc);
 	}
 	if (this->realm) {
 
-		crc = crc32_generate((uint8_t*)this->realm, sizeof(this->realm), crc);
+		crc = crc32_generate((uint8_t*)this->realm, this->realm_totalLength_nothsVal, crc);
 	}
 	if (this->username) {
 
-		crc = crc32_generate((uint8_t*)this->username, sizeof(this->username), crc);
+		crc = crc32_generate((uint8_t*)this->username, this->username_totalLength_nothsVal, crc);
 	}
 	if (this->error_code) {
 
-		crc = crc32_generate((uint8_t*)this->error_code, sizeof(this->error_code), crc);
+		crc = crc32_generate((uint8_t*)this->error_code, this->error_code_totalLength_nothsVal, crc);
 	}
 	if (this->unknown_attribute) {
 
-		crc = crc32_generate((uint8_t*)this->unknown_attribute, sizeof(this->unknown_attribute), crc);
+		crc = crc32_generate((uint8_t*)this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal, crc);
 	}
 	if (this->message_integrity) {
 
-		crc = crc32_generate((uint8_t*)this->message_integrity, sizeof(this->message_integrity), crc);
+		crc = crc32_generate((uint8_t*)this->message_integrity, this->message_integrity_totalLength_nothsVal, crc);
 	}
 	if (this->software) {
 
-		crc = crc32_generate((uint8_t*)this->software, sizeof(this->software), crc);
+		crc = crc32_generate((uint8_t*)this->software, this->software_totalLength_nothsVal, crc);
 	}
 	if (this->channel_number) {
 
-		crc = crc32_generate((uint8_t*)this->channel_number, sizeof(this->channel_number), crc);
+		crc = crc32_generate((uint8_t*)this->channel_number, this->channel_number_totalLength_nothsVal, crc);
 	}
 	if (this->lifetime) {
 
-		crc = crc32_generate((uint8_t*)this->lifetime, sizeof(this->lifetime), crc);
+		crc = crc32_generate((uint8_t*)this->lifetime, this->lifetime_totalLength_nothsVal, crc);
 	}
 	if (this->peer_addr) {
 
-		crc = crc32_generate((uint8_t*)this->peer_addr, sizeof(this->peer_addr), crc);
+		crc = crc32_generate((uint8_t*)this->peer_addr, this->peer_addr_totalLength_nothsVal, crc);
 	}
 	if (this->data) {
 
-		crc = crc32_generate((uint8_t*)this->data, sizeof(this->data), crc);
+		crc = crc32_generate((uint8_t*)this->data, this->data_totalLength_nothsVal, crc);
 	}
 	if (this->relayed_addr) {
 
-		crc = crc32_generate((uint8_t*)this->relayed_addr, sizeof(this->relayed_addr), crc);
+		crc = crc32_generate((uint8_t*)this->relayed_addr, this->relayed_addr_totalLength_nothsVal, crc);
 	}
 	if (this->even_port) {
 
-		crc = crc32_generate((uint8_t*)this->even_port, sizeof(this->even_port), crc);
+		crc = crc32_generate((uint8_t*)this->even_port, this->even_port_totalLength_nothsVal, crc);
 	}
 	if (this->requested_transport) {
 
-		crc = crc32_generate((uint8_t*)this->requested_transport, sizeof(this->requested_transport), crc);
+		crc = crc32_generate((uint8_t*)this->requested_transport, this->requested_transport_totalLength_nothsVal, crc);
 	}
 	if (this->dont_fragment) {
 
-		crc = crc32_generate((uint8_t*)this->dont_fragment, sizeof(this->dont_fragment), crc);
+		crc = crc32_generate((uint8_t*)this->dont_fragment, this->dont_fragment_totalLength_nothsVal, crc);
 	}
 	if (this->reservation_token) {
 
-		crc = crc32_generate((uint8_t*)this->reservation_token, sizeof(this->reservation_token), crc);
+		crc = crc32_generate((uint8_t*)this->reservation_token, this->reservation_token_totalLength_nothsVal, crc);
 	}
 	if (this->requested_addr_family) {
 
-		crc = crc32_generate((uint8_t*)this->requested_addr_family, sizeof(this->requested_addr_family), crc);
+		crc = crc32_generate((uint8_t*)this->requested_addr_family, this->requested_addr_family_totalLength_nothsVal, crc);
 	}
 
 	if (this->connection_id) {
 
-		crc = crc32_generate((uint8_t*)this->connection_id, sizeof(this->connection_id), crc);
+		crc = crc32_generate((uint8_t*)this->connection_id, this->connection_id_totalLength_nothsVal, crc);
 	}
 	return crc;
 }

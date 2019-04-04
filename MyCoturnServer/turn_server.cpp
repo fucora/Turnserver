@@ -55,8 +55,10 @@ turn_server::~turn_server()
 
 int turn_server::StartServer() {
 
-	auto x = sizeof(uint16_t);
+	int x = htons(3);
+	x += 4;
 
+	int y = ntohs(x);
 
 	manager.onTcpconnected += newDelegate(this, &turn_server::onTcpConnect);
 
