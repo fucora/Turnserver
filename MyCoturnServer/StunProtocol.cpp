@@ -215,7 +215,7 @@ uint16_t StunProtocol::getResponseType()
 
 
 //是否是错误的请求
-bool StunProtocol::IsErrorRequest()
+bool StunProtocol::IsErrorRequest(buffer_type buf)
 {
 	//检查是否是数据
 	auto ischanneldata = IsChannelData();
@@ -255,7 +255,7 @@ bool StunProtocol::IsErrorRequest()
 	{
 		/* verify if CRC is valid */
 		uint32_t crc = 0;
-		crc = crc32_generate((const unsigned char*)data, getRequestLength() - sizeof(struct turn_attr_fingerprint), 0);
+		crc = crc32_generate((const unsigned char*)buf, getRequestLength() - sizeof(struct turn_attr_fingerprint), 0);
 		if (htonl(crc) != (fingerprint->turn_attr_crc ^ htonl(STUN_FINGERPRINT_XOR_VALUE)))
 		{
 			debug(DBG_ATTR, "Fingerprint mismatch\n");
@@ -355,11 +355,17 @@ void  StunProtocol::turn_msg_createpermission_response_create(const uint8_t* id)
 {
 	this->turn_msg_create(TURN_METHOD_CREATEPERMISSION, STUN_SUCCESS_RESP, 0, id);
 }
-void  StunProtocol::turn_attr_reservation_token_create(const uint8_t* token)
+int  StunProtocol::turn_attr_reservation_token_create(const uint8_t* token)
 {
+	this->reservation_token = (struct turn_attr_reservation_token*)malloc(sizeof(struct turn_attr_reservation_token));
+	if (this->reservation_token == NULL) {
+		return -1;
+	}
 	this->reservation_token->turn_attr_type = htons(TURN_ATTR_RESERVATION_TOKEN);
 	this->reservation_token->turn_attr_len = htons(8);
 	memcpy(this->reservation_token->turn_attr_token, token, 8);
+	this->reservation_token_totalLength_nothsVal = sizeof(struct turn_attr_reservation_token);
+	this->addHeaderMsgLength(this->reservation_token_totalLength_nothsVal);
 }
 
 void  StunProtocol::turn_error_response_500(int requestMethod, const uint8_t* transactionID)
@@ -423,6 +429,7 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 	}
 	else
 	{
+		//IN6_IS_ADDR_V4MAPPED()
 		auto sockett = (udp_socket*)sock;
 		/*	ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());*/
 		port = sockett->remote_endpoint().port();
@@ -438,6 +445,10 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 		}
 	}
 
+	this->xor_mapped_addr = (struct turn_attr_xor_mapped_address*)malloc(sizeof(struct turn_attr_xor_mapped_address) + len);
+	if (this->xor_mapped_addr == NULL) {
+		return;
+	}
 
 	/* XOR the address and port */
 
@@ -465,6 +476,8 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 	this->xor_mapped_addr->turn_attr_family = family;
 	this->xor_mapped_addr->turn_attr_port = htons(port);
 	memcpy(this->xor_mapped_addr->turn_attr_address, ptr, len);
+	this->xor_mapped_addr_totalLength_nothsVal = sizeof(struct turn_attr_xor_mapped_address) + len;
+	this->addHeaderMsgLength(this->xor_mapped_addr_totalLength_nothsVal);
 }
 
 int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t* id)
@@ -472,7 +485,7 @@ int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t* id)
 	return turn_msg_create(TURN_METHOD_CHANNELBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
-void  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size)
+int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size)
 {
 	size_t len = 0;
 	size_t tmp_len = 0;
@@ -481,11 +494,10 @@ void  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_
 	/* length of the attributes MUST be a multiple of 4 bytes
 	 * so it must be a pair number of attributes
 	 */
-	len = attr_size + (attr_size % 2);
-
+	len = attr_size + (attr_size % 2); 
 	this->unknown_attribute = (struct turn_attr_unknown_attribute*)malloc(sizeof(struct turn_attr_unknown_attribute) + (len * 2));
 	if (this->unknown_attribute == NULL) {
-		return;
+		return -1;
 	}
 	this->unknown_attribute->turn_attr_type = htons(STUN_ATTR_UNKNOWN_ATTRIBUTES);
 	this->unknown_attribute->turn_attr_len = htons(attr_size);
@@ -587,8 +599,7 @@ int StunProtocol::turn_nonce_is_stale(const char* noncekey)
 	{
 		/* nonce stale */
 		return 1;
-	}
-
+	} 
 	return 0;
 }
 
@@ -606,6 +617,11 @@ int StunProtocol::turn_add_message_integrity(const unsigned char* key, size_t ke
 
 int StunProtocol::turn_attr_message_integrity_create(const uint8_t* hmac)
 {
+	this->message_integrity = (struct turn_attr_message_integrity*)malloc(sizeof(struct turn_attr_message_integrity));
+	if (this->message_integrity == NULL) {
+		return -1;
+	}
+
 	this->message_integrity->turn_attr_type = htons(STUN_ATTR_MESSAGE_INTEGRITY);
 	this->message_integrity->turn_attr_len = htons(20);
 
@@ -617,6 +633,8 @@ int StunProtocol::turn_attr_message_integrity_create(const uint8_t* hmac)
 	{
 		memset(this->message_integrity->turn_attr_hmac, 0x00, 20);
 	}
+	this->message_integrity_totalLength_nothsVal = sizeof(struct turn_attr_message_integrity);
+	this->addHeaderMsgLength(this->message_integrity_totalLength_nothsVal);
 	return 1;
 }
 
@@ -631,89 +649,90 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 	HMAC_Init(&ctx, key, key_len, EVP_sha1());
 
 	if (this->reuqestHeader) {
-		HMAC_Update(&ctx, (const unsigned char *)this->reuqestHeader, sizeof(this->reuqestHeader));
+		HMAC_Update(&ctx, (const unsigned char *)this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal);
 	}
 	if (this->mapped_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->mapped_addr, sizeof(this->mapped_addr));
+		HMAC_Update(&ctx, (const unsigned char *)this->mapped_addr,this->mapped_addr_totalLength_nothsVal);
 	}
 	if (this->xor_mapped_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->xor_mapped_addr, sizeof(this->xor_mapped_addr));
+		HMAC_Update(&ctx, (const unsigned char *)this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
 	}
 	if (this->alternate_server) {
-		HMAC_Update(&ctx, (const unsigned char *)this->alternate_server, sizeof(this->alternate_server));
+		HMAC_Update(&ctx, (const unsigned char *)this->alternate_server,this->alternate_server_totalLength_nothsVal);
 	}
 	if (this->nonce) {
-		HMAC_Update(&ctx, (const unsigned char *)this->nonce, sizeof(this->nonce));
+		HMAC_Update(&ctx, (const unsigned char *)this->nonce, this->nonce_totalLength_nothsVal);
 	}
 	if (this->realm) {
-		HMAC_Update(&ctx, (const unsigned char *)this->realm, sizeof(this->realm));
+		HMAC_Update(&ctx, (const unsigned char *)this->realm, this->realm_totalLength_nothsVal);
 	}
 	if (this->username) {
-		HMAC_Update(&ctx, (const unsigned char *)this->username, sizeof(this->username));
+		HMAC_Update(&ctx, (const unsigned char *)this->username,this->username_totalLength_nothsVal);
 	}
 	if (this->error_code) {
-		HMAC_Update(&ctx, (const unsigned char *)this->error_code, sizeof(this->error_code));
+		HMAC_Update(&ctx, (const unsigned char *)this->error_code,this->error_code_totalLength_nothsVal);
 	}
 	if (this->unknown_attribute) {
-		HMAC_Update(&ctx, (const unsigned char *)this->unknown_attribute, sizeof(this->unknown_attribute));
+		HMAC_Update(&ctx, (const unsigned char *)this->unknown_attribute,this->unknown_attribute_totalLength_nothsVal);
 	}
 	if (this->message_integrity) {
-		HMAC_Update(&ctx, (const unsigned char *)this->message_integrity, sizeof(this->message_integrity));
+		HMAC_Update(&ctx, (const unsigned char *)this->message_integrity, this->message_integrity_totalLength_nothsVal);
 	}
 	if (this->software) {
-		HMAC_Update(&ctx, (const unsigned char *)this->software, sizeof(this->software));
+		HMAC_Update(&ctx, (const unsigned char *)this->software,this->software_totalLength_nothsVal);
 	}
 	if (this->channel_number) {
-		HMAC_Update(&ctx, (const unsigned char *)this->channel_number, sizeof(this->channel_number));
+		HMAC_Update(&ctx, (const unsigned char *)this->channel_number,this->channel_number_totalLength_nothsVal);
 	}
 	if (this->lifetime) {
-		HMAC_Update(&ctx, (const unsigned char *)this->lifetime, sizeof(this->lifetime));
+		HMAC_Update(&ctx, (const unsigned char *)this->lifetime,this->lifetime_totalLength_nothsVal);
 	}
 	if (this->peer_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->peer_addr, sizeof(this->peer_addr));
+		HMAC_Update(&ctx, (const unsigned char *)this->peer_addr,this->peer_addr_totalLength_nothsVal);
 	}
 	if (this->data) {
-		HMAC_Update(&ctx, (const unsigned char *)this->data, sizeof(this->data));
+		HMAC_Update(&ctx, (const unsigned char *)this->data, this->data_totalLength_nothsVal);
 	}
 	if (this->relayed_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->relayed_addr, sizeof(this->relayed_addr));
+		HMAC_Update(&ctx, (const unsigned char *)this->relayed_addr, this->relayed_addr_totalLength_nothsVal);
 	}
 	if (this->even_port) {
-		HMAC_Update(&ctx, (const unsigned char *)this->even_port, sizeof(this->even_port));
+		HMAC_Update(&ctx, (const unsigned char *)this->even_port, this->even_port_totalLength_nothsVal);
 	}
 	if (this->requested_transport) {
-		HMAC_Update(&ctx, (const unsigned char *)this->requested_transport, sizeof(this->requested_transport));
+		HMAC_Update(&ctx, (const unsigned char *)this->requested_transport, this->requested_transport_totalLength_nothsVal);
 	}
 	if (this->dont_fragment) {
-		HMAC_Update(&ctx, (const unsigned char *)this->dont_fragment, sizeof(this->dont_fragment));
+		HMAC_Update(&ctx, (const unsigned char *)this->dont_fragment,this->dont_fragment_totalLength_nothsVal);
 	}
 	if (this->reservation_token) {
-		HMAC_Update(&ctx, (const unsigned char *)this->reservation_token, sizeof(this->reservation_token));
+		HMAC_Update(&ctx, (const unsigned char *)this->reservation_token,this->reservation_token_totalLength_nothsVal);
 	}
 	if (this->requested_addr_family) {
-		HMAC_Update(&ctx, (const unsigned char *)this->requested_addr_family, sizeof(this->requested_addr_family));
+		HMAC_Update(&ctx, (const unsigned char *)this->requested_addr_family,this->requested_addr_family_totalLength_nothsVal);
 	}
 	if (this->connection_id) {
-		HMAC_Update(&ctx, (const unsigned char *)this->connection_id, sizeof(this->connection_id));
+		HMAC_Update(&ctx, (const unsigned char *)this->connection_id, this->connection_id_totalLength_nothsVal);
 	}
 
 	HMAC_Final(&ctx, this->message_integrity->turn_attr_hmac, &md_len); /* HMAC-SHA1 is 20 bytes length */
-
 	HMAC_CTX_cleanup(&ctx);
-
-	return 0;
+	return 1;
 }
 
 unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* buf, unsigned char* userAcountHashkey)
 {
-	size_t bufferdatalen = sizeof(buf);
+	size_t bufferdatalen = 0;
+	
 	if (this->fingerprint)
 	{
-
+		bufferdatalen = this->getRequestLength() -
+			sizeof(struct turn_attr_fingerprint) -
+			sizeof(struct turn_attr_message_integrity);
 	}
 	else
 	{
-
+		bufferdatalen = this->getRequestLength()  - sizeof(struct turn_attr_message_integrity);
 	}
 
 	char key[16];
@@ -726,7 +745,7 @@ unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* 
 	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
 	HMAC_CTX_init(&ctx);
 	HMAC_Init(&ctx, key, keysize, EVP_sha1());
-	HMAC_Update(&ctx, buf, strlen((char*)buf));
+	HMAC_Update(&ctx, buf, bufferdatalen);
 
 	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
 	HMAC_CTX_cleanup(&ctx);
@@ -1021,10 +1040,10 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 //48字节长度的随机数
 uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 {
-	uint8_t* nonce;
-	size_t noncekey_len = strlen(noncekey);
 	size_t len = 48;
-
+	uint8_t nonce[len];
+	size_t noncekey_len = strlen(noncekey);
+	 
 	time_t t;
 	char c = ':';
 	MD5_CTX ctx;
@@ -1096,6 +1115,7 @@ int StunProtocol::turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16
 turn_message* StunProtocol::getMessageData()
 {
 	turn_message* result = (turn_message*)malloc(sizeof(struct turn_message));
+	result->msg = this->reuqestHeader;
 	result->mapped_addr = this->mapped_addr;
 	result->xor_mapped_addr = this->xor_mapped_addr;
 	result->alternate_server = this->alternate_server;

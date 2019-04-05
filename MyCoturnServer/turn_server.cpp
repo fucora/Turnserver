@@ -54,11 +54,7 @@ turn_server::~turn_server()
 }
 
 int turn_server::StartServer() {
-
-	int x = htons(3);
-	x += 4;
-
-	int y = ntohs(x);
+	 
 
 	manager.onTcpconnected += newDelegate(this, &turn_server::onTcpConnect);
 
@@ -98,7 +94,7 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
 {
 	StunProtocol protocol(data, lenth);
-	if (protocol.IsErrorRequest() == true) {
+	if (protocol.IsErrorRequest(data) == true) {
 		return -1;
 	}
 	auto requestType = protocol.getRequestType();
@@ -125,8 +121,6 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
 
 			errorMessage.turn_attr_fingerprint_create(0);
-			/* convert to big endian */
-			errorMessage.reuqestHeader->turn_msg_len = htons(errorMessage.reuqestHeader->turn_msg_len);
 
 			if (this->turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
 			{
@@ -224,7 +218,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 			memcpy(hash, newhash, 20);
 
 			if (memcmp(hash, protocol.message_integrity->turn_attr_hmac, 20) != 0)
-			{ 
+			{
 				debug(DBG_ATTR, "Hash mismatch\n");
 #ifndef NDEBUG
 				/* print computed hash and the one from the message */
@@ -1556,10 +1550,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		 */
 			if (transport_protocol == IPPROTO_UDP)
 			{
-				manager.udp_send(tcp_relay->buf, (udp_socket*)sock);
+				manager.udp_send(tcp_relay->buf, tcp_relay->buf_len,(udp_socket*)sock);
 			}
 			else {
-				manager.tcp_send(tcp_relay->buf, (tcp_socket*)sock);
+				manager.tcp_send(tcp_relay->buf, tcp_relay->buf_len,(tcp_socket*)sock);
 			}
 			tcp_relay->buf_len = 0;
 
@@ -2541,10 +2535,13 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		ostringstream osstring;
 		boost::archive::binary_oarchive streamReader(osstring);
 		auto data = protocol->getMessageData();
-		streamReader << boost::serialization::make_binary_object(data,4096);
 
-		auto xxxx = (char*)osstring.str().data();
-		ssize_t len = manager.udp_send(xxxx, (udp_socket*)sock);
+		uint16_t requestDataLength = protocol->getRequestLength();
+		streamReader << boost::serialization::make_binary_object(data, protocol->getRequestLength());
+
+		char kxkx[requestDataLength];
+		streamReader.save_binary(kxkx, requestDataLength);
+		ssize_t len = manager.udp_send(kxkx, requestDataLength,(udp_socket*)sock);
 		return len;
 	}
 
@@ -2553,11 +2550,14 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		ostringstream osstring;
 		boost::archive::binary_oarchive streamReader(osstring);
 		auto data = protocol->getMessageData();
-		streamReader << boost::serialization::make_binary_object(data,4096);
 
-		auto xxxx = (char*)osstring.str().data();
-		ssize_t len = manager.tcp_send(xxxx, (tcp_socket*)sock);
-		return len;
+		uint16_t requestDataLength = protocol->getRequestLength();
+		streamReader << boost::serialization::make_binary_object(data, requestDataLength);
+		 
+		char kxkx[requestDataLength];
+		streamReader.save_binary(kxkx, requestDataLength); 
+		ssize_t len = manager.tcp_send(kxkx, requestDataLength,(tcp_socket*)sock);
+		return len;  
 	}
 
 	int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* addr,

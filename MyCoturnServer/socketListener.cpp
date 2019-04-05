@@ -143,23 +143,21 @@ void socketListener::StartSocketListen() {
 }
 
 
-int socketListener::udp_send(char* senddata, udp_socket* udpsocket)
+int socketListener::udp_send(char* senddata, size_t datalength, udp_socket* udpsocket)
 {
-	buffer_type linshbuf;
-	memcpy(linshbuf, senddata, strlen(senddata)); //拷贝到新的数组中   
- 
-	int sendlength = udpsocket->send(boost::asio::buffer(linshbuf));
+	char linshbuf[datalength];
+	memcpy(linshbuf, senddata, datalength); //拷贝到新的数组中    
+	int sendlength = udpsocket->send(boost::asio::buffer(linshbuf, datalength));
 	return sendlength;
 }
 
-int socketListener::tcp_send(char* senddata, tcp_socket* tcpsocket)
+int socketListener::tcp_send(char* senddata, size_t datalength, tcp_socket* tcpsocket)
 {
-	buffer_type linshbuf;
-	memcpy(linshbuf, senddata, strlen(senddata)); //拷贝到新的数组中   
-  
-	int sendlength = tcpsocket->write_some(boost::asio::buffer(linshbuf));
+	char linshbuf[datalength];
+	memcpy(linshbuf, senddata, datalength); //拷贝到新的数组中    
+	int sendlength = tcpsocket->write_some(boost::asio::buffer(linshbuf, datalength));
 	return sendlength;
 }
-  
+
 
 

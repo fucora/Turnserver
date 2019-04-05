@@ -96,15 +96,13 @@ public:
 	   uint16_t getRequestLength();
 	   uint16_t getRequestMethod();
 	   uint16_t getResponseType();
-
-	   bool IsErrorRequest();
- 
-
+  
 #pragma endregion
 
 public:
 	StunProtocol();
 	StunProtocol(buffer_type data, int length);  
+	bool IsErrorRequest(buffer_type buf);
 	void turn_error_response_400(int requestMethod, const uint8_t * transactionID);
 	void create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char * realmstr, unsigned char * nonce);
 
@@ -132,7 +130,7 @@ public:
 
 	void turn_msg_createpermission_response_create(const uint8_t * id);
 
-	void turn_attr_reservation_token_create(const uint8_t * token);
+	int turn_attr_reservation_token_create(const uint8_t * token);
 
 	void turn_error_response_500(int requestMethod, const uint8_t * transactionID);
 
@@ -146,7 +144,7 @@ public:
 
 	int turn_msg_channelbind_response_create(const uint8_t * id);
 
-	void turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size);
+	int turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size);
 
 	int turn_attr_software_create(const char * software);
 
