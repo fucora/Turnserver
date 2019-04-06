@@ -50,7 +50,7 @@ StunProtocol::StunProtocol(char* buf, int datalength)
 		{
 			return;
 		}
-		this->getAttr(allBufferPtr, ntohs(attr->turn_attr_type));
+		this->getAttr(allBufferPtr, attr->turn_attr_type);
 		requestlen -= (4 + ntohs(attr->turn_attr_len));
 		allBufferPtr += (4 + ntohs(attr->turn_attr_len));
 
@@ -65,9 +65,9 @@ StunProtocol::StunProtocol(char* buf, int datalength)
 	this->unknown_size = unknown_idx;
 }
 //获取协议里的attribute
-int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
+int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtypeHotols)
 {
-	switch (ntohs(attrtype))
+	switch (ntohs(attrtypeHotols))
 	{
 	case STUN_ATTR_MAPPED_ADDRESS:
 		mapped_addr = (struct turn_attr_mapped_address*)bufferPtr;
@@ -148,7 +148,7 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
 		connection_id = (struct turn_attr_connection_id*)bufferPtr;
 		break;
 	default:
-		if (ntohs(attrtype) <= 0x7fff)
+		if (ntohs(attrtypeHotols) <= 0x7fff)
 		{
 			/* comprehension-required attribute but server does not understand
 			 * it
@@ -157,7 +157,7 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
 			{
 				break;
 			}
-			this->unknown[unknown_idx] = htons(attrtype);
+			this->unknown[unknown_idx] = htons(attrtypeHotols);
 			this->unknown_size--;
 			unknown_idx++;
 		}
@@ -293,8 +293,7 @@ void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t* tr
 }
 
 void  StunProtocol::turn_error_response_438(int requestMethod, const uint8_t* transactionID, const char* realm, const uint8_t* nonce)
-{
-	size_t nonce_size = sizeof(nonce);
+{ 
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(438, STUN_ERROR_438);
 	this->turn_attr_realm_create(realm);
@@ -888,7 +887,7 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 //创建随机数消息
 int  StunProtocol::turn_attr_nonce_create(const uint8_t* nonce)
 {
-	size_t nonceSize = sizeof(nonce);
+	size_t nonceSize = 48;
 	size_t real_len = nonceSize;
 	/* nonce can be as long as 763 bytes */
 	if (nonceSize > 763)
@@ -1162,10 +1161,6 @@ char*  StunProtocol::getMessageData()
 		resultBuffer += this->message_integrity_totalLength_nothsVal;
 	}
 
-	if (this->fingerprint) {
-		memcpy(resultBuffer, this->fingerprint, this->fingerprint_totalLength_nothsVal);
-		resultBuffer += this->fingerprint_totalLength_nothsVal;
-	}
 
 	if (this->software) {
 		memcpy(resultBuffer, this->software, this->software_totalLength_nothsVal);
@@ -1226,6 +1221,12 @@ char*  StunProtocol::getMessageData()
 		memcpy(resultBuffer, this->connection_id, this->connection_id_totalLength_nothsVal);
 		resultBuffer += this->connection_id_totalLength_nothsVal;
 	}
+
+	if (this->fingerprint) {
+		memcpy(resultBuffer, this->fingerprint, this->fingerprint_totalLength_nothsVal);
+		resultBuffer += this->fingerprint_totalLength_nothsVal;
+	}
+
 	return (char*)oldBufferPtr;
 }
 
