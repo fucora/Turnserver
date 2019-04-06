@@ -54,7 +54,7 @@ turn_server::~turn_server()
 }
 
 int turn_server::StartServer() {
-	 
+
 
 	manager.onTcpconnected += newDelegate(this, &turn_server::onTcpConnect);
 
@@ -1550,10 +1550,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		 */
 			if (transport_protocol == IPPROTO_UDP)
 			{
-				manager.udp_send(tcp_relay->buf, tcp_relay->buf_len,(udp_socket*)sock);
+				manager.udp_send(tcp_relay->buf, tcp_relay->buf_len, (udp_socket*)sock);
 			}
 			else {
-				manager.tcp_send(tcp_relay->buf, tcp_relay->buf_len,(tcp_socket*)sock);
+				manager.tcp_send(tcp_relay->buf, tcp_relay->buf_len, (tcp_socket*)sock);
 			}
 			tcp_relay->buf_len = 0;
 
@@ -2541,23 +2541,33 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 
 		char kxkx[requestDataLength];
 		streamReader.save_binary(kxkx, requestDataLength);
-		ssize_t len = manager.udp_send(kxkx, requestDataLength,(udp_socket*)sock);
+		ssize_t len = manager.udp_send(kxkx, requestDataLength, (udp_socket*)sock);
 		return len;
 	}
 
 	int turn_server::turn_tcp_send(socket_base* sock, StunProtocol* protocol)
 	{
-		ostringstream osstring;
-		boost::archive::binary_oarchive streamReader(osstring);
-		auto data = protocol->getMessageData();
-
-		uint16_t requestDataLength = protocol->getRequestLength();
-		streamReader << boost::serialization::make_binary_object(data, requestDataLength);
-		 
-		char kxkx[requestDataLength];
-		streamReader.save_binary(kxkx, requestDataLength); 
-		ssize_t len = manager.tcp_send(kxkx, requestDataLength,(tcp_socket*)sock);
+		size_t databuflength = protocol->getRequestLength();
+		char databuffer[databuflength];
+		memcpy(databuffer, protocol->getMessageData(), databuflength);
+		ssize_t len = manager.tcp_send(databuffer, databuflength, (tcp_socket*)sock);
 		return len;  
+
+		int i = 0;
+		/*	ostringstream streamr;
+			boost::archive::binary_oarchive archive(streamr);
+			auto data = protocol->getMessageData();
+			archive << data;
+			char* kxkx = (char*)streamr.str().data();
+
+			ssize_t len = manager.tcp_send(kxkx, 0, (tcp_socket*)sock);
+			return len;*/
+			/*uint16_t requestDataLength = protocol->getRequestLength();
+			streamReader << boost::serialization::make_binary_object(data, requestDataLength);
+			char kxkx[requestDataLength];
+			streamReader.save_binary(kxkx, requestDataLength);
+			ssize_t len = manager.tcp_send(kxkx, requestDataLength,(tcp_socket*)sock);
+			return len;  */
 	}
 
 	int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* addr,

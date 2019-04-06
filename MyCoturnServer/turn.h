@@ -39,6 +39,8 @@
 #ifndef TURN_H
 #define TURN_H
 
+#include "commonTypes.h"
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -63,11 +65,8 @@ typedef unsigned __int64 uint64_t;
 #include <stdint.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" { /* } */
-#endif
 
-/* STUN message classes */
+  /* STUN message classes */
 #define STUN_REQUEST                    0x0000
 #define STUN_INDICATION                 0x0010
 #define STUN_SUCCESS_RESP               0x0100
@@ -292,308 +291,305 @@ extern "C" { /* } */
   * \struct turn_msg_hdr
   * \brief STUN/TURN message header.
   */
-	struct turn_msg_hdr
-	{
-		uint16_t turn_msg_type; /**< Message type (first 2 bit are always set to 0) */
-		uint16_t turn_msg_len; /**< Message length (without the 20 bytes of this
-								 header) */
-		uint32_t turn_msg_cookie; /**< Magic Cookie */
-		uint8_t turn_msg_id[12]; /**< Transaction ID (96 bit) */
-	}__attribute__((packed));
+struct turn_msg_hdr
+{ 
+	uint16_t turn_msg_type; /**< Message type (first 2 bit are always set to 0) */
+	uint16_t turn_msg_len; /**< Message length (without the 20 bytes of this
+							 header) */
+	uint32_t turn_msg_cookie; /**< Magic Cookie */
+	uint8_t turn_msg_id[12]; /**< Transaction ID (96 bit) */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_hdr
-	 * \brief STUN/TURN attribute header.
-	 */
-	struct turn_attr_hdr
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_value[]; /**< Variable-size value */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_hdr
+ * \brief STUN/TURN attribute header.
+ */
+struct turn_attr_hdr
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_value[]; /**< Variable-size value */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_mapped_address
-	 * \brief MAPPED-ADDRESS attribute.
-	 */
-	struct turn_attr_mapped_address
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_reserved; /**< Ignored */
-		uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
-		uint16_t turn_attr_port; /**< Port in network byte order */
-		uint8_t turn_attr_address[]; /**< Variable-size address */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_mapped_address
+ * \brief MAPPED-ADDRESS attribute.
+ */
+struct turn_attr_mapped_address
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_reserved; /**< Ignored */
+	uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
+	uint16_t turn_attr_port; /**< Port in network byte order */
+	uint8_t turn_attr_address[]; /**< Variable-size address */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_username
-	 * \brief USERNAME attribute
-	 */
-	struct turn_attr_username
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_username[]; /**< Username */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_username
+ * \brief USERNAME attribute
+ */
+struct turn_attr_username
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_username[]; /**< Username */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_message_integrity
-	 * \brief MESSAGE-INTEGRITY attribute.
-	 */
-	struct turn_attr_message_integrity
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_hmac[20]; /**< HMAC value */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_message_integrity
+ * \brief MESSAGE-INTEGRITY attribute.
+ */
+struct turn_attr_message_integrity
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_hmac[20]; /**< HMAC value */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_error_code
-	 * \brief ERROR-CODE attribute.
-	 */
-	struct turn_attr_error_code
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_reserved_class : 24; /**< 21 bit reserved (value = 0) and 3
-												  bit which indicates hundred digits
-												  of the response code (3 - 6) */
-		uint32_t turn_attr_number : 8; /**< Number (0 - 99) */
-		uint8_t turn_attr_reason[]; /**< Variable-size reason */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_error_code
+ * \brief ERROR-CODE attribute.
+ */
+struct turn_attr_error_code
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_reserved_class : 24; /**< 21 bit reserved (value = 0) and 3
+											  bit which indicates hundred digits
+											  of the response code (3 - 6) */
+	uint32_t turn_attr_number : 8; /**< Number (0 - 99) */
+	uint8_t turn_attr_reason[]; /**< Variable-size reason */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_unknown_attribute
-	 * \brief UNKNWON-ATTRIBUTE attribute.
-	 */
-	struct turn_attr_unknown_attribute
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_attributes[]; /**< Multiple of 4 attributes (each 16 bit) */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_unknown_attribute
+ * \brief UNKNWON-ATTRIBUTE attribute.
+ */
+struct turn_attr_unknown_attribute
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_attributes[]; /**< Multiple of 4 attributes (each 16 bit) */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_realm
-	 * \brief REALM attribute.
-	 */
-	struct turn_attr_realm
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_realm[]; /**< Realm */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_realm
+ * \brief REALM attribute.
+ */
+struct turn_attr_realm
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_realm[]; /**< Realm */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_nonce
-	 * \brief NONCE attribute.
-	 */
-	struct turn_attr_nonce
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_nonce[]; /**< Nonce */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_nonce
+ * \brief NONCE attribute.
+ */
+struct turn_attr_nonce
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_nonce[]; /**< Nonce */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_xor_mapped_address
-	 * \brief XOR-MAPPED-ADDRESS attribute.
-	 */
-	struct turn_attr_xor_mapped_address
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_reserved; /**< Ignored */
-		uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
-		uint16_t turn_attr_port; /**< Port in network byte order */
-		uint8_t turn_attr_address[]; /**< Variable-size address */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_xor_mapped_address
+ * \brief XOR-MAPPED-ADDRESS attribute.
+ */
+struct turn_attr_xor_mapped_address
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_reserved; /**< Ignored */
+	uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
+	uint16_t turn_attr_port; /**< Port in network byte order */
+	uint8_t turn_attr_address[]; /**< Variable-size address */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_software
-	 * \brief SOFTWARE attribute.
-	 */
-	struct turn_attr_software
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_software[]; /**< Textual description of the software */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_software
+ * \brief SOFTWARE attribute.
+ */
+struct turn_attr_software
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_software[]; /**< Textual description of the software */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_alternate_server
-	 * \brief ALTERNATE-SERVER attribute.
-	 */
-	struct turn_attr_alternate_server
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_reserved; /**< Ignored */
-		uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
-		uint16_t turn_attr_port; /**< Port in network byte order */
-		uint8_t turn_attr_address[]; /**< Variable-size address */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_alternate_server
+ * \brief ALTERNATE-SERVER attribute.
+ */
+struct turn_attr_alternate_server
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_reserved; /**< Ignored */
+	uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
+	uint16_t turn_attr_port; /**< Port in network byte order */
+	uint8_t turn_attr_address[]; /**< Variable-size address */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_fingerprint
-	 * \brief FINGERPRINT attribute.
-	 */
-	struct turn_attr_fingerprint
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_crc; /**< CRC-32 */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_fingerprint
+ * \brief FINGERPRINT attribute.
+ */
+struct turn_attr_fingerprint
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_crc; /**< CRC-32 */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_channel_number
-	 * \brief CHANNEL-NUMBER attribute.
-	 */
-	struct turn_attr_channel_number
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint16_t turn_attr_number; /**< Channel number value */
-		uint16_t turn_attr_rffu; /**< Reserved For Future Use, must be 0 */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_channel_number
+ * \brief CHANNEL-NUMBER attribute.
+ */
+struct turn_attr_channel_number
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint16_t turn_attr_number; /**< Channel number value */
+	uint16_t turn_attr_rffu; /**< Reserved For Future Use, must be 0 */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_lifetime
-	 * \brief LIFETIME attribute.
-	 */
-	struct turn_attr_lifetime
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_lifetime; /**< Lifetime of the binding */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_lifetime
+ * \brief LIFETIME attribute.
+ */
+struct turn_attr_lifetime
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_lifetime; /**< Lifetime of the binding */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_xor_peer_address
-	 * \brief XOR-PEER-ADDRESS attribute.
-	 */
-	struct turn_attr_xor_peer_address
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_reserved; /**< Ignored */
-		uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
-		uint16_t turn_attr_port; /**< Port in network byte order */
-		uint8_t turn_attr_address[]; /**< Variable-size address */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_xor_peer_address
+ * \brief XOR-PEER-ADDRESS attribute.
+ */
+struct turn_attr_xor_peer_address
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_reserved; /**< Ignored */
+	uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
+	uint16_t turn_attr_port; /**< Port in network byte order */
+	uint8_t turn_attr_address[]; /**< Variable-size address */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_data
-	 * \brief DATA attribute.
-	 */
-	struct turn_attr_data
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_data[]; /**< Raw data payload */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_data
+ * \brief DATA attribute.
+ */
+struct turn_attr_data
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_data[]; /**< Raw data payload */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_xor_relayed_address
-	 * \brief XOR-RELAYED-ADDRESS attribute.
-	 */
-	struct turn_attr_xor_relayed_address
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_reserved; /**< Ignored */
-		uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
-		uint16_t turn_attr_port; /**< Port in network byte order */
-		uint8_t turn_attr_address[]; /**< Variable-size address */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_xor_relayed_address
+ * \brief XOR-RELAYED-ADDRESS attribute.
+ */
+struct turn_attr_xor_relayed_address
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_reserved; /**< Ignored */
+	uint8_t turn_attr_family; /**< Family: 0x01 = IPv4, 0x02 = IPv6 */
+	uint16_t turn_attr_port; /**< Port in network byte order */
+	uint8_t turn_attr_address[]; /**< Variable-size address */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_even_port
-	 * \brief EVENT-PORT attribute.
-	 */
-	struct turn_attr_even_port
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_flags; /**< Flags (just R flag are defined in RFC5766) */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_even_port
+ * \brief EVENT-PORT attribute.
+ */
+struct turn_attr_even_port
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_flags; /**< Flags (just R flag are defined in RFC5766) */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_requested_transport
-	 * \brief REQUESTED-TRANSPORT attribute.
-	 */
-	struct turn_attr_requested_transport
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_protocol : 8; /**< Transport protocol number */
-		uint32_t turn_attr_reserved : 24; /**< Reserved, must be 0 */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_requested_transport
+ * \brief REQUESTED-TRANSPORT attribute.
+ */
+struct turn_attr_requested_transport
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_protocol : 8; /**< Transport protocol number */
+	uint32_t turn_attr_reserved : 24; /**< Reserved, must be 0 */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_dont_fragment
-	 * \brief DONT-FRAGMENT attribute.
-	 */
-	struct turn_attr_dont_fragment
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_dont_fragment
+ * \brief DONT-FRAGMENT attribute.
+ */
+struct turn_attr_dont_fragment
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_reservation_token
-	 * \brief RESERVATION-TOKEN attribute.
-	 */
-	struct turn_attr_reservation_token
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint8_t turn_attr_token[8]; /**< Token */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_reservation_token
+ * \brief RESERVATION-TOKEN attribute.
+ */
+struct turn_attr_reservation_token
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint8_t turn_attr_token[8]; /**< Token */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_channel_data
-	 * \brief ChannelData packet.
-	 */
-	struct turn_channel_data
-	{
-		uint16_t turn_channel_number; /**< Channel number */
-		uint16_t turn_channel_len; /**< Length of the data */
-		uint8_t turn_channel_data[]; /**< Data */
-	}__attribute__((packed));
+/**
+ * \struct turn_channel_data
+ * \brief ChannelData packet.
+ */
+struct turn_channel_data
+{
+	uint16_t turn_channel_number; /**< Channel number */
+	uint16_t turn_channel_len; /**< Length of the data */
+	uint8_t turn_channel_data[]; /**< Data */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_requested_address_family.
-	 * \brief REQUESTED-ADDRESS-FAMILY attribute (RFC6156).
-	 */
-	struct turn_attr_requested_address_family
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_family : 8; /**<  Family (IPv4 or IPv6) requested */
-		uint32_t turn_attr_reserved : 24; /**< Reserved */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_requested_address_family.
+ * \brief REQUESTED-ADDRESS-FAMILY attribute (RFC6156).
+ */
+struct turn_attr_requested_address_family
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_family : 8; /**<  Family (IPv4 or IPv6) requested */
+	uint32_t turn_attr_reserved : 24; /**< Reserved */
+}__attribute__((packed));
 
-	/**
-	 * \struct turn_attr_connection_id
-	 * \brief CONNECTION-ID attribute (RFC6062).
-	 */
-	struct turn_attr_connection_id
-	{
-		uint16_t turn_attr_type; /**< Attribute type */
-		uint16_t turn_attr_len; /**< Length of "value" */
-		uint32_t turn_attr_id; /**<  Connection ID */
-	}__attribute__((packed));
+/**
+ * \struct turn_attr_connection_id
+ * \brief CONNECTION-ID attribute (RFC6062).
+ */
+struct turn_attr_connection_id
+{
+	uint16_t turn_attr_type; /**< Attribute type */
+	uint16_t turn_attr_len; /**< Length of "value" */
+	uint32_t turn_attr_id; /**<  Connection ID */
+}__attribute__((packed));
 
-	/* end of "packed" structure for Microsoft compiler */
+/* end of "packed" structure for Microsoft compiler */
 #ifdef _MSC_VER
 #pragma pack(pop)
 #endif
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* TURN_H */
 

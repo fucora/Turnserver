@@ -203,7 +203,7 @@ struct allocation_desc
 
 
 struct turn_message
-{
+{ 
 	struct turn_msg_hdr* msg; /**< STUN/TURN header */
 	struct turn_attr_mapped_address* mapped_addr; /**< MAPPED-ADDRESS attribute */
 	struct turn_attr_xor_mapped_address* xor_mapped_addr; /**< XOR-MAPPED-ADDRESS attribute */
