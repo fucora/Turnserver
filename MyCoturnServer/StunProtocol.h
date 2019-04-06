@@ -17,9 +17,9 @@ public:
 	uint16_t* unknown;
 	size_t unknown_size;
 
-	uint16_t reuqestHeader_totalLength_nothsVal=0;
+	uint16_t reuqestHeader_totalLength_nothsVal = 0;
 	struct	turn_msg_hdr * reuqestHeader;
-	 
+
 	uint16_t mapped_addr_totalLength_nothsVal;
 	struct turn_attr_mapped_address* mapped_addr; /**< MAPPED-ADDRESS attribute */
 
@@ -74,7 +74,7 @@ public:
 	uint16_t requested_transport_totalLength_nothsVal;
 	struct turn_attr_requested_transport* requested_transport; /**< REQUESTED-TRANSPORT attribute */
 
-	uint16_t dont_fragment_totalLength_nothsVal; 
+	uint16_t dont_fragment_totalLength_nothsVal;
 	struct turn_attr_dont_fragment* dont_fragment; /**< DONT-FRAGMENT attribute */
 
 	uint16_t reservation_token_totalLength_nothsVal;
@@ -82,7 +82,7 @@ public:
 
 	uint16_t requested_addr_family_totalLength_nothsVal;
 	struct turn_attr_requested_address_family* requested_addr_family; /**< REQUESTED-ADDRESS-FAMILY attribute (RFC6156) */
-	
+
 	uint16_t connection_id_totalLength_nothsVal;
 	struct turn_attr_connection_id* connection_id; /**< CONNECTION-ID attribute (RFC6062) */
 	size_t xor_peer_addr_overflow; /**< If set to 1, not all the XOR-PEER-ADDRESS given in request are in this structure */
@@ -91,17 +91,17 @@ public:
 
 #pragma region 协议
 public:
-	   bool IsChannelData();
-	   uint16_t getRequestType();
-	   uint16_t getRequestLength();
-	   uint16_t getRequestMethod();
-	   uint16_t getResponseType();
-  
+	bool IsChannelData();
+	uint16_t getRequestType();
+	uint16_t getRequestLength();
+	uint16_t getRequestMethod();
+	uint16_t getResponseType();
+
 #pragma endregion
 
 public:
 	StunProtocol();
-	StunProtocol(buffer_type data, int length);  
+	StunProtocol(char * buf, int datalength);
 	bool IsErrorRequest(buffer_type buf);
 	void turn_error_response_400(int requestMethod, const uint8_t * transactionID);
 	void create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char * realmstr, unsigned char * nonce);
@@ -161,8 +161,8 @@ public:
 	void turn_msg_refresh_response_create(const uint8_t * transactionID);
 
 	void turn_attr_lifetime_create(uint32_t lifetime);
-	 
-	 
+
+
 
 	int turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t * transactionID);
 	int turn_attr_connection_id_create(uint32_t id);
@@ -176,14 +176,15 @@ public:
 	uint32_t turn_calculate_fingerprint();
 	uint8_t * turn_generate_nonce(const char * noncekey);
 	int turn_xor_address_cookie(int family, uint8_t * peer_addr, uint16_t * peer_port, const uint8_t * cookie, const uint8_t * msg_id);
-	turn_message * getMessageData();
+	char* getMessageData();
 	~StunProtocol();
 
 private:
+
 	int getAttr(const char * bufferPtr, uint16_t attrtype);
 
 	void addHeaderMsgLength(uint16_t ntohsVal);
 
 };
 #endif
- 
+

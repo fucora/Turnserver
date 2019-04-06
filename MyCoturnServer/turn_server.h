@@ -23,7 +23,7 @@ public:
 	void onUdpMessage(buffer_type * buf, int lenth, udp_socket * udpsocket);
 
 
-	int MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type * remoteaddr, address_type * localaddr, int remoteAddrSize, socket_base * sock);
+	int MessageHandle(buffer_type buf, int lenth, int transport_protocol, address_type * remoteaddr, address_type * localaddr, int remoteAddrSize, socket_base * sock);
 
 	int turnserver_process_turn(int transport_protocol, socket_base * sock, StunProtocol * protocol, const address_type * saddr, const address_type * daddr, socklen_t saddr_size, account_desc * account);
 

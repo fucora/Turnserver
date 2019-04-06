@@ -10,71 +10,59 @@ StunProtocol::StunProtocol()
 
 
 #pragma region 解析协议的方法
-size_t unknown_idx = 0;
+
 /* count of XOR-PEER-ADDRESS attribute */
 size_t xor_peer_address_nb = 0;
-StunProtocol::StunProtocol(buffer_type data, int length)
+size_t unknown_idx = 0;
+StunProtocol::StunProtocol(char* buf, int datalength)
 {
-	this->reuqestHeader = (struct turn_msg_hdr*)malloc(sizeof(struct turn_msg_hdr));
+	if (datalength < 20) {
+		return;
+	}
+	this->reuqestHeader = NULL;
 
-	if (this->reuqestHeader == NULL)
+	char* allBufferPtr = buf; 
+
+	this->reuqestHeader = (struct turn_msg_hdr*)allBufferPtr;
+	size_t requestlen = ntohs(this->reuqestHeader->turn_msg_len);
+
+	if ((requestlen + 20) > datalength)
 	{
 		return;
 	}
-
-	if (length < 20) {
+	allBufferPtr += 20;
+	if (requestlen % 4) {
 		return;
 	}
-	char* allBuffer = data;
-	//获取消息类型，它在前0-1字节 
-	memcpy(&reuqestHeader->turn_msg_type, allBuffer, 2);
-	allBuffer += 2;
-	//获取消息长度，它在前2-3字节
-	memcpy(&reuqestHeader->turn_msg_len, allBuffer, 2);
-	allBuffer += 2;
-	//获取magic_cookie，它在4-7字节 
-	memcpy(&reuqestHeader->turn_msg_cookie, allBuffer, 4);
-	allBuffer += 4;
-	//获取transactionID，它在8-19字节
-	memcpy(&reuqestHeader->turn_msg_id, allBuffer, 12);
-	allBuffer += 12;
 
-	int startArrIndex = 20;
-	while (startArrIndex < length)
-	{
-		uint16_t attr_type;
-		//获取attribute type
-		memcpy(&attr_type, allBuffer, 2);
-		this->getAttr(allBuffer, attr_type);
-		allBuffer += 2;
-		startArrIndex += 2;
-
-		//获取attribute length
-		uint16_t attr_len;
-		memcpy(&attr_len, allBuffer, 2);
-		allBuffer += 2;
-		startArrIndex += 2;
-		if (fingerprint)
+	while (requestlen >= 4) {
+		struct turn_attr_hdr* attr = (struct turn_attr_hdr*)allBufferPtr;
+		/* FINGERPRINT MUST be the last attributes if present */
+		if (this->fingerprint)
 		{
 			/* when present, the FINGERPRINT attribute MUST be the last attribute */
 			/* ignore other message
 			 */
 			return;
 		}
-		/* MESSAGE-INTEGRITY is the last attribute except if FINGERPRINT follow
-		 * it
-		 */
-		if (message_integrity && ntohs(attr_type) != STUN_ATTR_FINGERPRINT)
+
+		if (this->message_integrity&&ntohs(attr->turn_attr_type) != STUN_ATTR_FINGERPRINT)
 		{
-			/* with the exception of the FINGERPRINT attribute [...]
-			 * agents MUST ignore all other attributes that follow MESSAGE-INTEGRITY
-			 */
 			return;
 		}
-		allBuffer += ntohs(attr_len);
-		startArrIndex += ntohs(attr_len);
+		this->getAttr(allBufferPtr, ntohs(attr->turn_attr_type));
+		requestlen -= (4 + ntohs(attr->turn_attr_len));
+		allBufferPtr += (4 + ntohs(attr->turn_attr_len));
+
+		size_t m = (4 + ntohs(attr->turn_attr_len)) % 4;
+		if (m)
+		{
+			requestlen -= (4 - m);
+			allBufferPtr += (4 - m);
+		}
 	}
-	unknown_size = unknown_idx;
+
+	this->unknown_size = unknown_idx;
 }
 //获取协议里的attribute
 int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
@@ -165,12 +153,12 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtype)
 			/* comprehension-required attribute but server does not understand
 			 * it
 			 */
-			if (!unknown_size)
+			if (!this->unknown_size)
 			{
 				break;
 			}
-			unknown[unknown_idx] = htons(attrtype);
-			unknown_size--;
+			this->unknown[unknown_idx] = htons(attrtype);
+			this->unknown_size--;
 			unknown_idx++;
 		}
 		break;
@@ -261,8 +249,15 @@ bool StunProtocol::IsErrorRequest(buffer_type buf)
 			debug(DBG_ATTR, "Fingerprint mismatch\n");
 			return true;
 		}
-	}
+		//应该不需要使用
+		 /*	crc = crc32_generate((const unsigned char*)buf, getRequestLength() - sizeof(struct turn_attr_fingerprint), 0);
+			 if (ntohl(crc ^ (uint32_t)STUN_FINGERPRINT_XOR_VALUE) != fingerprint->turn_attr_crc)
+			 {
+				 debug(DBG_ATTR, "Fingerprint mismatch\n");
+				 return true;
+			 }*/
 
+	}
 	return false;
 }
 
@@ -494,7 +489,7 @@ int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_a
 	/* length of the attributes MUST be a multiple of 4 bytes
 	 * so it must be a pair number of attributes
 	 */
-	len = attr_size + (attr_size % 2); 
+	len = attr_size + (attr_size % 2);
 	this->unknown_attribute = (struct turn_attr_unknown_attribute*)malloc(sizeof(struct turn_attr_unknown_attribute) + (len * 2));
 	if (this->unknown_attribute == NULL) {
 		return -1;
@@ -599,7 +594,7 @@ int StunProtocol::turn_nonce_is_stale(const char* noncekey)
 	{
 		/* nonce stale */
 		return 1;
-	} 
+	}
 	return 0;
 }
 
@@ -652,13 +647,13 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 		HMAC_Update(&ctx, (const unsigned char *)this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal);
 	}
 	if (this->mapped_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->mapped_addr,this->mapped_addr_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->mapped_addr, this->mapped_addr_totalLength_nothsVal);
 	}
 	if (this->xor_mapped_addr) {
 		HMAC_Update(&ctx, (const unsigned char *)this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
 	}
 	if (this->alternate_server) {
-		HMAC_Update(&ctx, (const unsigned char *)this->alternate_server,this->alternate_server_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->alternate_server, this->alternate_server_totalLength_nothsVal);
 	}
 	if (this->nonce) {
 		HMAC_Update(&ctx, (const unsigned char *)this->nonce, this->nonce_totalLength_nothsVal);
@@ -667,28 +662,28 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 		HMAC_Update(&ctx, (const unsigned char *)this->realm, this->realm_totalLength_nothsVal);
 	}
 	if (this->username) {
-		HMAC_Update(&ctx, (const unsigned char *)this->username,this->username_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->username, this->username_totalLength_nothsVal);
 	}
 	if (this->error_code) {
-		HMAC_Update(&ctx, (const unsigned char *)this->error_code,this->error_code_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->error_code, this->error_code_totalLength_nothsVal);
 	}
 	if (this->unknown_attribute) {
-		HMAC_Update(&ctx, (const unsigned char *)this->unknown_attribute,this->unknown_attribute_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
 	}
 	if (this->message_integrity) {
 		HMAC_Update(&ctx, (const unsigned char *)this->message_integrity, this->message_integrity_totalLength_nothsVal);
 	}
 	if (this->software) {
-		HMAC_Update(&ctx, (const unsigned char *)this->software,this->software_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->software, this->software_totalLength_nothsVal);
 	}
 	if (this->channel_number) {
-		HMAC_Update(&ctx, (const unsigned char *)this->channel_number,this->channel_number_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->channel_number, this->channel_number_totalLength_nothsVal);
 	}
 	if (this->lifetime) {
-		HMAC_Update(&ctx, (const unsigned char *)this->lifetime,this->lifetime_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->lifetime, this->lifetime_totalLength_nothsVal);
 	}
 	if (this->peer_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->peer_addr,this->peer_addr_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->peer_addr, this->peer_addr_totalLength_nothsVal);
 	}
 	if (this->data) {
 		HMAC_Update(&ctx, (const unsigned char *)this->data, this->data_totalLength_nothsVal);
@@ -703,13 +698,13 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 		HMAC_Update(&ctx, (const unsigned char *)this->requested_transport, this->requested_transport_totalLength_nothsVal);
 	}
 	if (this->dont_fragment) {
-		HMAC_Update(&ctx, (const unsigned char *)this->dont_fragment,this->dont_fragment_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->dont_fragment, this->dont_fragment_totalLength_nothsVal);
 	}
 	if (this->reservation_token) {
-		HMAC_Update(&ctx, (const unsigned char *)this->reservation_token,this->reservation_token_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->reservation_token, this->reservation_token_totalLength_nothsVal);
 	}
 	if (this->requested_addr_family) {
-		HMAC_Update(&ctx, (const unsigned char *)this->requested_addr_family,this->requested_addr_family_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char *)this->requested_addr_family, this->requested_addr_family_totalLength_nothsVal);
 	}
 	if (this->connection_id) {
 		HMAC_Update(&ctx, (const unsigned char *)this->connection_id, this->connection_id_totalLength_nothsVal);
@@ -723,7 +718,7 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* buf, unsigned char* userAcountHashkey)
 {
 	size_t bufferdatalen = 0;
-	
+
 	if (this->fingerprint)
 	{
 		bufferdatalen = this->getRequestLength() -
@@ -732,7 +727,7 @@ unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* 
 	}
 	else
 	{
-		bufferdatalen = this->getRequestLength()  - sizeof(struct turn_attr_message_integrity);
+		bufferdatalen = this->getRequestLength() - sizeof(struct turn_attr_message_integrity);
 	}
 
 	char key[16];
@@ -1043,7 +1038,7 @@ uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 	size_t len = 48;
 	uint8_t nonce[len];
 	size_t noncekey_len = strlen(noncekey);
-	 
+
 	time_t t;
 	char c = ':';
 	MD5_CTX ctx;
@@ -1112,37 +1107,126 @@ int StunProtocol::turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16
 }
 
 
-turn_message* StunProtocol::getMessageData()
+char*  StunProtocol::getMessageData()
 {
-	turn_message* result = (turn_message*)malloc(sizeof(struct turn_message));
-	result->msg = this->reuqestHeader;
-	result->mapped_addr = this->mapped_addr;
-	result->xor_mapped_addr = this->xor_mapped_addr;
-	result->alternate_server = this->alternate_server;
-	result->nonce = this->nonce;
-	result->realm = this->realm;
-	result->username = this->username;
-	result->error_code = this->error_code;
-	result->unknown_attribute = this->unknown_attribute;
-	result->message_integrity = this->message_integrity;
-	result->fingerprint = this->fingerprint;
-	result->software = this->software;
-	result->channel_number = this->channel_number;
-	result->lifetime = this->lifetime;
-	result->peer_addr[0] = this->peer_addr[0];
-	result->peer_addr[1] = this->peer_addr[1];
-	result->peer_addr[2] = this->peer_addr[2];
-	result->peer_addr[3] = this->peer_addr[3];
-	result->peer_addr[4] = this->peer_addr[4];
-	result->data = this->data;
-	result->relayed_addr = this->relayed_addr;
-	result->even_port = this->even_port;
-	result->requested_transport = this->requested_transport;
-	result->dont_fragment = this->dont_fragment;
-	result->reservation_token = this->reservation_token;
-	result->requested_addr_family = this->requested_addr_family;
-	result->connection_id = this->connection_id;
-	result->xor_peer_addr_overflow = this->xor_peer_addr_overflow;
+	auto requestLength = this->getRequestLength();
+	char* resultBuffer = (char*)malloc(requestLength);
+	const char* oldBufferPtr = resultBuffer;
+
+	if (this->reuqestHeader) {
+		memcpy(resultBuffer, this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal);
+		resultBuffer += this->reuqestHeader_totalLength_nothsVal;
+	}
+	if (this->mapped_addr) {
+		memcpy(resultBuffer, this->mapped_addr, this->mapped_addr_totalLength_nothsVal);
+		resultBuffer += this->mapped_addr_totalLength_nothsVal;
+	}
+
+	if (this->xor_mapped_addr) {
+		memcpy(resultBuffer, this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
+		resultBuffer += this->xor_mapped_addr_totalLength_nothsVal;
+	}
+
+	if (this->alternate_server) {
+		memcpy(resultBuffer, this->alternate_server, this->alternate_server_totalLength_nothsVal);
+		resultBuffer += this->alternate_server_totalLength_nothsVal;
+	}
+
+	if (this->nonce) {
+		memcpy(resultBuffer, this->nonce, this->nonce_totalLength_nothsVal);
+		resultBuffer += this->nonce_totalLength_nothsVal;
+	}
+
+	if (this->realm) {
+		memcpy(resultBuffer, this->realm, this->realm_totalLength_nothsVal);
+		resultBuffer += this->realm_totalLength_nothsVal;
+	}
+
+	if (this->username) {
+		memcpy(resultBuffer, this->username, this->username_totalLength_nothsVal);
+		resultBuffer += this->username_totalLength_nothsVal;
+	}
+
+	if (this->error_code) {
+		memcpy(resultBuffer, this->error_code, this->error_code_totalLength_nothsVal);
+		resultBuffer += this->error_code_totalLength_nothsVal;
+	}
+
+	if (this->unknown_attribute) {
+		memcpy(resultBuffer, this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
+		resultBuffer += this->unknown_attribute_totalLength_nothsVal;
+	}
+
+	if (this->message_integrity) {
+		memcpy(resultBuffer, this->message_integrity, this->message_integrity_totalLength_nothsVal);
+		resultBuffer += this->message_integrity_totalLength_nothsVal;
+	}
+
+	if (this->fingerprint) {
+		memcpy(resultBuffer, this->fingerprint, this->fingerprint_totalLength_nothsVal);
+		resultBuffer += this->fingerprint_totalLength_nothsVal;
+	}
+
+	if (this->software) {
+		memcpy(resultBuffer, this->software, this->software_totalLength_nothsVal);
+		resultBuffer += this->software_totalLength_nothsVal;
+	}
+
+	if (this->channel_number) {
+		memcpy(resultBuffer, this->channel_number, this->channel_number_totalLength_nothsVal);
+		resultBuffer += this->channel_number_totalLength_nothsVal;
+	}
+
+	if (this->lifetime) {
+		memcpy(resultBuffer, this->lifetime, this->lifetime_totalLength_nothsVal);
+		resultBuffer += this->lifetime_totalLength_nothsVal;
+	}
+
+	if (this->peer_addr) {
+		memcpy(resultBuffer, this->peer_addr, this->peer_addr_totalLength_nothsVal);
+		resultBuffer += this->peer_addr_totalLength_nothsVal;
+	}
+
+	if (this->data) {
+		memcpy(resultBuffer, this->data, this->data_totalLength_nothsVal);
+		resultBuffer += this->data_totalLength_nothsVal;
+	}
+
+	if (this->relayed_addr) {
+		memcpy(resultBuffer, this->relayed_addr, this->relayed_addr_totalLength_nothsVal);
+		resultBuffer += this->relayed_addr_totalLength_nothsVal;
+	}
+
+	if (this->even_port) {
+		memcpy(resultBuffer, this->even_port, this->even_port_totalLength_nothsVal);
+		resultBuffer += this->even_port_totalLength_nothsVal;
+	}
+
+	if (this->requested_transport) {
+		memcpy(resultBuffer, this->requested_transport, this->requested_transport_totalLength_nothsVal);
+		resultBuffer += this->requested_transport_totalLength_nothsVal;
+	}
+
+	if (this->dont_fragment) {
+		memcpy(resultBuffer, this->dont_fragment, this->dont_fragment_totalLength_nothsVal);
+		resultBuffer += this->dont_fragment_totalLength_nothsVal;
+	}
+
+	if (this->reservation_token) {
+		memcpy(resultBuffer, this->reservation_token, this->reservation_token_totalLength_nothsVal);
+		resultBuffer += this->reservation_token_totalLength_nothsVal;
+	}
+
+	if (this->requested_addr_family) {
+		memcpy(resultBuffer, this->requested_addr_family, this->requested_addr_family_totalLength_nothsVal);
+		resultBuffer += this->requested_addr_family_totalLength_nothsVal;
+	}
+
+	if (this->connection_id) {
+		memcpy(resultBuffer, this->connection_id, this->connection_id_totalLength_nothsVal);
+		resultBuffer += this->connection_id_totalLength_nothsVal;
+	}
+	return (char*)oldBufferPtr;
 }
 
 #pragma endregion

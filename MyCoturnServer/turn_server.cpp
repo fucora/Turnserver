@@ -91,10 +91,10 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
+int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
 {
-	StunProtocol protocol(data, lenth);
-	if (protocol.IsErrorRequest(data) == true) {
+	StunProtocol protocol(buf, lenth);
+	if (protocol.IsErrorRequest(buf) == true) {
 		return -1;
 	}
 	auto requestType = protocol.getRequestType();
@@ -214,7 +214,7 @@ int turn_server::MessageHandle(buffer_type data, int lenth, int transport_protoc
 		/* compute HMAC-SHA1 and compare with the value in message_integrity */
 		{
 			uint8_t hash[20];
-			auto newhash = protocol.turn_calculate_integrity_hmac((const unsigned char*)data, account->key);
+			auto newhash = protocol.turn_calculate_integrity_hmac((const unsigned char*)buf, account->key);
 			memcpy(hash, newhash, 20);
 
 			if (memcmp(hash, protocol.message_integrity->turn_attr_hmac, 20) != 0)
@@ -2547,13 +2547,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 
 	int turn_server::turn_tcp_send(socket_base* sock, StunProtocol* protocol)
 	{
-		size_t databuflength = protocol->getRequestLength();
-		char databuffer[databuflength];
-		memcpy(databuffer, protocol->getMessageData(), databuflength);
-		ssize_t len = manager.tcp_send(databuffer, databuflength, (tcp_socket*)sock);
-		return len;  
-
-		int i = 0;
+		size_t databuflength = protocol->getRequestLength(); 
+		auto senddata = protocol->getMessageData();
+		ssize_t len = manager.tcp_send(senddata, databuflength, (tcp_socket*)sock);
+		return len;   
 		/*	ostringstream streamr;
 			boost::archive::binary_oarchive archive(streamr);
 			auto data = protocol->getMessageData();
