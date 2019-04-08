@@ -7,7 +7,7 @@ list_head* _allocation_list;
 char* listen_address = "127.0.0.1";
 char* nonce_key = "hieKedq";
 int turn_tcp_po = 1;
-char* realmstr = "domain.org";
+char* realmstr = "lul.org";
 bool is_turn_tcp = true;
 int allocation_lifetime = 1800;
 int restricted_bandwidth = 10;
@@ -172,14 +172,16 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
 				return -1;
 			}
-			account = (account_desc*)malloc(sizeof(account_desc)); 
 
-			strncpy(account->username, (char*)protocol.username->turn_attr_username, username_len);
+			account = protocol.account_desc_new((char*)protocol.username->turn_attr_username, "username", (char*)protocol.realm->turn_attr_realm, AUTHORIZED);
+
+			/*account = (account_desc*)malloc(sizeof(account_desc)); 
+			strncpy(account->username, (char*)protocol.username->turn_attr_username, username_len);		 
 			username[username_len - 1] = 0x00;
 			strncpy(account->realm, (char*)protocol.realm->turn_attr_realm, realm_len);
 			user_realm[realm_len - 1] = 0x00;
 			memcpy(account->key, "1111111111111111", 16);
-			account->allocations = 5;
+			account->allocations = 5;*/
 
 			bool isUser = true;//检查用户合法性
 
@@ -212,9 +214,9 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 				return 0;
 			}
 		}
+	 
 		/* compute HMAC-SHA1 and compare with the value in message_integrity */
-		{
-			目前user的hash值对不上
+		{ 
 			uint8_t hash[20];
 			auto newhash = protocol.turn_calculate_integrity_hmac((const unsigned char*)buf, account->key);
 			memcpy(hash, newhash, 20);

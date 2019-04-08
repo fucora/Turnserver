@@ -177,6 +177,9 @@ public:
 	uint8_t * turn_generate_nonce(const char * noncekey);
 	int turn_xor_address_cookie(int family, uint8_t * peer_addr, uint16_t * peer_port, const uint8_t * cookie, const uint8_t * msg_id);
 	char* getMessageData();
+	account_desc* account_desc_new(const char* username, const char* password, const char* realm, account_state state);
+	int turn_calculate_authentication_key(const char* username, const char* realm, const char* password, unsigned char* key, size_t key_len);
+
 	~StunProtocol();
 
 private:
@@ -187,4 +190,4 @@ private:
 
 };
 #endif
-
+ 

@@ -21,7 +21,7 @@ StunProtocol::StunProtocol(char* buf, int datalength)
 	}
 	this->reuqestHeader = NULL;
 
-	char* allBufferPtr = buf; 
+	char* allBufferPtr = buf;
 
 	this->reuqestHeader = (struct turn_msg_hdr*)allBufferPtr;
 	size_t requestlen = ntohs(this->reuqestHeader->turn_msg_len);
@@ -46,7 +46,7 @@ StunProtocol::StunProtocol(char* buf, int datalength)
 			return;
 		}
 
-		if (this->message_integrity&&ntohs(attr->turn_attr_type) != STUN_ATTR_FINGERPRINT)
+		if (this->message_integrity && ntohs(attr->turn_attr_type) != STUN_ATTR_FINGERPRINT)
 		{
 			return;
 		}
@@ -261,12 +261,12 @@ bool StunProtocol::IsErrorRequest(buffer_type buf)
 	return false;
 }
 
-void  StunProtocol::turn_error_response_400(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_400(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(400, STUN_ERROR_400);
 }
-void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint8_t* transactionID, char* realmstr, unsigned char* nonce)
+void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char* realmstr, unsigned char* nonce)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(401, STUN_ERROR_401);
@@ -274,82 +274,82 @@ void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint
 	this->turn_attr_nonce_create((const uint8_t*)nonce);
 }
 
-void  StunProtocol::turn_error_response_420(int requestMethod, const uint8_t* transactionID, const uint16_t* unknown, size_t unknown_size)
+void  StunProtocol::turn_error_response_420(int requestMethod, const uint8_t * transactionID, const uint16_t * unknown, size_t unknown_size)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(420, STUN_ERROR_420);
 	this->turn_attr_unknown_attributes_create(unknown, unknown_size);
 }
 
-void  StunProtocol::turn_error_response_403(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_403(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(403, TURN_ERROR_403);
 }
-void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_437(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(437, TURN_ERROR_437);
 }
 
-void  StunProtocol::turn_error_response_438(int requestMethod, const uint8_t* transactionID, const char* realm, const uint8_t* nonce)
-{ 
+void  StunProtocol::turn_error_response_438(int requestMethod, const uint8_t * transactionID, const char* realm, const uint8_t * nonce)
+{
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(438, STUN_ERROR_438);
 	this->turn_attr_realm_create(realm);
 	this->turn_attr_nonce_create(nonce);
 }
-void  StunProtocol::turn_error_response_440(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_440(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(440, TURN_ERROR_440);
 
 }
 
-void  StunProtocol::turn_error_response_441(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_441(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(441, TURN_ERROR_441);
 }
 
-void  StunProtocol::turn_error_response_442(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_442(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(442, TURN_ERROR_442);
 
 }
 
-void  StunProtocol::turn_error_response_443(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_443(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(443, TURN_ERROR_443);
 
 }
 
-void  StunProtocol::turn_error_response_446(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_446(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(446, TURN_ERROR_446);
 
 }
 
-void  StunProtocol::turn_error_response_447(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_447(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(447, TURN_ERROR_447);
 }
 
-void  StunProtocol::turn_error_response_486(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_486(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(486, TURN_ERROR_486);
 }
 
-void  StunProtocol::turn_msg_createpermission_response_create(const uint8_t* id)
+void  StunProtocol::turn_msg_createpermission_response_create(const uint8_t * id)
 {
 	this->turn_msg_create(TURN_METHOD_CREATEPERMISSION, STUN_SUCCESS_RESP, 0, id);
 }
-int  StunProtocol::turn_attr_reservation_token_create(const uint8_t* token)
+int  StunProtocol::turn_attr_reservation_token_create(const uint8_t * token)
 {
 	this->reservation_token = (struct turn_attr_reservation_token*)malloc(sizeof(struct turn_attr_reservation_token));
 	if (this->reservation_token == NULL) {
@@ -362,22 +362,22 @@ int  StunProtocol::turn_attr_reservation_token_create(const uint8_t* token)
 	this->addHeaderMsgLength(this->reservation_token_totalLength_nothsVal);
 }
 
-void  StunProtocol::turn_error_response_500(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_500(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(500, STUN_ERROR_500);
 }
-void  StunProtocol::turn_error_response_508(int requestMethod, const uint8_t* transactionID)
+void  StunProtocol::turn_error_response_508(int requestMethod, const uint8_t * transactionID)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(508, TURN_ERROR_508);
 }
 
-void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id)
 {
 	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, sock, transport_protocol, cookie, id);
 }
-void  StunProtocol::turn_attr_xor_relayed_address_create(const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+void  StunProtocol::turn_attr_xor_relayed_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id)
 {
 	return this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, sock, transport_protocol, cookie, id);
 }
@@ -391,14 +391,14 @@ void  StunProtocol::turn_attr_xor_relayed_address_create(const socket_base* sock
  * \param iov vector
  * \return pointer on turn_attr_hdr or NULL if problem
  */
-void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_base* sock, int transport_protocol, uint32_t cookie, const uint8_t* id)
+void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id)
 {
 	/* XOR-MAPPED-ADDRESS are the same as XOR-PEER-ADDRESS and
 	 * XOR-RELAYED-ADDRESS
 	 */
 	size_t len = 0;
 	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
-	uint8_t* p = (uint8_t*)&cookie;
+	uint8_t* p = (uint8_t*)& cookie;
 	size_t i = 0;
 	uint16_t port = 0;
 	uint8_t family = 0;
@@ -448,7 +448,7 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 
 	/* host order port XOR most-significant 16 bits of the cookie */
 	cookie = htonl(cookie);
-	msb_cookie = ((uint8_t*)&cookie)[0] << 8 | ((uint8_t*)&cookie)[1];
+	msb_cookie = ((uint8_t*)& cookie)[0] << 8 | ((uint8_t*)& cookie)[1];
 	port ^= msb_cookie;
 
 	/* IPv4/IPv6 XOR cookie (just the first four bytes of IPv6 address) */
@@ -474,12 +474,12 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 	this->addHeaderMsgLength(this->xor_mapped_addr_totalLength_nothsVal);
 }
 
-int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t* id)
+int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t * id)
 {
 	return turn_msg_create(TURN_METHOD_CHANNELBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
-int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t* unknown_attributes, size_t attr_size)
+int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size)
 {
 	size_t len = 0;
 	size_t tmp_len = 0;
@@ -609,7 +609,7 @@ int StunProtocol::turn_add_message_integrity(const unsigned char* key, size_t ke
 	return 0;
 }
 
-int StunProtocol::turn_attr_message_integrity_create(const uint8_t* hmac)
+int StunProtocol::turn_attr_message_integrity_create(const uint8_t * hmac)
 {
 	this->message_integrity = (struct turn_attr_message_integrity*)malloc(sizeof(struct turn_attr_message_integrity));
 	if (this->message_integrity == NULL) {
@@ -643,70 +643,68 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 	HMAC_Init(&ctx, key, key_len, EVP_sha1());
 
 	if (this->reuqestHeader) {
-		HMAC_Update(&ctx, (const unsigned char *)this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal);
 	}
 	if (this->mapped_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->mapped_addr, this->mapped_addr_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->mapped_addr, this->mapped_addr_totalLength_nothsVal);
 	}
 	if (this->xor_mapped_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
 	}
 	if (this->alternate_server) {
-		HMAC_Update(&ctx, (const unsigned char *)this->alternate_server, this->alternate_server_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->alternate_server, this->alternate_server_totalLength_nothsVal);
 	}
 	if (this->nonce) {
-		HMAC_Update(&ctx, (const unsigned char *)this->nonce, this->nonce_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->nonce, this->nonce_totalLength_nothsVal);
 	}
 	if (this->realm) {
-		HMAC_Update(&ctx, (const unsigned char *)this->realm, this->realm_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->realm, this->realm_totalLength_nothsVal);
 	}
 	if (this->username) {
-		HMAC_Update(&ctx, (const unsigned char *)this->username, this->username_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->username, this->username_totalLength_nothsVal);
 	}
 	if (this->error_code) {
-		HMAC_Update(&ctx, (const unsigned char *)this->error_code, this->error_code_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->error_code, this->error_code_totalLength_nothsVal);
 	}
 	if (this->unknown_attribute) {
-		HMAC_Update(&ctx, (const unsigned char *)this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
 	}
-	if (this->message_integrity) {
-		HMAC_Update(&ctx, (const unsigned char *)this->message_integrity, this->message_integrity_totalLength_nothsVal);
-	}
+	 
 	if (this->software) {
-		HMAC_Update(&ctx, (const unsigned char *)this->software, this->software_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->software, this->software_totalLength_nothsVal);
 	}
 	if (this->channel_number) {
-		HMAC_Update(&ctx, (const unsigned char *)this->channel_number, this->channel_number_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->channel_number, this->channel_number_totalLength_nothsVal);
 	}
 	if (this->lifetime) {
-		HMAC_Update(&ctx, (const unsigned char *)this->lifetime, this->lifetime_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->lifetime, this->lifetime_totalLength_nothsVal);
 	}
 	if (this->peer_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->peer_addr, this->peer_addr_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->peer_addr, this->peer_addr_totalLength_nothsVal);
 	}
 	if (this->data) {
-		HMAC_Update(&ctx, (const unsigned char *)this->data, this->data_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->data, this->data_totalLength_nothsVal);
 	}
 	if (this->relayed_addr) {
-		HMAC_Update(&ctx, (const unsigned char *)this->relayed_addr, this->relayed_addr_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->relayed_addr, this->relayed_addr_totalLength_nothsVal);
 	}
 	if (this->even_port) {
-		HMAC_Update(&ctx, (const unsigned char *)this->even_port, this->even_port_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->even_port, this->even_port_totalLength_nothsVal);
 	}
 	if (this->requested_transport) {
-		HMAC_Update(&ctx, (const unsigned char *)this->requested_transport, this->requested_transport_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->requested_transport, this->requested_transport_totalLength_nothsVal);
 	}
 	if (this->dont_fragment) {
-		HMAC_Update(&ctx, (const unsigned char *)this->dont_fragment, this->dont_fragment_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->dont_fragment, this->dont_fragment_totalLength_nothsVal);
 	}
 	if (this->reservation_token) {
-		HMAC_Update(&ctx, (const unsigned char *)this->reservation_token, this->reservation_token_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->reservation_token, this->reservation_token_totalLength_nothsVal);
 	}
 	if (this->requested_addr_family) {
-		HMAC_Update(&ctx, (const unsigned char *)this->requested_addr_family, this->requested_addr_family_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->requested_addr_family, this->requested_addr_family_totalLength_nothsVal);
 	}
 	if (this->connection_id) {
-		HMAC_Update(&ctx, (const unsigned char *)this->connection_id, this->connection_id_totalLength_nothsVal);
+		HMAC_Update(&ctx, (const unsigned char*)this->connection_id, this->connection_id_totalLength_nothsVal);
 	}
 
 	HMAC_Final(&ctx, this->message_integrity->turn_attr_hmac, &md_len); /* HMAC-SHA1 is 20 bytes length */
@@ -746,7 +744,7 @@ unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* 
 	return integrity;
 }
 
-void  StunProtocol::turn_msg_refresh_response_create(const uint8_t* transactionID)
+void  StunProtocol::turn_msg_refresh_response_create(const uint8_t * transactionID)
 {
 	this->turn_msg_create(TURN_METHOD_REFRESH, STUN_SUCCESS_RESP, 0, transactionID);
 }
@@ -763,7 +761,7 @@ void  StunProtocol::turn_attr_lifetime_create(uint32_t lifetime)
 }
 
 //创建回复的消息头
-int StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t* transactionID)
+int StunProtocol::turn_msg_create(uint16_t requestMethod, uint16_t responseType, uint16_t messagelen, const uint8_t * transactionID)
 {
 	this->reuqestHeader = (struct turn_msg_hdr*)malloc(sizeof(struct turn_msg_hdr));
 	if (this->reuqestHeader == NULL) {
@@ -792,12 +790,12 @@ int  StunProtocol::turn_attr_connection_id_create(uint32_t id)
 	this->addHeaderMsgLength(this->connection_id_totalLength_nothsVal);
 	return 1;
 }
-void  StunProtocol::turn_msg_connectionbind_response_create(const uint8_t* id)
+void  StunProtocol::turn_msg_connectionbind_response_create(const uint8_t * id)
 {
 	this->turn_msg_create(TURN_METHOD_CONNECTIONBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
-int  StunProtocol::turn_msg_allocate_response_create(const uint8_t* id)
+int  StunProtocol::turn_msg_allocate_response_create(const uint8_t * id)
 {
 	return this->turn_msg_create(TURN_METHOD_ALLOCATE, STUN_SUCCESS_RESP, 0, id);
 }
@@ -885,7 +883,7 @@ int  StunProtocol::turn_attr_error_create(uint16_t code, const char* reason)
 }
 
 //创建随机数消息
-int  StunProtocol::turn_attr_nonce_create(const uint8_t* nonce)
+int  StunProtocol::turn_attr_nonce_create(const uint8_t * nonce)
 {
 	size_t nonceSize = 48;
 	size_t real_len = nonceSize;
@@ -1053,7 +1051,7 @@ uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 	t += TURN_DEFAULT_NONCE_LIFETIME;
 
 	t = (time_t)htonl((uint32_t)t);
-	hex_convert((unsigned char*)&t, sizeof(time_t), nonce, sizeof(time_t) * 2);
+	hex_convert((unsigned char*)& t, sizeof(time_t), nonce, sizeof(time_t) * 2);
 
 	if (sizeof(time_t) == 4) /* 32 bit */
 	{
@@ -1070,7 +1068,7 @@ uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 }
 
 
-int StunProtocol::turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16_t* peer_port, const uint8_t* cookie, const uint8_t* msg_id)
+int StunProtocol::turn_xor_address_cookie(int family, uint8_t * peer_addr, uint16_t * peer_port, const uint8_t * cookie, const uint8_t * msg_id)
 {
 	size_t i = 0;
 	size_t len = 0;
@@ -1106,7 +1104,7 @@ int StunProtocol::turn_xor_address_cookie(int family, uint8_t* peer_addr, uint16
 }
 
 
-char*  StunProtocol::getMessageData()
+char* StunProtocol::getMessageData()
 {
 	auto requestLength = this->getRequestLength();
 	char* resultBuffer = (char*)malloc(requestLength);
@@ -1228,6 +1226,58 @@ char*  StunProtocol::getMessageData()
 	}
 
 	return (char*)oldBufferPtr;
+}
+
+
+
+account_desc* StunProtocol::account_desc_new(const char* username, const char* password, const char* realm, enum account_state state)
+{
+	struct account_desc* ret = NULL;
+
+	if (!username || !password || !realm)
+	{
+		return NULL;
+	}
+
+	if (!(ret = (struct account_desc*)(struct account_desc*)malloc(sizeof(struct account_desc))))
+	{
+		return NULL;
+	}
+
+	/* copy username and realm */
+	strncpy(ret->username, username, sizeof(ret->username) - 1);
+	ret->username[sizeof(ret->username) - 1] = 0x00;
+	strncpy(ret->realm, realm, sizeof(ret->realm) - 1);
+	ret->realm[sizeof(ret->realm) - 1] = 0x00;
+
+	/* set state */
+	ret->state = state;
+	ret->allocations = 0;
+	ret->is_tmp = 0;
+	
+	this->turn_calculate_authentication_key(username, realm, password, ret->key, sizeof(ret->key));
+
+	return ret;
+}
+
+
+int StunProtocol::turn_calculate_authentication_key(const char* username, const char* realm, const char* password, unsigned char* key, size_t key_len)
+{
+	MD5_CTX ctx;
+	if (key_len < 16)
+	{
+		return -1;
+	}
+
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, username, strlen(username));
+	MD5_Update(&ctx, ":", 1);
+	MD5_Update(&ctx, realm, strlen(realm));
+	MD5_Update(&ctx, ":", 1);
+	MD5_Update(&ctx, password, strlen(password));
+	MD5_Final(key, &ctx);
+
+	return 0;
 }
 
 #pragma endregion
