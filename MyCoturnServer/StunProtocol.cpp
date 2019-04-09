@@ -479,6 +479,9 @@ int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t * id)
 	return turn_msg_create(TURN_METHOD_CHANNELBIND, STUN_SUCCESS_RESP, 0, id);
 }
 
+
+ 
+
 int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size)
 {
 	size_t len = 0;
@@ -669,7 +672,7 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 	if (this->unknown_attribute) {
 		HMAC_Update(&ctx, (const unsigned char*)this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
 	}
-	 
+
 	if (this->software) {
 		HMAC_Update(&ctx, (const unsigned char*)this->software, this->software_totalLength_nothsVal);
 	}
@@ -715,12 +718,9 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* buf, unsigned char* userAcountHashkey)
 {
 	size_t bufferdatalen = 0;
-
 	if (this->fingerprint)
 	{
-		bufferdatalen = this->getRequestLength() -
-			sizeof(struct turn_attr_fingerprint) -
-			sizeof(struct turn_attr_message_integrity);
+		bufferdatalen = this->getRequestLength() - sizeof(struct turn_attr_fingerprint) - sizeof(struct turn_attr_message_integrity);
 	}
 	else
 	{
@@ -1254,7 +1254,7 @@ account_desc* StunProtocol::account_desc_new(const char* username, const char* p
 	ret->state = state;
 	ret->allocations = 0;
 	ret->is_tmp = 0;
-	
+
 	this->turn_calculate_authentication_key(username, realm, password, ret->key, sizeof(ret->key));
 
 	return ret;

@@ -108,7 +108,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		if (!protocol.message_integrity)
 		{
 			StunProtocol errorMessage;
-			unsigned char*  nonce = protocol.turn_generate_nonce(nonce_key);
+			unsigned char* nonce = protocol.turn_generate_nonce(nonce_key);
 			try
 			{
 				debug(DBG_ATTR, "No message integrity\n");
@@ -174,14 +174,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			}
 
 			account = protocol.account_desc_new((char*)protocol.username->turn_attr_username, "username", (char*)protocol.realm->turn_attr_realm, AUTHORIZED);
-
-			/*account = (account_desc*)malloc(sizeof(account_desc)); 
-			strncpy(account->username, (char*)protocol.username->turn_attr_username, username_len);		 
-			username[username_len - 1] = 0x00;
-			strncpy(account->realm, (char*)protocol.realm->turn_attr_realm, realm_len);
-			user_realm[realm_len - 1] = 0x00;
-			memcpy(account->key, "1111111111111111", 16);
-			account->allocations = 5;*/
+	 
 
 			bool isUser = true;//检查用户合法性
 
@@ -214,7 +207,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 				return 0;
 			}
 		}
-	 
+
 		/* compute HMAC-SHA1 and compare with the value in message_integrity */
 		{ 
 			uint8_t hash[20];
@@ -559,20 +552,20 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 	switch (desc->relayed_addr.ss_family)
 	{
 	case AF_INET:
-		((struct sockaddr_in*)&storage)->sin_family = AF_INET;
-		memcpy(&((struct sockaddr_in*)&storage)->sin_addr, peer_addr, 4);
-		((struct sockaddr_in*)&storage)->sin_port = htons(peer_port);
-		memset(&((struct sockaddr_in*)&storage)->sin_zero, 0x00,
-			sizeof((struct sockaddr_in*)&storage)->sin_zero);
+		((struct sockaddr_in*) & storage)->sin_family = AF_INET;
+		memcpy(&((struct sockaddr_in*) & storage)->sin_addr, peer_addr, 4);
+		((struct sockaddr_in*) & storage)->sin_port = htons(peer_port);
+		memset(&((struct sockaddr_in*) & storage)->sin_zero, 0x00,
+			sizeof((struct sockaddr_in*) & storage)->sin_zero);
 		break;
 	case AF_INET6:
-		((struct sockaddr_in6*)&storage)->sin6_family = AF_INET6;
-		memcpy(&((struct sockaddr_in6*)&storage)->sin6_addr, peer_addr, 16);
-		((struct sockaddr_in6*)&storage)->sin6_port = htons(peer_port);
-		((struct sockaddr_in6*)&storage)->sin6_flowinfo = htonl(0);
-		((struct sockaddr_in6*)&storage)->sin6_scope_id = htonl(0);
+		((struct sockaddr_in6*) & storage)->sin6_family = AF_INET6;
+		memcpy(&((struct sockaddr_in6*) & storage)->sin6_addr, peer_addr, 16);
+		((struct sockaddr_in6*) & storage)->sin6_port = htons(peer_port);
+		((struct sockaddr_in6*) & storage)->sin6_flowinfo = htonl(0);
+		((struct sockaddr_in6*) & storage)->sin6_scope_id = htonl(0);
 #ifdef SIN6_LEN
-		((struct sockaddr_in6*)&storage)->sin6_len = sizeof(struct sockaddr_in6);
+		((struct sockaddr_in6*) & storage)->sin6_len = sizeof(struct sockaddr_in6);
 #endif
 		break;
 	default:
@@ -586,7 +579,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 	if (desc->relayed_addr.ss_family == AF_INET &&
 		(desc->tuple.client_addr.is_v4() == true ||
 		(desc->tuple.client_addr.is_v6() == true &&
-			IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*)&desc->tuple.client_addr)->sin6_addr))))
+			IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*) & desc->tuple.client_addr)->sin6_addr))))
 	{
 #ifdef OS_SET_DF_SUPPORT
 		/* alternate behavior */
@@ -614,7 +607,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 	}
 
 	debug(DBG_ATTR, "Send ChannelData to peer\n");
-	nb = sendto(desc->relayed_sock, msg, len, 0, (struct sockaddr*)&storage, sockaddr_get_size(&desc->relayed_addr));
+	nb = sendto(desc->relayed_sock, msg, len, 0, (struct sockaddr*) & storage, sockaddr_get_size(&desc->relayed_addr));
 
 #ifdef OS_SET_DF_SUPPORT
 	/* if not an IPv4-IPv4 relay, optlen keep its default value 0 */
@@ -733,7 +726,7 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
  * \return 0 if success, -1 otherwise
  */
 int turn_server::turnserver_process_channelbind_request(int transport_protocol,
-	socket_base*  sock, StunProtocol* protocol, const address_type* saddr,
+	socket_base * sock, StunProtocol * protocol, const address_type * saddr,
 	socklen_t saddr_size, struct allocation_desc* desc)
 {
 	auto requestType = protocol->getRequestType();
@@ -748,7 +741,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	uint8_t peer_addr[16];
 	size_t len = 0;
 	uint32_t cookie = htonl(STUN_MAGIC_COOKIE);
-	uint8_t* p = (uint8_t*)&cookie;
+	uint8_t* p = (uint8_t*)& cookie;
 	char str[INET6_ADDRSTRLEN];
 	string str2;
 	char str3[INET6_ADDRSTRLEN];
@@ -860,13 +853,13 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	/* get string representation of addresses for syslog */
 	if (desc->relayed_addr.ss_family == AF_INET)
 	{
-		inet_ntop(AF_INET, &((struct sockaddr_in*)&desc->relayed_addr)->sin_addr, str3, INET6_ADDRSTRLEN);
-		port = ntohs(((struct sockaddr_in*)&desc->relayed_addr)->sin_port);
+		inet_ntop(AF_INET, &((struct sockaddr_in*) & desc->relayed_addr)->sin_addr, str3, INET6_ADDRSTRLEN);
+		port = ntohs(((struct sockaddr_in*) & desc->relayed_addr)->sin_port);
 	}
 	else /* IPv6 */
 	{
-		inet_ntop(AF_INET6, &((struct sockaddr_in6*)&desc->relayed_addr)->sin6_addr, str3, INET6_ADDRSTRLEN);
-		port = ntohs(((struct sockaddr_in6*)&desc->relayed_addr)->sin6_port);
+		inet_ntop(AF_INET6, &((struct sockaddr_in6*) & desc->relayed_addr)->sin6_addr, str3, INET6_ADDRSTRLEN);
+		port = ntohs(((struct sockaddr_in6*) & desc->relayed_addr)->sin6_port);
 	}
 
 
@@ -929,7 +922,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
  * \param desc allocation descriptor
  * \return 0 if success, -1 otherwise
  */
-int turn_server::turnserver_process_send_indication(StunProtocol* protocol, struct allocation_desc* desc)
+int turn_server::turnserver_process_send_indication(StunProtocol * protocol, struct allocation_desc* desc)
 {
 	const char* msg = NULL;
 	size_t msg_len = 0;
@@ -938,7 +931,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	uint8_t peer_addr[16];
 	size_t len = 0;
 	uint32_t cookie = htonl(STUN_MAGIC_COOKIE);
-	uint8_t* p = (uint8_t*)&cookie;
+	uint8_t* p = (uint8_t*)& cookie;
 	ssize_t nb = -1;
 	/* for get/setsockopt */
 	int optval = 0;
@@ -1025,19 +1018,19 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		switch (desc->relayed_addr.ss_family)
 		{
 		case AF_INET:
-			((struct sockaddr_in*)&storage)->sin_family = AF_INET;
-			memcpy(&((struct sockaddr_in*)&storage)->sin_addr, peer_addr, 4);
-			((struct sockaddr_in*)&storage)->sin_port = htons(peer_port);
-			memset(&((struct sockaddr_in*)&storage)->sin_zero, 0x00, sizeof((struct sockaddr_in*)&storage)->sin_zero);
+			((struct sockaddr_in*) & storage)->sin_family = AF_INET;
+			memcpy(&((struct sockaddr_in*) & storage)->sin_addr, peer_addr, 4);
+			((struct sockaddr_in*) & storage)->sin_port = htons(peer_port);
+			memset(&((struct sockaddr_in*) & storage)->sin_zero, 0x00, sizeof((struct sockaddr_in*) & storage)->sin_zero);
 			break;
 		case AF_INET6:
-			((struct sockaddr_in6*)&storage)->sin6_family = AF_INET6;
-			memcpy(&((struct sockaddr_in6*)&storage)->sin6_addr, peer_addr, 16);
-			((struct sockaddr_in6*)&storage)->sin6_port = htons(peer_port);
-			((struct sockaddr_in6*)&storage)->sin6_flowinfo = htonl(0);
-			((struct sockaddr_in6*)&storage)->sin6_scope_id = htonl(0);
+			((struct sockaddr_in6*) & storage)->sin6_family = AF_INET6;
+			memcpy(&((struct sockaddr_in6*) & storage)->sin6_addr, peer_addr, 16);
+			((struct sockaddr_in6*) & storage)->sin6_port = htons(peer_port);
+			((struct sockaddr_in6*) & storage)->sin6_flowinfo = htonl(0);
+			((struct sockaddr_in6*) & storage)->sin6_scope_id = htonl(0);
 #ifdef SIN6_LEN
-			((struct sockaddr_in6*)&storage)->sin6_len = sizeof(struct sockaddr_in6);
+			((struct sockaddr_in6*) & storage)->sin6_len = sizeof(struct sockaddr_in6);
 #endif
 			break;
 		default:
@@ -1090,7 +1083,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		}
 
 		debug(DBG_ATTR, "Send data to peer\n");
-		nb = sendto(desc->relayed_sock, msg, msg_len, 0, (struct sockaddr*)&storage, sockaddr_get_size(&desc->relayed_addr));
+		nb = sendto(desc->relayed_sock, msg, msg_len, 0, (struct sockaddr*) & storage, sockaddr_get_size(&desc->relayed_addr));
 		/* if not an IPv4-IPv4 relay, optlen keep its default value 0 */
 #ifdef OS_SET_DF_SUPPORT
 		if (optlen)
@@ -1103,10 +1096,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
-	}
+		}
 
 		return 0;
-}
+	}
 
 
 	/**
@@ -1116,7 +1109,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * \param port port to check
 	 * \return 1 if address is denied, 0 otherwise
 	 */
-	int  turn_server::turnserver_is_address_denied(const uint8_t* addr, size_t addrlen, uint16_t port)
+	int  turn_server::turnserver_is_address_denied(const uint8_t * addr, size_t addrlen, uint16_t port)
 	{
 		struct list_head* get = NULL;
 		struct list_head* n = NULL;
@@ -1198,7 +1191,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * \param addrlen sizeof address
 	 * \return 1 if address is an IPv6 tunneled ones, 0 otherwise
 	 */
-	int  turn_server::turnserver_is_ipv6_tunneled_address(const uint8_t* addr, size_t addrlen)
+	int  turn_server::turnserver_is_ipv6_tunneled_address(const uint8_t * addr, size_t addrlen)
 	{
 		if (addrlen == 16)
 		{
@@ -1227,8 +1220,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int  turn_server::turnserver_process_connect_request(int transport_protocol, socket_base* sock,
-		StunProtocol* protocol, const address_type* saddr,
+	int  turn_server::turnserver_process_connect_request(int transport_protocol, socket_base * sock,
+		StunProtocol * protocol, const address_type * saddr,
 		socklen_t saddr_size, struct allocation_desc* desc)
 	{
 		auto requestType = protocol->getRequestType();
@@ -1240,7 +1233,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		int peer_sock = -1;
 		int family = 0;
 		uint32_t cookie = htonl(STUN_MAGIC_COOKIE);
-		uint8_t* p = (uint8_t*)&cookie;
+		uint8_t* p = (uint8_t*)& cookie;
 		uint32_t id = 0;
 		long flags = 0;
 		int ret = 0;
@@ -1312,19 +1305,19 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		switch (family)
 		{
 		case AF_INET:
-			((struct sockaddr_in*)&storage)->sin_family = AF_INET;
-			memcpy(&((struct sockaddr_in*)&storage)->sin_addr, peer_addr, 4);
-			((struct sockaddr_in*)&storage)->sin_port = htons(peer_port);
-			memset(&((struct sockaddr_in*)&storage)->sin_zero, 0x00, sizeof((struct sockaddr_in*)&storage)->sin_zero);
+			((struct sockaddr_in*) & storage)->sin_family = AF_INET;
+			memcpy(&((struct sockaddr_in*) & storage)->sin_addr, peer_addr, 4);
+			((struct sockaddr_in*) & storage)->sin_port = htons(peer_port);
+			memset(&((struct sockaddr_in*) & storage)->sin_zero, 0x00, sizeof((struct sockaddr_in*) & storage)->sin_zero);
 			break;
 		case AF_INET6:
-			((struct sockaddr_in6*)&storage)->sin6_family = AF_INET6;
-			memcpy(&((struct sockaddr_in6*)&storage)->sin6_addr, peer_addr, 16);
-			((struct sockaddr_in6*)&storage)->sin6_port = htons(peer_port);
-			((struct sockaddr_in6*)&storage)->sin6_flowinfo = htonl(0);
-			((struct sockaddr_in6*)&storage)->sin6_scope_id = htonl(0);
+			((struct sockaddr_in6*) & storage)->sin6_family = AF_INET6;
+			memcpy(&((struct sockaddr_in6*) & storage)->sin6_addr, peer_addr, 16);
+			((struct sockaddr_in6*) & storage)->sin6_port = htons(peer_port);
+			((struct sockaddr_in6*) & storage)->sin6_flowinfo = htonl(0);
+			((struct sockaddr_in6*) & storage)->sin6_scope_id = htonl(0);
 #ifdef SIN6_LEN
-			((struct sockaddr_in6*)&storage)->sin6_len = sizeof(struct sockaddr_in6);
+			((struct sockaddr_in6*) & storage)->sin6_len = sizeof(struct sockaddr_in6);
 #endif
 			break;
 		default:
@@ -1348,12 +1341,12 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 			return -1;
 		}
 
-		ret = connect(peer_sock, (struct sockaddr*)&storage, sockaddr_get_size(&storage));
+		ret = connect(peer_sock, (struct sockaddr*) & storage, sockaddr_get_size(&storage));
 		if (errno == EINPROGRESS)
 		{
 			/* connection ongoing */
 			/* generate unique ID */
-			random_bytes_generate((uint8_t*)&id, 4);
+			random_bytes_generate((uint8_t*)& id, 4);
 			/* add it to allocation */
 			if (allocation_desc_add_tcp_relay(desc, id, peer_sock, family, peer_addr, peer_port, TURN_DEFAULT_TCP_RELAY_TIMEOUT, 0, protocol->reuqestHeader->turn_msg_id) == -1)
 			{
@@ -1387,8 +1380,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int turn_server::turnserver_process_binding_request(int transport_protocol, socket_base* sock,
-		StunProtocol* protocol, const address_type* saddr,
+	int turn_server::turnserver_process_binding_request(int transport_protocol, socket_base * sock,
+		StunProtocol * protocol, const address_type * saddr,
 		socklen_t saddr_size)
 	{
 		StunProtocol errormsg;
@@ -1427,7 +1420,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_process_connectionbind_request(int transport_protocol,
-		socket_base* sock, StunProtocol* protocol, const address_type* saddr,
+		socket_base * sock, StunProtocol * protocol, const address_type * saddr,
 		socklen_t saddr_size, struct account_desc* account,
 		struct list_head* allocation_list)
 	{
@@ -1590,9 +1583,9 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int  turn_server::turnserver_process_allocate_request(int transport_protocol, socket_base* sock,
-		StunProtocol* protocol, const address_type* saddr,
-		const address_type* daddr, socklen_t saddr_size, struct account_desc* account)
+	int  turn_server::turnserver_process_allocate_request(int transport_protocol, socket_base * sock,
+		StunProtocol * protocol, const address_type * saddr,
+		const address_type * daddr, socklen_t saddr_size, struct account_desc* account)
 	{
 		struct allocation_desc* desc = NULL;
 		struct itimerspec t; /* time before expire */
@@ -1949,7 +1942,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 			return -1;
 		}
 
-		if (getsockname(relayed_sock, (struct sockaddr*)&relayed_addr, &relayed_size)
+		if (getsockname(relayed_sock, (struct sockaddr*) & relayed_addr, &relayed_size)
 			!= 0)
 		{
 
@@ -1959,16 +1952,16 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 
 		if (relayed_addr.ss_family == AF_INET)
 		{
-			port = ntohs(((struct sockaddr_in*)&relayed_addr)->sin_port);
+			port = ntohs(((struct sockaddr_in*) & relayed_addr)->sin_port);
 		}
 		else /* IPv6 */
 		{
-			port = ntohs(((struct sockaddr_in6*)&relayed_addr)->sin6_port);
+			port = ntohs(((struct sockaddr_in6*) & relayed_addr)->sin6_port);
 		}
 
 		desc = allocation_desc_new(protocol->reuqestHeader->turn_msg_id, transport_protocol,
 			account->username, account->key, account->realm,
-			protocol->nonce->turn_attr_nonce, (address_type*)&relayed_addr, daddr,
+			protocol->nonce->turn_attr_nonce, (address_type*)& relayed_addr, daddr,
 			saddr, sizeof(struct sockaddr_storage), lifetime);
 
 		if (!desc)
@@ -2078,7 +2071,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_process_createpermission_request(int transport_protocol,
-		socket_base* sock, StunProtocol* protocol, const address_type* saddr,
+		socket_base * sock, StunProtocol * protocol, const address_type * saddr,
 		socklen_t saddr_size, struct allocation_desc* desc)
 	{
 		uint16_t RequestType = protocol->getRequestType();
@@ -2087,7 +2080,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		uint8_t peer_addr[16];
 		size_t len = 0;
 		uint32_t cookie = htonl(STUN_MAGIC_COOKIE);
-		uint8_t* p = (uint8_t*)&cookie;
+		uint8_t* p = (uint8_t*)& cookie;
 		size_t i = 0;
 		size_t j = 0;
 		struct allocation_permission* alloc_permission = NULL;
@@ -2120,13 +2113,13 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		/* get string representation of addresses for syslog */
 		if (desc->relayed_addr.ss_family == AF_INET)
 		{
-			inet_ntop(AF_INET, &((struct sockaddr_in*)&desc->relayed_addr)->sin_addr, str3, INET6_ADDRSTRLEN);
-			port = ntohs(((struct sockaddr_in*)&desc->relayed_addr)->sin_port);
+			inet_ntop(AF_INET, &((struct sockaddr_in*) & desc->relayed_addr)->sin_addr, str3, INET6_ADDRSTRLEN);
+			port = ntohs(((struct sockaddr_in*) & desc->relayed_addr)->sin_port);
 		}
 		else /* IPv6 */
 		{
-			inet_ntop(AF_INET6, &((struct sockaddr_in6*)&desc->relayed_addr)->sin6_addr, str3, INET6_ADDRSTRLEN);
-			port = ntohs(((struct sockaddr_in6*)&desc->relayed_addr)->sin6_port);
+			inet_ntop(AF_INET6, &((struct sockaddr_in6*) & desc->relayed_addr)->sin6_addr, str3, INET6_ADDRSTRLEN);
+			port = ntohs(((struct sockaddr_in6*) & desc->relayed_addr)->sin6_port);
 		}
 
 		if (transport_protocol == IPPROTO_TCP)
@@ -2276,8 +2269,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int  turn_server::turnserver_process_refresh_request(int transport_protocol, socket_base* sock,
-		StunProtocol* protocol, const address_type* saddr,
+	int  turn_server::turnserver_process_refresh_request(int transport_protocol, socket_base * sock,
+		StunProtocol * protocol, const address_type * saddr,
 		socklen_t saddr_size, struct allocation_desc* desc, struct account_desc* account)
 	{
 		uint16_t RequestType = protocol->getRequestType();
@@ -2521,8 +2514,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 
 #pragma region 发送socket
 
-	int turn_server::turn_send_message(int transport_protocol, socket_base* sock,
-		const address_type* remoteaddr, int remoteAddrSize, StunProtocol* protocol)
+	int turn_server::turn_send_message(int transport_protocol, socket_base * sock,
+		const address_type * remoteaddr, int remoteAddrSize, StunProtocol * protocol)
 	{
 		if (transport_protocol == IPPROTO_UDP)
 		{
@@ -2534,7 +2527,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		}
 	}
 
-	int turn_server::turn_udp_send(socket_base* sock, const address_type* remoteaddr, StunProtocol* protocol)
+	int turn_server::turn_udp_send(socket_base * sock, const address_type * remoteaddr, StunProtocol * protocol)
 	{
 		ostringstream osstring;
 		boost::archive::binary_oarchive streamReader(osstring);
@@ -2549,12 +2542,12 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 		return len;
 	}
 
-	int turn_server::turn_tcp_send(socket_base* sock, StunProtocol* protocol)
+	int turn_server::turn_tcp_send(socket_base * sock, StunProtocol * protocol)
 	{
-		size_t databuflength = protocol->getRequestLength(); 
+		size_t databuflength = protocol->getRequestLength();
 		auto senddata = protocol->getMessageData();
 		ssize_t len = manager.tcp_send(senddata, databuflength, (tcp_socket*)sock);
-		return len;   
+		return len;
 		/*	ostringstream streamr;
 			boost::archive::binary_oarchive archive(streamr);
 			auto data = protocol->getMessageData();
@@ -2618,8 +2611,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol* protocol, stru
 	 * \note Some error codes cannot be sent using this function (420, 438, ...).
 	 * \return 0 if success, -1 otherwise
 	 */
-	int  turn_server::turnserver_send_error(int transport_protocol, socket_base* sock, int method,
-		const uint8_t* id, int error, const address_type* saddr,
+	int  turn_server::turnserver_send_error(int transport_protocol, socket_base * sock, int method,
+		const uint8_t * id, int error, const address_type * saddr,
 		socklen_t saddr_size, unsigned char* key)
 	{
 		StunProtocol protocol;

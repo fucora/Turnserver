@@ -90,6 +90,7 @@
     <ClCompile Include="dbg.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol.cpp" />
+    <ClCompile Include="SHAmethod.cpp" />
     <ClCompile Include="socketListener.cpp" />
     <ClCompile Include="StunProtocol.cpp" />
     <ClCompile Include="turn_server.cpp" />
@@ -101,6 +102,7 @@
     <ClInclude Include="list.h" />
     <ClInclude Include="myDeletegate.h" />
     <ClInclude Include="protocol.h" />
+    <ClInclude Include="SHAmethod.h" />
     <ClInclude Include="socketListener.h" />
     <ClInclude Include="StunProtocol.h" />
     <ClInclude Include="turn.h" />

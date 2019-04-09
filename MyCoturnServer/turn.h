@@ -585,6 +585,9 @@ struct turn_attr_connection_id
 	uint32_t turn_attr_id; /**<  Connection ID */
 }__attribute__((packed));
 
+
+
+
 /* end of "packed" structure for Microsoft compiler */
 #ifdef _MSC_VER
 #pragma pack(pop)
@@ -592,4 +595,4 @@ struct turn_attr_connection_id
 
 
 #endif /* TURN_H */
-
+ 
