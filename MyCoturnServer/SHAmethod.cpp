@@ -1,7 +1,6 @@
 #include "SHAmethod.h"
-
 //º”√‹¿‡–Õ
-enum _SHATYPE {
+enum SHATYPE {
 	SHATYPE_ERROR = -1,
 	SHATYPE_DEFAULT = 0,
 	SHATYPE_SHA1 = SHATYPE_DEFAULT,
@@ -16,6 +15,7 @@ typedef enum {
 	TURN_CREDENTIALS_SHORT_TERM,
 	TURN_CREDENTIALS_UNDEFINED
 } turn_credential_type;
+
 
 
 int ct = TURN_CREDENTIALS_SHORT_TERM;
@@ -48,7 +48,6 @@ unsigned char * stun_calculate_password_hmac(const unsigned char *buf, size_t le
 {
 	unsigned char *hmac;
 
-
 	size_t pwdlen = strlen((const char*)password);
 
 	if (shatype == SHATYPE_SHA256) {
@@ -70,12 +69,21 @@ unsigned char * stun_calculate_password_hmac(const unsigned char *buf, size_t le
 		if (!HMAC(EVP_sha1(), password, pwdlen, buf, len, hmac, hmac_len)) {
 			return NULL;
 		}
-	}
-
-
+	} 
 	return hmac;
 }
 
+
+size_t get_hmackey_size(SHATYPE shatype)
+{
+	if (shatype == SHATYPE_SHA256)
+		return 32;
+	if (shatype == SHATYPE_SHA384)
+		return 48;
+	if (shatype == SHATYPE_SHA512)
+		return 64;
+	return 16;
+}
 
 
 SHAmethod::~SHAmethod()

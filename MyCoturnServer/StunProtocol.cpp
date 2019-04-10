@@ -1153,13 +1153,7 @@ char* StunProtocol::getMessageData()
 		memcpy(resultBuffer, this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
 		resultBuffer += this->unknown_attribute_totalLength_nothsVal;
 	}
-
-	if (this->message_integrity) {
-		memcpy(resultBuffer, this->message_integrity, this->message_integrity_totalLength_nothsVal);
-		resultBuffer += this->message_integrity_totalLength_nothsVal;
-	}
-
-
+	 
 	if (this->software) {
 		memcpy(resultBuffer, this->software, this->software_totalLength_nothsVal);
 		resultBuffer += this->software_totalLength_nothsVal;
@@ -1218,6 +1212,11 @@ char* StunProtocol::getMessageData()
 	if (this->connection_id) {
 		memcpy(resultBuffer, this->connection_id, this->connection_id_totalLength_nothsVal);
 		resultBuffer += this->connection_id_totalLength_nothsVal;
+	}
+
+	if (this->message_integrity) {
+		memcpy(resultBuffer, this->message_integrity, this->message_integrity_totalLength_nothsVal);
+		resultBuffer += this->message_integrity_totalLength_nothsVal;
 	}
 
 	if (this->fingerprint) {
