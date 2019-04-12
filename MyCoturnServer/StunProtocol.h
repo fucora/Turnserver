@@ -2,6 +2,7 @@
 #ifndef STUNPRPTOCAL_H
 #define STUNPRPTOCAL_H
 
+#include "SHAmethod.h"
 #include "commonTypes.h"
 #include "turn.h"
 
@@ -20,70 +21,70 @@ public:
 	uint16_t reuqestHeader_totalLength_nothsVal = 0;
 	struct	turn_msg_hdr * reuqestHeader=NULL;
 
-	uint16_t mapped_addr_totalLength_nothsVal;
+	uint16_t mapped_addr_totalLength_nothsVal = 0;
 	struct turn_attr_mapped_address* mapped_addr = NULL; /**< MAPPED-ADDRESS attribute */
 
-	uint16_t xor_mapped_addr_totalLength_nothsVal;
+	uint16_t xor_mapped_addr_totalLength_nothsVal = 0;
 	struct turn_attr_xor_mapped_address* xor_mapped_addr = NULL; /**< XOR-MAPPED-ADDRESS attribute */
 
-	uint16_t alternate_server_totalLength_nothsVal;
+	uint16_t alternate_server_totalLength_nothsVal = 0;
 	struct turn_attr_alternate_server* alternate_server = NULL; /**< ALTERNATE-SERVER attribute */
 
-	uint16_t nonce_totalLength_nothsVal;
+	uint16_t nonce_totalLength_nothsVal = 0;
 	struct turn_attr_nonce* nonce = NULL; /**< NONCE attribute */
 
-	uint16_t realm_totalLength_nothsVal;
+	uint16_t realm_totalLength_nothsVal = 0;
 	struct turn_attr_realm* realm = NULL; /**< REALM attribute */
 
-	uint16_t username_totalLength_nothsVal;
+	uint16_t username_totalLength_nothsVal = 0;
 	struct turn_attr_username* username = NULL; /**< USERNAME attribute */
 
-	uint16_t error_code_totalLength_nothsVal;
+	uint16_t error_code_totalLength_nothsVal = 0;
 	struct turn_attr_error_code* error_code = NULL; /**< ERROR-CODE attribute */
 
-	uint16_t unknown_attribute_totalLength_nothsVal;
+	uint16_t unknown_attribute_totalLength_nothsVal = 0;
 	struct turn_attr_unknown_attribute* unknown_attribute = NULL; /**< UNKNOWN-ATTRIBUTE attribute */
 
-	uint16_t message_integrity_totalLength_nothsVal;
+	uint16_t message_integrity_totalLength_nothsVal = 0;
 	struct turn_attr_message_integrity* message_integrity = NULL; /**< MESSAGE-INTEGRITY attribute */
 
-	uint16_t fingerprint_totalLength_nothsVal;
+	uint16_t fingerprint_totalLength_nothsVal = 0;
 	struct turn_attr_fingerprint* fingerprint = NULL; /**< FINGERPRINT attribute */
 
-	uint16_t software_totalLength_nothsVal;
+	uint16_t software_totalLength_nothsVal = 0;
 	struct turn_attr_software* software = NULL; /**< SOFTWARE attribute */
 
-	uint16_t channel_number_totalLength_nothsVal;
+	uint16_t channel_number_totalLength_nothsVal = 0;
 	struct turn_attr_channel_number* channel_number = NULL; /**< CHANNEL-NUMBER attribute */
 
-	uint16_t lifetime_totalLength_nothsVal;
+	uint16_t lifetime_totalLength_nothsVal = 0;
 	struct turn_attr_lifetime* lifetime = NULL; /**< LIFETIME attribute */
 
-	uint16_t peer_addr_totalLength_nothsVal;
+	uint16_t peer_addr_totalLength_nothsVal = 0;
 	struct turn_attr_xor_peer_address* peer_addr[XOR_PEER_ADDRESS_MAX]; /**< XOR-PEER-ADDRESS attribute */
 
-	uint16_t data_totalLength_nothsVal;
+	uint16_t data_totalLength_nothsVal = 0;
 	struct turn_attr_data* data = NULL; /**< DATA attribute */
 
-	uint16_t relayed_addr_totalLength_nothsVal;
+	uint16_t relayed_addr_totalLength_nothsVal = 0;
 	struct turn_attr_xor_relayed_address* relayed_addr = NULL; /**< XOR-RELAYED-ADDRESS attribute */
 
-	uint16_t even_port_totalLength_nothsVal;
+	uint16_t even_port_totalLength_nothsVal = 0;
 	struct turn_attr_even_port* even_port = NULL; /**< REQUESTED-PROPS attribute */
 
-	uint16_t requested_transport_totalLength_nothsVal;
+	uint16_t requested_transport_totalLength_nothsVal = 0;
 	struct turn_attr_requested_transport* requested_transport = NULL; /**< REQUESTED-TRANSPORT attribute */
 
-	uint16_t dont_fragment_totalLength_nothsVal;
+	uint16_t dont_fragment_totalLength_nothsVal = 0;
 	struct turn_attr_dont_fragment* dont_fragment = NULL; /**< DONT-FRAGMENT attribute */
 
-	uint16_t reservation_token_totalLength_nothsVal;
+	uint16_t reservation_token_totalLength_nothsVal = 0;
 	struct turn_attr_reservation_token* reservation_token = NULL; /**< RESERVATION-TOKEN attribute */
 
-	uint16_t requested_addr_family_totalLength_nothsVal;
+	uint16_t requested_addr_family_totalLength_nothsVal = 0;
 	struct turn_attr_requested_address_family* requested_addr_family = NULL; /**< REQUESTED-ADDRESS-FAMILY attribute (RFC6156) */
 
-	uint16_t connection_id_totalLength_nothsVal;
+	uint16_t connection_id_totalLength_nothsVal = 0;
 	struct turn_attr_connection_id* connection_id = NULL; /**< CONNECTION-ID attribute (RFC6062) */
 	size_t xor_peer_addr_overflow; /**< If set to 1, not all the XOR-PEER-ADDRESS given in request are in this structure */
 #pragma endregion

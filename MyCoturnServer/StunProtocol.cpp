@@ -169,6 +169,8 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtypeHotols)
 #pragma endregion
 
 void StunProtocol::addHeaderMsgLength(uint16_t ntohsVal) {
+	debug(DBG_ATTR, "add Length %d \n", ntohsVal);
+	debug(DBG_ATTR, "Total Length %d \n", ntohs(this->reuqestHeader->turn_msg_len) + ntohsVal);
 	this->reuqestHeader->turn_msg_len = htons(ntohs(this->reuqestHeader->turn_msg_len) + ntohsVal);
 }
 #pragma region 对外方法
@@ -480,7 +482,7 @@ int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t * id)
 }
 
 
- 
+
 
 int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size)
 {
@@ -717,6 +719,10 @@ int StunProtocol::turn_calculate_integrity_hmac_iov(const unsigned char* key, si
 
 unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* buf, unsigned char* userAcountHashkey)
 {
+	SHAmethod shamethod(this->message_integrity);
+	size_t	keysize = shamethod.get_hmackey_size();
+	size_t message_integrity_size = ntohs(this->message_integrity->turn_attr_len);
+
 	size_t bufferdatalen = 0;
 	if (this->fingerprint)
 	{
@@ -727,19 +733,14 @@ unsigned char* StunProtocol::turn_calculate_integrity_hmac(const unsigned char* 
 		bufferdatalen = this->getRequestLength() - sizeof(struct turn_attr_message_integrity);
 	}
 
-	char key[16];
-	memcpy(key, userAcountHashkey, 16);
-	size_t	keysize = sizeof(key);
-
-	unsigned char integrity[20];
+	unsigned char integrity[message_integrity_size];
 	HMAC_CTX ctx;
-	unsigned int md_len = SHA_DIGEST_LENGTH;
 	/* MESSAGE-INTEGRITY uses HMAC-SHA1 */
 	HMAC_CTX_init(&ctx);
-	HMAC_Init(&ctx, key, keysize, EVP_sha1());
+	HMAC_Init(&ctx, userAcountHashkey, keysize, EVP_sha1());
 	HMAC_Update(&ctx, buf, bufferdatalen);
 
-	HMAC_Final(&ctx, integrity, &md_len); /* HMAC-SHA1 is 20 bytes length */
+	HMAC_Final(&ctx, integrity, &message_integrity_size); /* HMAC-SHA1 is 20 bytes length */
 	HMAC_CTX_cleanup(&ctx);
 	return integrity;
 }
@@ -1110,120 +1111,149 @@ char* StunProtocol::getMessageData()
 	char* resultBuffer = (char*)malloc(requestLength);
 	const char* oldBufferPtr = resultBuffer;
 
+	size_t totallength = 0;
+
 	if (this->reuqestHeader) {
 		memcpy(resultBuffer, this->reuqestHeader, this->reuqestHeader_totalLength_nothsVal);
 		resultBuffer += this->reuqestHeader_totalLength_nothsVal;
+		totallength += this->reuqestHeader_totalLength_nothsVal;
 	}
 	if (this->mapped_addr) {
 		memcpy(resultBuffer, this->mapped_addr, this->mapped_addr_totalLength_nothsVal);
 		resultBuffer += this->mapped_addr_totalLength_nothsVal;
+		totallength += this->mapped_addr_totalLength_nothsVal;
 	}
 
 	if (this->xor_mapped_addr) {
 		memcpy(resultBuffer, this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
 		resultBuffer += this->xor_mapped_addr_totalLength_nothsVal;
+		totallength += this->xor_mapped_addr_totalLength_nothsVal;
 	}
 
 	if (this->alternate_server) {
 		memcpy(resultBuffer, this->alternate_server, this->alternate_server_totalLength_nothsVal);
 		resultBuffer += this->alternate_server_totalLength_nothsVal;
+		totallength += this->alternate_server_totalLength_nothsVal;
 	}
 
 	if (this->nonce) {
 		memcpy(resultBuffer, this->nonce, this->nonce_totalLength_nothsVal);
 		resultBuffer += this->nonce_totalLength_nothsVal;
+		totallength += this->nonce_totalLength_nothsVal;
 	}
 
 	if (this->realm) {
 		memcpy(resultBuffer, this->realm, this->realm_totalLength_nothsVal);
 		resultBuffer += this->realm_totalLength_nothsVal;
+		totallength += this->realm_totalLength_nothsVal;
 	}
 
 	if (this->username) {
 		memcpy(resultBuffer, this->username, this->username_totalLength_nothsVal);
 		resultBuffer += this->username_totalLength_nothsVal;
+		totallength += this->username_totalLength_nothsVal;
 	}
 
 	if (this->error_code) {
 		memcpy(resultBuffer, this->error_code, this->error_code_totalLength_nothsVal);
 		resultBuffer += this->error_code_totalLength_nothsVal;
+		totallength += this->error_code_totalLength_nothsVal;
 	}
 
 	if (this->unknown_attribute) {
 		memcpy(resultBuffer, this->unknown_attribute, this->unknown_attribute_totalLength_nothsVal);
 		resultBuffer += this->unknown_attribute_totalLength_nothsVal;
+		totallength += this->unknown_attribute_totalLength_nothsVal;
 	}
-	 
+
 	if (this->software) {
 		memcpy(resultBuffer, this->software, this->software_totalLength_nothsVal);
 		resultBuffer += this->software_totalLength_nothsVal;
+		totallength += this->software_totalLength_nothsVal;
 	}
 
 	if (this->channel_number) {
 		memcpy(resultBuffer, this->channel_number, this->channel_number_totalLength_nothsVal);
 		resultBuffer += this->channel_number_totalLength_nothsVal;
+		totallength += this->channel_number_totalLength_nothsVal;
 	}
 
 	if (this->lifetime) {
 		memcpy(resultBuffer, this->lifetime, this->lifetime_totalLength_nothsVal);
 		resultBuffer += this->lifetime_totalLength_nothsVal;
+		totallength += this->lifetime_totalLength_nothsVal;
 	}
 
 	if (this->peer_addr) {
 		memcpy(resultBuffer, this->peer_addr, this->peer_addr_totalLength_nothsVal);
 		resultBuffer += this->peer_addr_totalLength_nothsVal;
+		totallength += this->peer_addr_totalLength_nothsVal;
 	}
 
 	if (this->data) {
 		memcpy(resultBuffer, this->data, this->data_totalLength_nothsVal);
 		resultBuffer += this->data_totalLength_nothsVal;
+		totallength += this->data_totalLength_nothsVal;
 	}
 
 	if (this->relayed_addr) {
 		memcpy(resultBuffer, this->relayed_addr, this->relayed_addr_totalLength_nothsVal);
 		resultBuffer += this->relayed_addr_totalLength_nothsVal;
+		totallength += this->relayed_addr_totalLength_nothsVal;
 	}
 
 	if (this->even_port) {
 		memcpy(resultBuffer, this->even_port, this->even_port_totalLength_nothsVal);
 		resultBuffer += this->even_port_totalLength_nothsVal;
+		totallength += this->even_port_totalLength_nothsVal;
 	}
 
 	if (this->requested_transport) {
 		memcpy(resultBuffer, this->requested_transport, this->requested_transport_totalLength_nothsVal);
 		resultBuffer += this->requested_transport_totalLength_nothsVal;
+		totallength += this->requested_transport_totalLength_nothsVal;
 	}
 
 	if (this->dont_fragment) {
 		memcpy(resultBuffer, this->dont_fragment, this->dont_fragment_totalLength_nothsVal);
 		resultBuffer += this->dont_fragment_totalLength_nothsVal;
+		totallength += this->dont_fragment_totalLength_nothsVal;
 	}
 
 	if (this->reservation_token) {
 		memcpy(resultBuffer, this->reservation_token, this->reservation_token_totalLength_nothsVal);
 		resultBuffer += this->reservation_token_totalLength_nothsVal;
+		totallength += this->reservation_token_totalLength_nothsVal;
 	}
 
 	if (this->requested_addr_family) {
 		memcpy(resultBuffer, this->requested_addr_family, this->requested_addr_family_totalLength_nothsVal);
 		resultBuffer += this->requested_addr_family_totalLength_nothsVal;
+		totallength += this->requested_addr_family_totalLength_nothsVal;
 	}
 
 	if (this->connection_id) {
 		memcpy(resultBuffer, this->connection_id, this->connection_id_totalLength_nothsVal);
 		resultBuffer += this->connection_id_totalLength_nothsVal;
+		totallength += this->connection_id_totalLength_nothsVal;
 	}
 
 	if (this->message_integrity) {
 		memcpy(resultBuffer, this->message_integrity, this->message_integrity_totalLength_nothsVal);
 		resultBuffer += this->message_integrity_totalLength_nothsVal;
+		totallength += this->message_integrity_totalLength_nothsVal;
 	}
 
 	if (this->fingerprint) {
 		memcpy(resultBuffer, this->fingerprint, this->fingerprint_totalLength_nothsVal);
 		resultBuffer += this->fingerprint_totalLength_nothsVal;
+		totallength += this->fingerprint_totalLength_nothsVal;
 	}
 
+	if (requestLength != totallength)
+	{
+		debug(DBG_ATTR, "发生错误了\n");
+	} 
 	return (char*)oldBufferPtr;
 }
 
