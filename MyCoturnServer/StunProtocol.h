@@ -105,7 +105,7 @@ public:
 	StunProtocol(char * buf, int datalength);
 	bool IsErrorRequest(buffer_type buf);
 	void turn_error_response_400(int requestMethod, const uint8_t * transactionID);
-	void create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char * realmstr, unsigned char * nonce);
+	void create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char * realmstr,const uint8_t * nonce); 
 
 	void turn_error_response_420(int requestMethod, const uint8_t * transactionID, const uint16_t * unknown, size_t unknown_size);
 
@@ -137,11 +137,11 @@ public:
 
 	void turn_error_response_508(int requestMethod, const uint8_t * transactionID);
 
+	void turn_attr_xor_relayed_address_create(const sockaddr * address, int transport_protocol, uint32_t cookie, const uint8_t * id);
+	 
 	void turn_attr_xor_mapped_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
-
-	void turn_attr_xor_relayed_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
-
-	void turn_attr_xor_address_create(uint16_t type, const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id);
+	  
+	void turn_attr_xor_address_create(uint16_t type, uint8_t * pOfAddr, uint16_t port, uint8_t family, uint32_t cookie, const uint8_t * id);
 
 	int turn_msg_channelbind_response_create(const uint8_t * id);
 

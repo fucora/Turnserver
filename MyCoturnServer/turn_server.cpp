@@ -3,7 +3,7 @@
 
 
 unsigned long bandwidth = 1024;//带宽
-list_head* _allocation_list;
+list_head _allocation_list;
 char* listen_address = "127.0.0.1";
 char* nonce_key = "hieKedq";
 int turn_tcp_po = 1;
@@ -45,8 +45,10 @@ socketListener manager(8888);
 
 turn_server::turn_server()
 {
-
-
+	INIT_LIST(_allocation_list);
+	INIT_LIST(g_denied_address_list);
+	INIT_LIST(g_tcp_socket_list);
+	INIT_LIST(g_token_list);
 }
 
 turn_server::~turn_server()
@@ -76,7 +78,6 @@ void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocke
 	address_type remoteaddr = address_type(tcpsocket->remote_endpoint().address());
 	address_type localaddr = address_type(tcpsocket->local_endpoint().address());
 	int remoteAddrSize = tcpsocket->local_endpoint().size();
-
 	MessageHandle(*buf, lenth, IPPROTO_TCP, &remoteaddr, &localaddr, remoteAddrSize, tcpsocket);
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
@@ -93,6 +94,19 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
 {
+	/* is it a ChannelData message (bit 0 and 1 are not set to 0) ? */
+	{
+		uint16_t type = 0;
+		memcpy(&type, buf, sizeof(uint16_t));
+		type = ntohs(type);
+		/* is it a ChannelData message (bit 0 and 1 are not set to 0) ? */
+		if (TURN_IS_CHANNELDATA(type))
+		{
+			/* ChannelData */
+			return turnserver_process_channeldata(transport_protocol, type, buf, lenth, remoteaddr, localaddr, remoteAddrSize, &_allocation_list);
+		}
+	}
+
 	StunProtocol protocol(buf, lenth);
 	if (protocol.IsErrorRequest(buf) == true) {
 		return -1;
@@ -108,7 +122,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		if (!protocol.message_integrity)
 		{
 			StunProtocol errorMessage;
-			unsigned char* nonce = protocol.turn_generate_nonce(nonce_key);
+			uint8_t* nonce = protocol.turn_generate_nonce(nonce_key);
 			try
 			{
 				debug(DBG_ATTR, "No message integrity\n");
@@ -174,7 +188,6 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			}
 
 			account = protocol.account_desc_new((char*)protocol.username->turn_attr_username, "username", (char*)protocol.realm->turn_attr_realm, AUTHORIZED);
-	 
 
 			bool isUser = true;//检查用户合法性
 
@@ -209,7 +222,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		}
 
 		/* compute HMAC-SHA1 and compare with the value in message_integrity */
-		{ 
+		{
 			uint8_t hash[20];
 			auto newhash = protocol.turn_calculate_integrity_hmac((const unsigned char*)buf, account->key);
 			memcpy(hash, newhash, 20);
@@ -317,7 +330,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 		/* ConnectionBind is only for TCP or TLS over TCP <-> TCP */
 		if (transport_protocol == IPPROTO_TCP)
 		{
-			return this->turnserver_process_connectionbind_request(transport_protocol, sock, protocol, saddr, saddr_size, account, _allocation_list);
+			return this->turnserver_process_connectionbind_request(transport_protocol, sock, protocol, saddr, saddr_size, account, &_allocation_list);
 		}
 		else
 		{
@@ -327,7 +340,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 	/* check the 5-tuple except for an Allocate request */
 	if (requestMethod != TURN_METHOD_ALLOCATE)
 	{
-		desc = allocation_list_find_tuple(_allocation_list, transport_protocol, daddr, saddr, saddr_size);
+		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr, saddr_size);
 		if (STUN_IS_REQUEST(requestType))
 		{
 			/* check for the allocated username */
@@ -1096,10 +1109,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
-		}
+	}
 
 		return 0;
-	}
+}
 
 
 	/**
@@ -1613,7 +1626,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		debug(DBG_ATTR, "Allocate request received!\n");
 
 		/* check if it was a valid allocation */
-		desc = allocation_list_find_tuple(_allocation_list, transport_protocol, daddr, saddr, saddr_size);
+		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr, saddr_size);
 
 		if (desc)
 		{
@@ -1942,10 +1955,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			return -1;
 		}
 
-		if (getsockname(relayed_sock, (struct sockaddr*) & relayed_addr, &relayed_size)
-			!= 0)
+		if (getsockname(relayed_sock, (struct sockaddr*)&relayed_addr, &relayed_size) != 0)
 		{
-
 			close(relayed_sock);
 			return -1;
 		}
@@ -1992,8 +2003,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		/* increment number of allocations */
 		account->allocations++;
 		debug(DBG_ATTR, "Account %s, allocations used: %u\n", account->username, account->allocations);
-
-
+		desc->relayed_tls = 0;
+		desc->relayed_dtls = 0;
 		/* assign the sockets to the allocation */
 		desc->relayed_sock = relayed_sock;
 
@@ -2004,7 +2015,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 		desc->tuple_sock = sock;
 		/* add to the list */
-		allocation_list_add(_allocation_list, desc);
+		allocation_list_add(&_allocation_list, desc);
 
 		/* send back the success response */
 	send_success_response:
@@ -2016,22 +2027,9 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			try
 			{
 				errormsg.turn_msg_allocate_response_create(protocol->reuqestHeader->turn_msg_id);
-				errormsg.turn_attr_xor_relayed_address_create(sock, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
+				errormsg.turn_attr_xor_relayed_address_create((struct sockaddr*)&relayed_addr, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
 				errormsg.turn_attr_lifetime_create(lifetime);
-				errormsg.turn_attr_xor_mapped_address_create(sock, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
-				if (transport_protocol == IPPROTO_TCP)
-				{
-					auto tcpsocket = (tcp_socket*)sock;
-					port = tcpsocket->remote_endpoint().port();
-				}
-				else if (transport_protocol == IPPROTO_UDP)
-				{
-					auto tcpsocket = (udp_socket*)sock;
-					port = tcpsocket->remote_endpoint().port();
-				}
-				else {
-					return -1;
-				}
+			 
 				errormsg.turn_attr_xor_mapped_address_create(sock, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
 
 				if (reservation_port)
@@ -2371,7 +2369,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			LIST_DEL(&desc->list2);
 			turnserver_unblock_realtime_signal();
 
-			allocation_list_remove(_allocation_list, desc);
+			allocation_list_remove(&_allocation_list, desc);
 
 			/* decrement allocations for the account */
 			account->allocations--;
@@ -2523,7 +2521,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 		else /* TCP */
 		{
-			return turn_tcp_send(sock, protocol);
+			return this->turn_tcp_send(sock, protocol);
 		}
 	}
 

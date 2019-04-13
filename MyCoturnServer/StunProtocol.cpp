@@ -169,8 +169,8 @@ int StunProtocol::getAttr(const char* bufferPtr, uint16_t attrtypeHotols)
 #pragma endregion
 
 void StunProtocol::addHeaderMsgLength(uint16_t ntohsVal) {
-	debug(DBG_ATTR, "add Length %d \n", ntohsVal);
-	debug(DBG_ATTR, "Total Length %d \n", ntohs(this->reuqestHeader->turn_msg_len) + ntohsVal);
+	//debug(DBG_ATTR, "add Length %d \n", ntohsVal);
+	//debug(DBG_ATTR, "Total Length %d \n", ntohs(this->reuqestHeader->turn_msg_len) + ntohsVal);
 	this->reuqestHeader->turn_msg_len = htons(ntohs(this->reuqestHeader->turn_msg_len) + ntohsVal);
 }
 #pragma region 对外方法
@@ -241,12 +241,12 @@ bool StunProtocol::IsErrorRequest(buffer_type buf)
 		return true;
 	}
 	/* check the fingerprint if present */
-	if (fingerprint)
+	if (this->fingerprint)
 	{
 		/* verify if CRC is valid */
 		uint32_t crc = 0;
-		crc = crc32_generate((const unsigned char*)buf, getRequestLength() - sizeof(struct turn_attr_fingerprint), 0);
-		if (htonl(crc) != (fingerprint->turn_attr_crc ^ htonl(STUN_FINGERPRINT_XOR_VALUE)))
+		crc = crc32_generate((const unsigned char*)buf, this->getRequestLength() - sizeof(struct turn_attr_fingerprint), 0);
+		if (htonl(crc) != (this->fingerprint->turn_attr_crc ^ htonl(STUN_FINGERPRINT_XOR_VALUE)))
 		{
 			debug(DBG_ATTR, "Fingerprint mismatch\n");
 			return true;
@@ -268,12 +268,12 @@ void  StunProtocol::turn_error_response_400(int requestMethod, const uint8_t * t
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(400, STUN_ERROR_400);
 }
-void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char* realmstr, unsigned char* nonce)
+void  StunProtocol::create_error_response_401(uint16_t requestMethod, const uint8_t * transactionID, char* realmstr, const uint8_t* nonce)
 {
 	this->turn_msg_create(requestMethod, STUN_ERROR_RESP, 0, transactionID);
 	this->turn_attr_error_create(401, STUN_ERROR_401);
 	this->turn_attr_realm_create(realmstr);
-	this->turn_attr_nonce_create((const uint8_t*)nonce);
+	this->turn_attr_nonce_create(nonce);
 }
 
 void  StunProtocol::turn_error_response_420(int requestMethod, const uint8_t * transactionID, const uint16_t * unknown, size_t unknown_size)
@@ -377,11 +377,81 @@ void  StunProtocol::turn_error_response_508(int requestMethod, const uint8_t * t
 
 void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id)
 {
-	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, sock, transport_protocol, cookie, id);
+	uint16_t port = 0;
+	uint8_t family = 0;
+	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
+	 
+	if (transport_protocol == IPPROTO_TCP)
+	{
+		auto tcpsocket = (tcp_socket*)sock;
+		port = tcpsocket->remote_endpoint().port();
+		auto addstr = inet_addr(tcpsocket->remote_endpoint().address().to_string().data());
+		ptr = (uint8_t*)(&addstr);
+
+		if (tcpsocket->remote_endpoint().address().is_v4()) {
+			family = STUN_ATTR_FAMILY_IPV4;
+		}
+		else
+		{
+			family = STUN_ATTR_FAMILY_IPV6;
+		}
+	}
+	else if (transport_protocol == IPPROTO_UDP)
+	{
+		auto udpsocket = (udp_socket*)sock;
+		port = udpsocket->remote_endpoint().port();
+		auto addstr = inet_addr(udpsocket->remote_endpoint().address().to_string().data());
+		ptr = (uint8_t*)(&addstr);
+
+		if (udpsocket->remote_endpoint().address().is_v4()) {
+			family = STUN_ATTR_FAMILY_IPV4;
+		}
+		else
+		{
+			family = STUN_ATTR_FAMILY_IPV6;
+		}
+	}
+
+	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, ptr, port, family, cookie, id);
 }
-void  StunProtocol::turn_attr_xor_relayed_address_create(const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id)
-{
-	return this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, sock, transport_protocol, cookie, id);
+void  StunProtocol::turn_attr_xor_relayed_address_create(const struct sockaddr* address, int transport_protocol, uint32_t cookie, const uint8_t * id)
+{ 
+	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
+	struct sockaddr_storage storage;
+	uint16_t port = 0;
+	uint8_t family = 0; 
+	switch (address->sa_family)
+	{
+	case AF_INET:
+		memcpy(&storage, address, sizeof(struct sockaddr_in));
+		ptr = (uint8_t*)&((struct sockaddr_in*)&storage)->sin_addr;
+		port = ntohs(((struct sockaddr_in*)&storage)->sin_port);
+		family = STUN_ATTR_FAMILY_IPV4; 
+		break;
+	case AF_INET6:
+		if (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*)address)->sin6_addr))
+		{
+			((struct sockaddr_in*)&storage)->sin_family = AF_INET;
+			memcpy(&((struct sockaddr_in*)&storage)->sin_addr, &((struct sockaddr_in6*)address)->sin6_addr.s6_addr[12], 4);
+			ptr = (uint8_t*)&((struct sockaddr_in*)&storage)->sin_addr;
+			((struct sockaddr_in*)&storage)->sin_port = ((struct sockaddr_in6*)address)->sin6_port;
+			memset(((struct sockaddr_in*)&storage)->sin_zero, 0x00, sizeof(((struct sockaddr_in*)&storage)->sin_zero));
+			port = ntohs(((struct sockaddr_in*)&storage)->sin_port);
+			family = STUN_ATTR_FAMILY_IPV4; 
+		}
+		else
+		{
+			memcpy(&storage, address, sizeof(struct sockaddr_in6));
+			ptr = (uint8_t*)&((struct sockaddr_in6*)&storage)->sin6_addr;
+			port = ntohs(((struct sockaddr_in6*)&storage)->sin6_port);
+			family = STUN_ATTR_FAMILY_IPV6; 
+		}
+		break;
+	default:
+		return;
+		break;
+	}
+	return this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, ptr, port,family, cookie, id);
 }
 
 /**
@@ -393,52 +463,23 @@ void  StunProtocol::turn_attr_xor_relayed_address_create(const socket_base * soc
  * \param iov vector
  * \return pointer on turn_attr_hdr or NULL if problem
  */
-void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_base * sock, int transport_protocol, uint32_t cookie, const uint8_t * id)
+void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr, uint16_t port, uint8_t family, uint32_t cookie, const uint8_t * id)
 {
 	/* XOR-MAPPED-ADDRESS are the same as XOR-PEER-ADDRESS and
 	 * XOR-RELAYED-ADDRESS
 	 */
-	size_t len = 0;
-	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
+	size_t len = 0; 
 	uint8_t* p = (uint8_t*)& cookie;
-	size_t i = 0;
-	uint16_t port = 0;
-	uint8_t family = 0;
+	size_t i = 0; 
 	uint16_t msb_cookie = 0;
-
-
-	if (transport_protocol == IPPROTO_TCP)
+	 
+	if (family == STUN_ATTR_FAMILY_IPV4)
 	{
-		auto sockett = (tcp_socket*)sock;
-		//ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());
-		port = sockett->remote_endpoint().port();
-		if (sockett->remote_endpoint().address().is_v4())
-		{
-			family = STUN_ATTR_FAMILY_IPV4;
-			len = 4;
-		}
-		else
-		{
-			family = STUN_ATTR_FAMILY_IPV6;
-			len = 16;
-		}
+		len = 4;
 	}
 	else
 	{
-		//IN6_IS_ADDR_V4MAPPED()
-		auto sockett = (udp_socket*)sock;
-		/*	ptr = (uint8_t*)(&sockett->remote_endpoint().address().to_string());*/
-		port = sockett->remote_endpoint().port();
-		if (sockett->remote_endpoint().address().is_v4())
-		{
-			family = STUN_ATTR_FAMILY_IPV4;
-			len = 4;
-		}
-		else
-		{
-			family = STUN_ATTR_FAMILY_IPV6;
-			len = 16;
-		}
+		len = 16;
 	}
 
 	this->xor_mapped_addr = (struct turn_attr_xor_mapped_address*)malloc(sizeof(struct turn_attr_xor_mapped_address) + len);
@@ -456,13 +497,13 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 	/* IPv4/IPv6 XOR cookie (just the first four bytes of IPv6 address) */
 	for (i = 0; i < 4; i++)
 	{
-		ptr[i] ^= p[i];
+		pOfAddr[i] ^= p[i];
 	}
 
 	/* end of IPv6 address XOR transaction ID */
 	for (i = 4; i < len; i++)
 	{
-		ptr[i] ^= id[i - 4];
+		pOfAddr[i] ^= id[i - 4];
 	}
 
 	this->xor_mapped_addr->turn_attr_type = htons(type);
@@ -471,7 +512,8 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, const socket_bas
 	this->xor_mapped_addr->turn_attr_reserved = 0;
 	this->xor_mapped_addr->turn_attr_family = family;
 	this->xor_mapped_addr->turn_attr_port = htons(port);
-	memcpy(this->xor_mapped_addr->turn_attr_address, ptr, len);
+	 
+	memcpy(this->xor_mapped_addr->turn_attr_address, pOfAddr, len);
 	this->xor_mapped_addr_totalLength_nothsVal = sizeof(struct turn_attr_xor_mapped_address) + len;
 	this->addHeaderMsgLength(this->xor_mapped_addr_totalLength_nothsVal);
 }
@@ -1034,7 +1076,7 @@ uint32_t StunProtocol::turn_calculate_fingerprint()
 uint8_t* StunProtocol::turn_generate_nonce(const char* noncekey)
 {
 	size_t len = 48;
-	uint8_t nonce[len];
+	uint8_t* nonce = (uint8_t*)malloc(len);
 	size_t noncekey_len = strlen(noncekey);
 
 	time_t t;
@@ -1252,8 +1294,8 @@ char* StunProtocol::getMessageData()
 
 	if (requestLength != totallength)
 	{
-		debug(DBG_ATTR, "发生错误了\n");
-	} 
+		//debug(DBG_ATTR, "发生错误了\n");
+	}
 	return (char*)oldBufferPtr;
 }
 
@@ -1268,7 +1310,7 @@ account_desc* StunProtocol::account_desc_new(const char* username, const char* p
 		return NULL;
 	}
 
-	if (!(ret = (struct account_desc*)(struct account_desc*)malloc(sizeof(struct account_desc))))
+	if (!(ret = (struct account_desc*)malloc(sizeof(struct account_desc))))
 	{
 		return NULL;
 	}

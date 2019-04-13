@@ -62,7 +62,7 @@ struct allocation_desc* allocation_list_find_tuple(struct list_head* list,
 	/* not found */
 	return NULL;
 }
- 
+
 struct allocation_channel* allocation_desc_find_channel_number(struct allocation_desc* desc, uint16_t channel)
 {
 	struct list_head* get = NULL;
@@ -70,8 +70,7 @@ struct allocation_channel* allocation_desc_find_channel_number(struct allocation
 
 	list_iterate_safe(get, n, &desc->peers_channels)
 	{
-		struct allocation_channel* tmp = list_get(get, struct allocation_channel,
-			list);
+		struct allocation_channel* tmp = list_get(get, struct allocation_channel, list);
 
 		if (tmp->channel_number == channel)
 		{
@@ -89,9 +88,7 @@ uint32_t allocation_desc_find_channel(struct allocation_desc* desc, int family, 
 	struct list_head* n = NULL;
 	list_iterate_safe(get, n, &desc->peers_channels)
 	{
-		struct allocation_channel* tmp = list_get(get, struct allocation_channel,
-			list);
-
+		struct allocation_channel* tmp = list_get(get, struct allocation_channel, list); 
 		if (tmp->family == family && !memcmp(&tmp->peer_addr, peer_addr,
 			family == AF_INET ? 4 : 16) && tmp->peer_port == peer_port)
 		{
@@ -350,8 +347,7 @@ struct allocation_tcp_relay* allocation_desc_find_tcp_relay_id(struct allocation
 }
 
 
-void allocation_tcp_relay_set_timer(struct allocation_tcp_relay* relay,
-	uint32_t timeout)
+void allocation_tcp_relay_set_timer(struct allocation_tcp_relay* relay, uint32_t timeout)
 {
 	struct itimerspec expire;
 	struct itimerspec old;
@@ -392,8 +388,7 @@ struct allocation_token* allocation_token_list_find(struct list_head* list, uint
 }
 
 
-void allocation_token_list_remove(struct list_head* list,
-	struct allocation_token* token)
+void allocation_token_list_remove(struct list_head* list,struct allocation_token* token)
 {
 	(void)list; /* not used */
 
@@ -431,19 +426,16 @@ void allocation_token_set_timer(struct allocation_token* token,
 void allocation_desc_set_timer(struct allocation_desc* desc, uint32_t lifetime)
 {
 	struct itimerspec expire;
-	struct itimerspec old;
-
+	struct itimerspec old; 
 	/* timer */
 	expire.it_value.tv_sec = (long)lifetime;
 	expire.it_value.tv_nsec = 0;
 	expire.it_interval.tv_sec = 0; /* no interval */
 	expire.it_interval.tv_nsec = 0;
-	memset(&old, 0x00, sizeof(struct itimerspec));
-
+	memset(&old, 0x00, sizeof(struct itimerspec)); 
 	/* (re)-init bandwidth quota stuff */
 	gettimeofday(&desc->last_timeup, NULL);
-	gettimeofday(&desc->last_timedown, NULL);
-
+	gettimeofday(&desc->last_timedown, NULL); 
 	/* set the timer */
 	if (timer_settime(desc->expire_timer, 0, &expire, &old) == -1)
 	{
@@ -451,8 +443,7 @@ void allocation_desc_set_timer(struct allocation_desc* desc, uint32_t lifetime)
 	}
 }
 
-void allocation_list_remove(struct list_head* list,
-	struct allocation_desc* desc)
+void allocation_list_remove(struct list_head* list, struct allocation_desc* desc)
 {
 	/* to avoid compilation warning */
 	(void)list;
@@ -476,8 +467,7 @@ void allocation_desc_free(struct allocation_desc** desc)
 	/* free up the lists */
 	list_iterate_safe(get, n, &ret->peers_channels)
 	{
-		struct allocation_channel* tmp = list_get(get, struct allocation_channel,
-			list);
+		struct allocation_channel* tmp = list_get(get, struct allocation_channel, list);
 		timer_delete(tmp->expire_timer);
 		LIST_DEL(&tmp->list);
 		LIST_DEL(&tmp->list2);
@@ -486,8 +476,7 @@ void allocation_desc_free(struct allocation_desc** desc)
 
 	list_iterate_safe(get, n, &ret->peers_permissions)
 	{
-		struct allocation_permission* tmp = list_get(get,
-			struct allocation_permission, list);
+		struct allocation_permission* tmp = list_get(get, struct allocation_permission, list);
 		timer_delete(tmp->expire_timer);
 		LIST_DEL(&tmp->list);
 		LIST_DEL(&tmp->list2);
@@ -496,8 +485,7 @@ void allocation_desc_free(struct allocation_desc** desc)
 
 	list_iterate_safe(get, n, &ret->tcp_relays)
 	{
-		struct allocation_tcp_relay* tmp = list_get(get,
-			struct allocation_tcp_relay, list);
+		struct allocation_tcp_relay* tmp = list_get(get, struct allocation_tcp_relay, list);
 		allocation_tcp_relay_list_remove(&ret->tcp_relays, tmp);
 	}
 
@@ -513,8 +501,7 @@ void allocation_desc_free(struct allocation_desc** desc)
 		close(ret->relayed_sock_tcp);
 	}
 
-	ret->relayed_sock_tcp = -1;
-
+	ret->relayed_sock_tcp = -1; 
 	/* the tuple sock is closed by the user-defined application */
 	ret->tuple_sock = NULL;
 
@@ -659,7 +646,7 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 		return NULL;
 	}
 
-	allocation_desc_set_timer(ret, lifetime);
+	allocation_desc_set_timer(ret, lifetime); 
 
 	/* sockets */
 	ret->relayed_sock = -1;
