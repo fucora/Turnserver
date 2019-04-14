@@ -4,8 +4,7 @@
 #include "commonTypes.h"
  
 struct allocation_desc* allocation_list_find_tuple(struct list_head* list,
-	int transport_protocol, const  address_type* server_addr,
-	const  address_type* client_addr);
+	int transport_protocol, socket_base* sock);
  
  
 /**
@@ -201,8 +200,10 @@ void allocation_list_add(struct list_head* list, struct allocation_desc* desc);
  * \param lifetime expire of the allocation
  * \return pointer on struct allocation_desc, or NULL if problem
  */
-allocation_desc * allocation_desc_new(const uint8_t * id, uint8_t transport_protocol, const char * username, const unsigned char * key, const char * realm, const unsigned char * nonce, const sockaddr_storage * relayed_addr, const address_type * server_addr, const address_type * client_addr, uint32_t lifetime);
-
+struct allocation_desc* allocation_desc_new(const uint8_t* id,
+	uint8_t transport_protocol, const char* username, const unsigned char* key,
+	const char* realm, const unsigned char* nonce,
+	const sockaddr_storage* relayed_addr, socket_base* sock, uint32_t lifetime);
 
 /**
  * \brief Create a new token.

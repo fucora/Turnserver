@@ -103,7 +103,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		if (TURN_IS_CHANNELDATA(type))
 		{
 			/* ChannelData */
-			return turnserver_process_channeldata(transport_protocol, type, buf, lenth, NULL, NULL, NULL, &_allocation_list);
+			return turnserver_process_channeldata(transport_protocol, type, buf, lenth, sock);
 		}
 	}
 
@@ -328,7 +328,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 		/* ConnectionBind is only for TCP or TLS over TCP <-> TCP */
 		if (transport_protocol == IPPROTO_TCP)
 		{
-			return this->turnserver_process_connectionbind_request(transport_protocol, sock, protocol,account, &_allocation_list);
+			return this->turnserver_process_connectionbind_request(transport_protocol, sock, protocol,account);
 		}
 		else
 		{
@@ -338,7 +338,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 	/* check the 5-tuple except for an Allocate request */
 	if (requestMethod != TURN_METHOD_ALLOCATE)
 	{
-		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr);
+		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, sock);
 		if (STUN_IS_REQUEST(requestType))
 		{
 			/* check for the allocated username */
@@ -476,8 +476,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
  * \return 0 if success, -1 otherwise
  */
 int turn_server::turnserver_process_channeldata(int transport_protocol,
-	uint16_t channel_number, const char* buf, ssize_t buflen,
-	address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, list_head* allocation_list)
+	uint16_t channel_number, const char* buf, ssize_t buflen, socket_base* sock)
 {
 	struct allocation_desc* desc = NULL;
 	struct turn_channel_data* channel_data = NULL;
@@ -520,7 +519,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		return -1;
 	}
 
-	desc = allocation_list_find_tuple(allocation_list, transport_protocol, localaddr, remoteaddr);
+	desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, sock);
 	if (!desc)
 	{
 		/* not found */
@@ -587,10 +586,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 	/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 	 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
 	 */
-	if (desc->relayed_addr.ss_family == AF_INET &&
-		(desc->tuple.client_addr.is_v4() == true ||
-		(desc->tuple.client_addr.is_v6() == true &&
-			IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*) & desc->tuple.client_addr)->sin6_addr))))
+	if (desc->relayed_addr.ss_family == AF_INET)
 	{
 #ifdef OS_SET_DF_SUPPORT
 		/* alternate behavior */
@@ -1051,7 +1047,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		/* RFC6156: If present, the DONT-FRAGMENT attribute MUST be ignored by the
 		 * server for IPv4-IPv6, IPv6-IPv6 and IPv6-IPv4 relays
 		 */
-		if (desc->relayed_addr.ss_family == AF_INET && (desc->tuple.client_addr.is_v4() || (desc->tuple.client_addr.is_v6())))
+		if (desc->relayed_addr.ss_family == AF_INET)
 		{
 			/* following is for IPv4-IPv4 relay only */
 #ifdef OS_SET_DF_SUPPORT
@@ -1427,8 +1423,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_process_connectionbind_request(int transport_protocol,
-		socket_base * sock, StunProtocol * protocol, struct account_desc* account,
-		struct list_head* allocation_list)
+		socket_base * sock, StunProtocol * protocol, struct account_desc* account )
 	{
 		auto requestType = protocol->getRequestType();
 		auto requestMethod = protocol->getRequestMethod();
@@ -1448,7 +1443,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 
 		/* find corresponding allocation for TCP connection ID */
-		list_iterate_safe(get, n, allocation_list)
+		list_iterate_safe(get, n, &_allocation_list)
 		{
 			struct allocation_desc* tmp = list_get(get, struct allocation_desc, list);
 			struct list_head* get2 = NULL;
@@ -1467,15 +1462,13 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 					desc = tmp;
 					break;
 				}
-			}
-
+			} 
 			/* found ? */
 			if (desc)
 			{
 				break;
 			}
-		}
-
+		} 
 		/* check if allocation exists and if its ID exists for this allocation
 		 * otherwise => error 400
 		 */
@@ -1484,8 +1477,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			debug(DBG_ATTR, "No allocation or no allocation for CONNECTION-ID\n");
 			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 			return -1;
-		}
-
+		} 
 		/* only one ConnectionBind for a connection ID */
 		if (tcp_relay->client_sock != NULL)
 		{
@@ -1613,15 +1605,13 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		char* family_address = NULL;
 		const uint16_t max_port = 65535;
 		const uint16_t min_port = 49152;
-
-
-
+		 
 		debug(DBG_ATTR, "Allocate request received!\n");
 		/* check if it was a valid allocation */
-		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr);
+		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, sock);
 		if (desc)
 		{
-			if (transport_protocol == IPPROTO_UDP && !memcmp(protocol->reuqestHeader->turn_msg_id, desc->transaction_id, 12))
+			if (transport_protocol == IPPROTO_UDP && memcmp(protocol->reuqestHeader->turn_msg_id, desc->transaction_id, 12)==0)
 			{
 				/* the request is a retransmission of a valid request, rebuild the
 				 * response
@@ -1639,17 +1629,17 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 437, desc->key);
 			}
 			return 0;
-		}
-
-		str2 = saddr->to_string();
+		} 
 		/* get string representation of address for syslog */
 		if (transport_protocol == IPPROTO_UDP)
 		{
 			port2 = ((udp_socket*)sock)->remote_endpoint().port();
+			str2 = ((udp_socket*)sock)->remote_endpoint().address().to_string();
 		}
 		else /* IPv6 */
 		{
 			port2 = ((tcp_socket*)sock)->remote_endpoint().port();
+			str2 = ((tcp_socket*)sock)->remote_endpoint().address().to_string();
 		}
 		/* check for allocation quota */
 		if (account->allocations >= max_relay_per_username)
@@ -1749,8 +1739,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				turnserver_block_realtime_signal();
 				allocation_token_set_timer(token, 0); /* stop timer */
 				LIST_DEL(&token->list2);
-				turnserver_unblock_realtime_signal();
-
+				turnserver_unblock_realtime_signal(); 
 				allocation_token_list_remove(&g_token_list, token);
 				debug(DBG_ATTR, "Take token reserved address!\n");
 			}
@@ -1791,8 +1780,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			/* cannot override default max value for allocation time */
 			lifetime = MIN(allocation_lifetime, TURN_MAX_ALLOCATION_LIFETIME);
-		}
-
+		} 
 		/* RFC6156 */
 		if (protocol->requested_addr_family)
 		{
@@ -1807,22 +1795,19 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			default:
 				family_address = NULL;
 				break;
-			}
-
+			} 
 			/* check the family requested is supported */
 			if (!family_address)
 			{
 				/* family not supported */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 440, account->key);
-
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 440, account->key); 
 				return -1;
 			}
 		}
 		else
 		{
 			/* REQUESTED-ADDRESS-FAMILY absent so allocate an IPv4 address */
-			family_address = listen_address;
-
+			family_address = listen_address; 
 			if (!family_address)
 			{
 				/* only happen when IPv4 relaying is disabled and try to allocate IPv6
@@ -1884,8 +1869,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 				if (listen(relayed_sock, 5) == -1)
 				{
-					/* system error */
-
+					/* system error */ 
 					close(relayed_sock);
 					close(relayed_sock_tcp);
 					turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
@@ -1949,8 +1933,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 		desc = allocation_desc_new(protocol->reuqestHeader->turn_msg_id, transport_protocol,
 			account->username, account->key, account->realm,
-			protocol->nonce->turn_attr_nonce, &relayed_addr, daddr,
-			saddr, lifetime);
+			protocol->nonce->turn_attr_nonce, &relayed_addr,sock,lifetime);
 
 		if (!desc)
 		{
@@ -1958,8 +1941,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 			close(relayed_sock);
 			return -1;
-		}
-
+		} 
 		/* init token bucket */
 		if (account->state == AUTHORIZED)
 		{

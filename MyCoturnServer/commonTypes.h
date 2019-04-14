@@ -94,8 +94,10 @@ struct allocation_token
 struct allocation_tuple
 {
 	int transport_protocol; /**< Transport protocol */
-	address_type client_addr; /**< Client address */
-	address_type server_addr; /**< Server address */
+	uint8_t* client_addr; /**< Client address */
+	unsigned short client_port; 
+	uint8_t* server_addr; /**< Server address */
+	unsigned short server_port;
 };
 
 /**

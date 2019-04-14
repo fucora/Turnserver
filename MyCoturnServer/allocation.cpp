@@ -40,31 +40,56 @@
 #include "allocation.h"
 
 
-struct allocation_desc* allocation_list_find_tuple(struct list_head* list,
-	int transport_protocol, const  address_type* server_addr,
-	const  address_type* client_addr)
+struct allocation_desc* allocation_list_find_tuple(struct list_head* list, int transport_protocol, socket_base* sock)
 {
+	uint8_t* client_addr = NULL; /**< Client address */
+	size_t client_addr_size = 0;
+	unsigned short client_port = 0;
+
+	uint8_t* server_addr = NULL; /**< Server address */
+	size_t server_addr_size = 0;
+	unsigned short server_port = 0;
+
+	if (transport_protocol == IPPROTO_UDP)
+	{
+		udp_socket* sockeet = ((udp_socket*)sock);
+		client_addr = (uint8_t*)malloc(sockeet->remote_endpoint().address().to_string().size());
+		memcpy(client_addr, sockeet->remote_endpoint().address().to_string().data(), sockeet->remote_endpoint().address().to_string().size());
+		client_port = sockeet->remote_endpoint().port();
+
+		server_addr = (uint8_t*)malloc(sockeet->local_endpoint().address().to_string().size());
+		memcpy(server_addr, sockeet->local_endpoint().address().to_string().data(), sockeet->local_endpoint().address().to_string().size());
+		server_port = sockeet->local_endpoint().port();
+	}
+	else
+	{
+		tcp_socket* sockeet = ((tcp_socket*)sock);
+		client_addr = (uint8_t*)malloc(sockeet->remote_endpoint().address().to_string().size());
+		memcpy(client_addr, sockeet->remote_endpoint().address().to_string().data(), sockeet->remote_endpoint().address().to_string().size());
+		client_port = sockeet->remote_endpoint().port();
+
+		server_addr = (uint8_t*)malloc(sockeet->local_endpoint().address().to_string().size());
+		memcpy(server_addr, sockeet->local_endpoint().address().to_string().data(), sockeet->local_endpoint().address().to_string().size());
+		server_port = sockeet->local_endpoint().port();
+	}
+	debug(DBG_ATTR, "查找客户端五元组:地址：%s,端口：%d ", client_addr, client_port);
 	struct list_head* get = NULL;
 	struct list_head* n = NULL;
 
 	list_iterate_safe(get, n, list)
 	{
 		struct allocation_desc* tmp = list_get(get, struct allocation_desc, list);
-
-		auto serveraddr1 = tmp->tuple.server_addr.to_string();
-		auto serveraddr2 = server_addr->to_string();
-
-		auto clientaddr1 = tmp->tuple.client_addr.to_string();
-		auto clientaddr2 = client_addr->to_string();
-		
 		if (tmp->tuple.transport_protocol == transport_protocol &&
-			clientaddr1.compare(clientaddr2)==0 &&
-			serveraddr1.compare(serveraddr2)==0)
+			memcmp(&tmp->tuple.client_addr, client_addr, client_addr_size)==0 && 
+			tmp->tuple.client_port == client_port && 
+			memcmp(&tmp->tuple.server_addr, server_addr, server_addr_size)==0 && 
+			tmp->tuple.server_port == server_port)
 		{
+			debug(DBG_ATTR, "---找到了 \n");
 			return tmp;
 		}
 	}
-
+	debug(DBG_ATTR, "---没找到 \n");
 	/* not found */
 	return NULL;
 }
@@ -94,7 +119,7 @@ uint32_t allocation_desc_find_channel(struct allocation_desc* desc, int family, 
 	struct list_head* n = NULL;
 	list_iterate_safe(get, n, &desc->peers_channels)
 	{
-		struct allocation_channel* tmp = list_get(get, struct allocation_channel, list); 
+		struct allocation_channel* tmp = list_get(get, struct allocation_channel, list);
 		if (tmp->family == family && !memcmp(&tmp->peer_addr, peer_addr,
 			family == AF_INET ? 4 : 16) && tmp->peer_port == peer_port)
 		{
@@ -394,7 +419,7 @@ struct allocation_token* allocation_token_list_find(struct list_head* list, uint
 }
 
 
-void allocation_token_list_remove(struct list_head* list,struct allocation_token* token)
+void allocation_token_list_remove(struct list_head* list, struct allocation_token* token)
 {
 	(void)list; /* not used */
 
@@ -432,16 +457,16 @@ void allocation_token_set_timer(struct allocation_token* token,
 void allocation_desc_set_timer(struct allocation_desc* desc, uint32_t lifetime)
 {
 	struct itimerspec expire;
-	struct itimerspec old; 
+	struct itimerspec old;
 	/* timer */
 	expire.it_value.tv_sec = (long)lifetime;
 	expire.it_value.tv_nsec = 0;
 	expire.it_interval.tv_sec = 0; /* no interval */
 	expire.it_interval.tv_nsec = 0;
-	memset(&old, 0x00, sizeof(struct itimerspec)); 
+	memset(&old, 0x00, sizeof(struct itimerspec));
 	/* (re)-init bandwidth quota stuff */
 	gettimeofday(&desc->last_timeup, NULL);
-	gettimeofday(&desc->last_timedown, NULL); 
+	gettimeofday(&desc->last_timedown, NULL);
 	/* set the timer */
 	if (timer_settime(desc->expire_timer, 0, &expire, &old) == -1)
 	{
@@ -507,7 +532,7 @@ void allocation_desc_free(struct allocation_desc** desc)
 		close(ret->relayed_sock_tcp);
 	}
 
-	ret->relayed_sock_tcp = -1; 
+	ret->relayed_sock_tcp = -1;
 	/* the tuple sock is closed by the user-defined application */
 	ret->tuple_sock = NULL;
 
@@ -555,7 +580,8 @@ void allocation_tcp_relay_list_remove(struct list_head* list, struct allocation_
 
 
 void allocation_list_add(struct list_head* list, struct allocation_desc* desc)
-{
+{ 
+	debug(DBG_ATTR, "添加了客户端五元组:地址：%s,端口：%d \n", desc->tuple.client_addr, desc->tuple.client_port); 
 	LIST_ADD_TAIL(&desc->list, list);
 }
 
@@ -563,8 +589,7 @@ void allocation_list_add(struct list_head* list, struct allocation_desc* desc)
 struct allocation_desc* allocation_desc_new(const uint8_t* id,
 	uint8_t transport_protocol, const char* username, const unsigned char* key,
 	const char* realm, const unsigned char* nonce,
-	const sockaddr_storage* relayed_addr, const address_type* server_addr,
-	const address_type* client_addr, uint32_t lifetime)
+	const sockaddr_storage* relayed_addr, socket_base* sock, uint32_t lifetime)
 {
 	struct allocation_desc* ret = NULL;
 	size_t len_username = 0;
@@ -575,8 +600,7 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 		len_username = strlen(username);
 	}
 
-	if (!username || relayed_addr == NULL || server_addr == NULL || client_addr == NULL ||
-		len_username == 0 ||!id || !realm || !key || !nonce)
+	if (!username || relayed_addr == NULL || sock == NULL || len_username == 0 || !id || !realm || !key || !nonce)
 	{
 		return NULL;
 	}
@@ -603,39 +627,51 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 	memcpy(ret->nonce, nonce, 24);
 	strncpy(ret->realm, realm, sizeof(ret->realm) - 1);
 	ret->realm[sizeof(ret->realm) - 1] = 0x00;
-
 	/* initialize the 5-tuple */
 	ret->tuple.transport_protocol = transport_protocol;
-	memcpy(&ret->tuple.server_addr, server_addr, sizeof(address_type));
-	memcpy(&ret->tuple.client_addr, client_addr, sizeof(address_type));
+	 
+	if (transport_protocol == IPPROTO_UDP)
+	{
+		udp_socket* sockeet = ((udp_socket*)sock);
+		ret->tuple.client_addr = (uint8_t*)malloc(sockeet->remote_endpoint().address().to_string().size());
+		memcpy(ret->tuple.client_addr, sockeet->remote_endpoint().address().to_string().data(), sockeet->remote_endpoint().address().to_string().size());
+		ret->tuple.client_port = sockeet->remote_endpoint().port();
 
+		ret->tuple.server_addr = (uint8_t*)malloc(sockeet->local_endpoint().address().to_string().size());
+		memcpy(ret->tuple.server_addr, sockeet->local_endpoint().address().to_string().data(), sockeet->local_endpoint().address().to_string().size());
+		ret->tuple.server_port = sockeet->local_endpoint().port();
+	}
+	else
+	{
+		tcp_socket* sockeet = ((tcp_socket*)sock);
+		ret->tuple.client_addr = (uint8_t*)malloc(sockeet->remote_endpoint().address().to_string().size());
+		memcpy(ret->tuple.client_addr, sockeet->remote_endpoint().address().to_string().data(), sockeet->remote_endpoint().address().to_string().size());
+		ret->tuple.client_port = sockeet->remote_endpoint().port();
+
+		ret->tuple.server_addr = (uint8_t*)malloc(sockeet->local_endpoint().address().to_string().size());
+		memcpy(ret->tuple.server_addr, sockeet->local_endpoint().address().to_string().data(), sockeet->local_endpoint().address().to_string().size());
+		ret->tuple.server_port = sockeet->local_endpoint().port();
+	}
 	/* copy relayed address */
 	memcpy(&ret->relayed_addr, relayed_addr, sizeof(sockaddr_storage));
 
 	ret->relayed_transport_protocol = IPPROTO_UDP;
-
 	/* by default, this will be set by caller */
 	ret->relayed_tls = 0;
 	ret->relayed_dtls = 0;
-
 	/* tocken bucket initialization */
 	ret->bucket_capacity = 0;
 	ret->bucket_tokenup = 0;
 	ret->bucket_tokendown = 0;
-
 	/* list of permissions */
 	INIT_LIST(ret->peers_permissions);
-
 	/* list of channels */
 	INIT_LIST(ret->peers_channels);
-
 	/* list of TCP relays */
 	INIT_LIST(ret->tcp_relays);
-
 	/* linked lists, second ones used when timer has expired */
 	INIT_LIST(ret->list);
 	INIT_LIST(ret->list2);
-
 	/* timer */
 	memset(&event, 0x00, sizeof(struct sigevent));
 	event.sigev_value.sival_ptr = ret;
@@ -650,13 +686,11 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 		return NULL;
 	}
 
-	allocation_desc_set_timer(ret, lifetime); 
-
+	allocation_desc_set_timer(ret, lifetime);
 	/* sockets */
 	ret->relayed_sock = -1;
 	ret->relayed_sock_tcp = -1;
 	ret->tuple_sock = NULL;
-
 	return ret;
 }
 
