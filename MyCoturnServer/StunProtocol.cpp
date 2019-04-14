@@ -380,7 +380,7 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock
 	uint16_t port = 0;
 	uint8_t family = 0;
 	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
-	 
+
 	if (transport_protocol == IPPROTO_TCP)
 	{
 		auto tcpsocket = (tcp_socket*)sock;
@@ -415,18 +415,18 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock
 	return this->turn_attr_xor_address_create(STUN_ATTR_XOR_MAPPED_ADDRESS, ptr, port, family, cookie, id);
 }
 void  StunProtocol::turn_attr_xor_relayed_address_create(const struct sockaddr* address, int transport_protocol, uint32_t cookie, const uint8_t * id)
-{ 
+{
 	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
 	struct sockaddr_storage storage;
 	uint16_t port = 0;
-	uint8_t family = 0; 
+	uint8_t family = 0;
 	switch (address->sa_family)
 	{
 	case AF_INET:
 		memcpy(&storage, address, sizeof(struct sockaddr_in));
 		ptr = (uint8_t*)&((struct sockaddr_in*)&storage)->sin_addr;
 		port = ntohs(((struct sockaddr_in*)&storage)->sin_port);
-		family = STUN_ATTR_FAMILY_IPV4; 
+		family = STUN_ATTR_FAMILY_IPV4;
 		break;
 	case AF_INET6:
 		if (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6*)address)->sin6_addr))
@@ -437,21 +437,21 @@ void  StunProtocol::turn_attr_xor_relayed_address_create(const struct sockaddr* 
 			((struct sockaddr_in*)&storage)->sin_port = ((struct sockaddr_in6*)address)->sin6_port;
 			memset(((struct sockaddr_in*)&storage)->sin_zero, 0x00, sizeof(((struct sockaddr_in*)&storage)->sin_zero));
 			port = ntohs(((struct sockaddr_in*)&storage)->sin_port);
-			family = STUN_ATTR_FAMILY_IPV4; 
+			family = STUN_ATTR_FAMILY_IPV4;
 		}
 		else
 		{
 			memcpy(&storage, address, sizeof(struct sockaddr_in6));
 			ptr = (uint8_t*)&((struct sockaddr_in6*)&storage)->sin6_addr;
 			port = ntohs(((struct sockaddr_in6*)&storage)->sin6_port);
-			family = STUN_ATTR_FAMILY_IPV6; 
+			family = STUN_ATTR_FAMILY_IPV6;
 		}
 		break;
 	default:
 		return;
 		break;
 	}
-	return this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, ptr, port,family, cookie, id);
+	this->turn_attr_xor_address_create(TURN_ATTR_XOR_RELAYED_ADDRESS, ptr, port, family, cookie, id);
 }
 
 /**
@@ -468,11 +468,11 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 	/* XOR-MAPPED-ADDRESS are the same as XOR-PEER-ADDRESS and
 	 * XOR-RELAYED-ADDRESS
 	 */
-	size_t len = 0; 
+	size_t len = 0;
 	uint8_t* p = (uint8_t*)& cookie;
-	size_t i = 0; 
+	size_t i = 0;
 	uint16_t msb_cookie = 0;
-	 
+
 	if (family == STUN_ATTR_FAMILY_IPV4)
 	{
 		len = 4;
@@ -482,18 +482,16 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 		len = 16;
 	}
 
-	this->xor_mapped_addr = (struct turn_attr_xor_mapped_address*)malloc(sizeof(struct turn_attr_xor_mapped_address) + len);
-	if (this->xor_mapped_addr == NULL) {
+	struct turn_attr_xor_mapped_address* ret = (struct turn_attr_xor_mapped_address*)malloc(sizeof(struct turn_attr_xor_mapped_address) + len);
+	if (ret == NULL) {
 		return;
 	}
-
 	/* XOR the address and port */
 
 	/* host order port XOR most-significant 16 bits of the cookie */
 	cookie = htonl(cookie);
 	msb_cookie = ((uint8_t*)& cookie)[0] << 8 | ((uint8_t*)& cookie)[1];
 	port ^= msb_cookie;
-
 	/* IPv4/IPv6 XOR cookie (just the first four bytes of IPv6 address) */
 	for (i = 0; i < 4; i++)
 	{
@@ -505,17 +503,25 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 	{
 		pOfAddr[i] ^= id[i - 4];
 	}
-
-	this->xor_mapped_addr->turn_attr_type = htons(type);
+	ret->turn_attr_type = htons(type);
 	/* reserved (1)  + family (1) + port (2) + address (variable) */
-	this->xor_mapped_addr->turn_attr_len = htons(4 + len);
-	this->xor_mapped_addr->turn_attr_reserved = 0;
-	this->xor_mapped_addr->turn_attr_family = family;
-	this->xor_mapped_addr->turn_attr_port = htons(port);
-	 
-	memcpy(this->xor_mapped_addr->turn_attr_address, pOfAddr, len);
-	this->xor_mapped_addr_totalLength_nothsVal = sizeof(struct turn_attr_xor_mapped_address) + len;
-	this->addHeaderMsgLength(this->xor_mapped_addr_totalLength_nothsVal);
+	ret->turn_attr_len = htons(4 + len);
+	ret->turn_attr_reserved = 0;
+	ret->turn_attr_family = family;
+	ret->turn_attr_port = htons(port);
+	memcpy(ret->turn_attr_address, pOfAddr, len); 
+	if (type == TURN_ATTR_XOR_RELAYED_ADDRESS)
+	{ 
+		this->relayed_addr = (struct turn_attr_xor_relayed_address*)ret;
+		this->relayed_addr_totalLength_nothsVal = sizeof(struct turn_attr_xor_relayed_address) + len;
+		this->addHeaderMsgLength(this->relayed_addr_totalLength_nothsVal);
+	}
+	else if (type == STUN_ATTR_XOR_MAPPED_ADDRESS)
+	{
+		this->xor_mapped_addr = ret;
+		this->xor_mapped_addr_totalLength_nothsVal = sizeof(struct turn_attr_xor_mapped_address) + len;
+		this->addHeaderMsgLength(this->xor_mapped_addr_totalLength_nothsVal);
+	}
 }
 
 int  StunProtocol::turn_msg_channelbind_response_create(const uint8_t * id)

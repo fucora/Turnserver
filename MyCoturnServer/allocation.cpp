@@ -72,7 +72,7 @@ struct allocation_desc* allocation_list_find_tuple(struct list_head* list, int t
 		memcpy(server_addr, sockeet->local_endpoint().address().to_string().data(), sockeet->local_endpoint().address().to_string().size());
 		server_port = sockeet->local_endpoint().port();
 	}
-	debug(DBG_ATTR, "查找客户端五元组:地址：%s,端口：%d ", client_addr, client_port);
+	debug(DBG_ATTR, "查找客户端五元组:地址：%s,端口：%d  \n", client_addr, client_port);
 	struct list_head* get = NULL;
 	struct list_head* n = NULL;
 
