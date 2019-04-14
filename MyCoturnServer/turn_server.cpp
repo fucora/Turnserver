@@ -75,24 +75,24 @@ void turn_server::onTcpConnect(tcp_socket* tcpsocket) {
 void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocket) {
 
 	//boost::asio::posix 
-	address_type remoteaddr = address_type(tcpsocket->remote_endpoint().address());
-	address_type localaddr = address_type(tcpsocket->local_endpoint().address());
-	int remoteAddrSize = tcpsocket->local_endpoint().size();
-	MessageHandle(*buf, lenth, IPPROTO_TCP, &remoteaddr, &localaddr, remoteAddrSize, tcpsocket);
+	//address_type remoteaddr = address_type(tcpsocket->remote_endpoint().address());
+	//address_type localaddr = address_type(tcpsocket->local_endpoint().address());
+	//int remoteAddrSize = tcpsocket->local_endpoint().size();
+	MessageHandle(*buf, lenth, IPPROTO_TCP, tcpsocket);
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
 }
 
 void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocket) {
-	address_type remoteaddr = address_type(udpsocket->remote_endpoint().address());
-	address_type localaddr = address_type(udpsocket->local_endpoint().address());
-	int remoteAddrSize = udpsocket->local_endpoint().size();
-	MessageHandle(*buf, lenth, IPPROTO_UDP, &remoteaddr, &localaddr, remoteAddrSize, udpsocket);
+	//address_type remoteaddr = address_type(udpsocket->remote_endpoint().address());
+	//address_type localaddr = address_type(udpsocket->local_endpoint().address());
+	//int remoteAddrSize = udpsocket->local_endpoint().size();
+	MessageHandle(*buf, lenth, IPPROTO_UDP, udpsocket);
 	printf("收到udp消息");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protocol, address_type* remoteaddr, address_type* localaddr, int remoteAddrSize, socket_base* sock)
+int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protocol, socket_base* sock)
 {
 	/* is it a ChannelData message (bit 0 and 1 are not set to 0) ? */
 	{
@@ -103,7 +103,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		if (TURN_IS_CHANNELDATA(type))
 		{
 			/* ChannelData */
-			return turnserver_process_channeldata(transport_protocol, type, buf, lenth, remoteaddr, localaddr, remoteAddrSize, &_allocation_list);
+			return turnserver_process_channeldata(transport_protocol, type, buf, lenth, NULL, NULL, NULL, &_allocation_list);
 		}
 	}
 
@@ -130,13 +130,13 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			}
 			catch (const std::exception&)
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 			}
 			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
 
 			errorMessage.turn_attr_fingerprint_create(0);
 
-			if (this->turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
+			if (this->turn_send_message(transport_protocol, sock, &errorMessage))
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -146,7 +146,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		if (!protocol.username || !protocol.realm || !protocol.nonce)
 		{
 			/* missing username, realm or nonce => error 400 */
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 400, NULL);
 			return 0;
 		}
 		if (protocol.turn_nonce_is_stale(nonce_key))
@@ -164,10 +164,10 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			}
 			catch (const std::exception&)
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 			}
 			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
-			if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
+			if (turn_send_message(transport_protocol, sock, &errorMessage))
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -183,7 +183,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			if (username_len > 513 || realm_len > 256)
 			{
 				/* some attributes are too long */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 400, remoteaddr, remoteAddrSize, NULL);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 400, NULL);
 				return -1;
 			}
 
@@ -203,7 +203,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 				}
 				catch (const std::exception&)
 				{
-					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 				}
 				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
 				/* software (not fatal if it cannot be allocated) */
@@ -213,7 +213,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 					idx++;
 				}*/
 				errorMessage.turn_attr_fingerprint_create(0);
-				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
+				if (turn_send_message(transport_protocol, sock, &errorMessage))
 				{
 					debug(DBG_ATTR, "turn_send_message failed\n");
 				}
@@ -246,12 +246,12 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 				}
 				catch (const std::exception&)
 				{
-					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500,NULL);
 				}
 				/* software (not fatal if it cannot be allocated) */
 				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
 				errorMessage.turn_attr_fingerprint_create(0);
-				if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
+				if (turn_send_message(transport_protocol, sock,&errorMessage))
 				{
 					debug(DBG_ATTR, "turn_send_message failed\n");
 				}
@@ -277,11 +277,11 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		}
 		catch (const std::exception&)
 		{
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, remoteaddr, remoteAddrSize, NULL);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 		}
 		errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
 
-		if (turn_send_message(transport_protocol, sock, remoteaddr, remoteAddrSize, &errorMessage))
+		if (turn_send_message(transport_protocol, sock,&errorMessage))
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
@@ -293,7 +293,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 	 * now check that specific method requirement are OK
 	 */
 	debug(DBG_ATTR, "OK basic validation are done, process the TURN message\n");
-	return turnserver_process_turn(transport_protocol, sock, &protocol, remoteaddr, localaddr, remoteAddrSize, account);
+	return turnserver_process_turn(transport_protocol, sock, &protocol, account);
 }
 
 /**
@@ -310,9 +310,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
  * also in TLS
  * \return 0 if success, -1 otherwise
  */
-int turn_server::turnserver_process_turn(int transport_protocol, socket_base* sock,
-	StunProtocol* protocol, const address_type* saddr,
-	const address_type* daddr, socklen_t saddr_size, struct account_desc* account)
+int turn_server::turnserver_process_turn(int transport_protocol, socket_base* sock, StunProtocol* protocol, struct account_desc* account)
 {
 	auto requestType = protocol->getRequestType();
 	auto requestMethod = protocol->getRequestMethod();
@@ -321,7 +319,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 	/* process STUN binding request */
 	if (STUN_IS_REQUEST(requestType) && requestMethod == STUN_METHOD_BINDING)
 	{
-		return turnserver_process_binding_request(transport_protocol, sock, protocol, saddr, saddr_size);
+		return turnserver_process_binding_request(transport_protocol, sock, protocol);
 	}
 	/* RFC6062 (TURN-TCP) */
 	/* find right tuple for a TCP allocation (ConnectionBind case) */
@@ -330,17 +328,17 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 		/* ConnectionBind is only for TCP or TLS over TCP <-> TCP */
 		if (transport_protocol == IPPROTO_TCP)
 		{
-			return this->turnserver_process_connectionbind_request(transport_protocol, sock, protocol, saddr, saddr_size, account, &_allocation_list);
+			return this->turnserver_process_connectionbind_request(transport_protocol, sock, protocol,account, &_allocation_list);
 		}
 		else
 		{
-			return this->turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+			return this->turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 		}
 	}
 	/* check the 5-tuple except for an Allocate request */
 	if (requestMethod != TURN_METHOD_ALLOCATE)
 	{
-		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr, saddr_size);
+		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr);
 		if (STUN_IS_REQUEST(requestType))
 		{
 			/* check for the allocated username */
@@ -368,7 +366,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 			if (STUN_IS_REQUEST(requestType))
 			{
 				/* allocation mismatch => error 437 */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 437, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 437, account->key);
 				return 0;
 			}
 
@@ -398,7 +396,7 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 				 * => error 441
 				 */
 				debug(DBG_ATTR, "Wrong credentials!\n");
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 441, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 441, account->key);
 				return 0;
 			}
 		}
@@ -406,34 +404,34 @@ int turn_server::turnserver_process_turn(int transport_protocol, socket_base* so
 		switch (requestMethod)
 		{
 		case TURN_METHOD_ALLOCATE:
-			turnserver_process_allocate_request(transport_protocol, sock, protocol, saddr, daddr, saddr_size, account);
+			turnserver_process_allocate_request(transport_protocol, sock, protocol,account);
 			break;
 		case TURN_METHOD_REFRESH:
-			turnserver_process_refresh_request(transport_protocol, sock, protocol, saddr, saddr_size, desc, account);
+			turnserver_process_refresh_request(transport_protocol, sock, protocol,desc, account);
 			break;
 		case TURN_METHOD_CREATEPERMISSION:
-			turnserver_process_createpermission_request(transport_protocol, sock, protocol, saddr, saddr_size, desc);
+			turnserver_process_createpermission_request(transport_protocol, sock, protocol,desc);
 			break;
 		case TURN_METHOD_CHANNELBIND:
 			/* ChannelBind is only for UDP relay */
 			if (desc->relayed_transport_protocol == IPPROTO_UDP)
 			{
-				turnserver_process_channelbind_request(transport_protocol, sock, protocol, saddr, saddr_size, desc);
+				turnserver_process_channelbind_request(transport_protocol, sock, protocol,desc);
 			}
 			else
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			}
 			break;
 		case TURN_METHOD_CONNECT: /* RFC6062 (TURN-TCP) */
 		  /* Connect is only for TCP or TLS over TCP <-> TCP */
 			if (transport_protocol == IPPROTO_TCP && desc->relayed_transport_protocol == IPPROTO_TCP)
 			{
-				turnserver_process_connect_request(transport_protocol, sock, protocol, saddr, saddr_size, desc);
+				turnserver_process_connect_request(transport_protocol, sock, protocol,desc);
 			}
 			else
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			}
 			break;
 		default:
@@ -522,7 +520,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		return -1;
 	}
 
-	desc = allocation_list_find_tuple(allocation_list, transport_protocol, localaddr, remoteaddr, remoteAddrSize);
+	desc = allocation_list_find_tuple(allocation_list, transport_protocol, localaddr, remoteaddr);
 	if (!desc)
 	{
 		/* not found */
@@ -739,8 +737,7 @@ socklen_t turn_server::sockaddr_get_size(struct sockaddr_storage* ss)
  * \return 0 if success, -1 otherwise
  */
 int turn_server::turnserver_process_channelbind_request(int transport_protocol,
-	socket_base * sock, StunProtocol * protocol, const address_type * saddr,
-	socklen_t saddr_size, struct allocation_desc* desc)
+	socket_base * sock, StunProtocol * protocol,struct allocation_desc* desc)
 {
 	auto requestType = protocol->getRequestType();
 	auto requestMethod = protocol->getRequestMethod();
@@ -768,7 +765,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	{
 		/* attributes missing => error 400 */
 		debug(DBG_ATTR, "Channel number or peer address attributes missing\n");
-		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 		return 0;
 	}
 
@@ -778,7 +775,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	{
 		/* bad channel => error 400 */
 		debug(DBG_ATTR, "Channel number is invalid\n");
-		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 		return 0;
 	}
 
@@ -803,7 +800,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	if (desc->relayed_addr.ss_family != family)
 	{
 		debug(DBG_ATTR, "Do not allow requesting a Channel when allocated address family mismatch peer address family\n");
-		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 443, saddr, saddr_size, desc->key);
+		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 443, desc->key);
 		return -1;
 	}
 
@@ -824,7 +821,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	{
 		/* permission denied => error 403 */
 		debug(DBG_ATTR, "TurnServer does not permit to create a ChannelBind to %s\n", str);
-		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 403, saddr, saddr_size, desc->key);
+		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 403, desc->key);
 		return -1;
 	}
 	debug(DBG_ATTR, "Client request a ChannelBinding for %s %u\n", str, peer_port);
@@ -836,7 +833,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	{
 		/* transport address already bound to another channel */
 		debug(DBG_ATTR, "Transport address already bound to another channel\n");
-		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 		return 0;
 	}
 	alloc_channel = allocation_desc_find_channel_number(desc, channel);
@@ -848,7 +845,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 		{
 			/* different transport address => error 400 */
 			debug(DBG_ATTR, "Channel already bound to another transport address\n");
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return 0;
 		}
 		/* same transport address OK so refresh */
@@ -915,13 +912,13 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	}
 	catch (const std::exception&)
 	{
-		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, desc->key);
+		turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, desc->key);
 	}
 
 	debug(DBG_ATTR, "ChannelBind successful, send success ChannelBind response\n");
 
 	/* finally send the response */
-	if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &errormsg) == -1)
+	if (turn_send_message(transport_protocol, sock,&errormsg) == -1)
 	{
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
@@ -1234,8 +1231,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_process_connect_request(int transport_protocol, socket_base * sock,
-		StunProtocol * protocol, const address_type * saddr,
-		socklen_t saddr_size, struct allocation_desc* desc)
+		StunProtocol * protocol,struct allocation_desc* desc)
 	{
 		auto requestType = protocol->getRequestType();
 		auto requestMethod = protocol->getRequestMethod();
@@ -1260,7 +1256,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		 */
 		if (!protocol->peer_addr[0] || desc->relayed_sock_tcp == -1)
 		{
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return -1;
 		}
 
@@ -1291,7 +1287,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		if (desc->relayed_addr.ss_family != family)
 		{
 			debug(DBG_ATTR, "Could not relayed from a different family\n");
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return -1;
 		}
 
@@ -1300,7 +1296,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		 */
 		if (allocation_desc_find_tcp_relay_addr(desc, family, peer_addr, peer_port))
 		{
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return -1;
 		}
 
@@ -1310,7 +1306,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		 */
 		if (this->turnserver_is_address_denied(peer_addr, len, peer_port) || turnserver_is_ipv6_tunneled_address(peer_addr, len))
 		{
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return -1;
 		}
 
@@ -1363,7 +1359,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			/* add it to allocation */
 			if (allocation_desc_add_tcp_relay(desc, id, peer_sock, family, peer_addr, peer_port, TURN_DEFAULT_TCP_RELAY_TIMEOUT, 0, protocol->reuqestHeader->turn_msg_id) == -1)
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 				return -1;
 			}
 			return 0;
@@ -1374,7 +1370,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			char error_str[256];
 			//get_error(errno, error_str, sizeof(error_str));
 			debug(DBG_ATTR, "connect to peer failed: %s", error_str);
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return -1;
 		}
 
@@ -1393,9 +1389,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int turn_server::turnserver_process_binding_request(int transport_protocol, socket_base * sock,
-		StunProtocol * protocol, const address_type * saddr,
-		socklen_t saddr_size)
+	int turn_server::turnserver_process_binding_request(int transport_protocol, socket_base * sock, StunProtocol * protocol)
 	{
 		StunProtocol errormsg;
 		debug(DBG_ATTR, "Binding request received!\n");
@@ -1409,10 +1403,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 		catch (const std::exception&)
 		{
-			turnserver_send_error(transport_protocol, sock, STUN_METHOD_BINDING, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, NULL);
+			turnserver_send_error(transport_protocol, sock, STUN_METHOD_BINDING, protocol->reuqestHeader->turn_msg_id, 500, NULL);
 		}
 
-		if (turn_send_message(transport_protocol, sock, saddr, (int)saddr_size, &errormsg))
+		if (turn_send_message(transport_protocol, sock, &errormsg))
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
@@ -1433,8 +1427,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_process_connectionbind_request(int transport_protocol,
-		socket_base * sock, StunProtocol * protocol, const address_type * saddr,
-		socklen_t saddr_size, struct account_desc* account,
+		socket_base * sock, StunProtocol * protocol, struct account_desc* account,
 		struct list_head* allocation_list)
 	{
 		auto requestType = protocol->getRequestType();
@@ -1450,7 +1443,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		if (!protocol->connection_id)
 		{
 			debug(DBG_ATTR, "No CONNECTION-ID attribute!\n");
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 			return -1;
 		}
 
@@ -1489,7 +1482,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		if (!desc || !(tcp_relay = allocation_desc_find_tcp_relay_id(desc, protocol->connection_id->turn_attr_id)))
 		{
 			debug(DBG_ATTR, "No allocation or no allocation for CONNECTION-ID\n");
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 			return -1;
 		}
 
@@ -1509,10 +1502,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 		catch (const std::exception&)
 		{
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 		}
 
-		if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &responseMsg) == -1)
+		if (turn_send_message(transport_protocol, sock, &responseMsg) == -1)
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 			return -1;
@@ -1596,9 +1589,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int  turn_server::turnserver_process_allocate_request(int transport_protocol, socket_base * sock,
-		StunProtocol * protocol, const address_type * saddr,
-		const address_type * daddr, socklen_t saddr_size, struct account_desc* account)
+	int  turn_server::turnserver_process_allocate_request(int transport_protocol, socket_base* sock,StunProtocol * protocol,struct account_desc* account)
 	{
 		struct allocation_desc* desc = NULL;
 		struct itimerspec t; /* time before expire */
@@ -1623,11 +1614,11 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		const uint16_t max_port = 65535;
 		const uint16_t min_port = 49152;
 
+
+
 		debug(DBG_ATTR, "Allocate request received!\n");
-
 		/* check if it was a valid allocation */
-		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr, saddr_size);
-
+		desc = allocation_list_find_tuple(&_allocation_list, transport_protocol, daddr, saddr);
 		if (desc)
 		{
 			if (transport_protocol == IPPROTO_UDP && !memcmp(protocol->reuqestHeader->turn_msg_id, desc->transaction_id, 12))
@@ -1635,7 +1626,6 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				/* the request is a retransmission of a valid request, rebuild the
 				 * response
 				 */
-
 				 /* get some states */
 				timer_gettime(desc->expire_timer, &t);
 				lifetime = t.it_value.tv_sec;
@@ -1646,9 +1636,8 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			else
 			{
 				/* allocation mismatch => error 437 */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 437, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 437, desc->key);
 			}
-
 			return 0;
 		}
 
@@ -1661,26 +1650,22 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		else /* IPv6 */
 		{
 			port2 = ((tcp_socket*)sock)->remote_endpoint().port();
-
 		}
-
 		/* check for allocation quota */
 		if (account->allocations >= max_relay_per_username)
 		{
 			/* quota exceeded => error 486 */
 			//debug(DBG_ATTR, "Allocation transport=%u (d)tls=%u source=%s:%u account=%s quota exceeded", transport_protocol, 0, str2, port2, account->username);
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 486, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 486, account->key);
 			return -1;
 		}
-
 		/* check requested-transport */
 		if (!protocol->requested_transport)
 		{
 			/* bad request => error 400 */
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 			return 0;
 		}
-
 		/* check if DONT-FRAGMENT attribute is supported */
 #ifndef OS_SET_DF_SUPPORT
 		if (protocol->dont_fragment)
@@ -1700,10 +1685,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			}
 			catch (const std::exception&)
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 			}
 
-			if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &errormsg) == -1)
+			if (turn_send_message(transport_protocol, sock,&errormsg) == -1)
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -1715,7 +1700,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		if (protocol->requested_transport->turn_attr_protocol != IPPROTO_UDP && (protocol->requested_transport->turn_attr_protocol != IPPROTO_TCP || !is_turn_tcp))
 		{
 			/* unsupported transport protocol => error 442 */
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 442, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 442, account->key);
 			return 0;
 		}
 
@@ -1730,7 +1715,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			 */
 			if (transport_protocol == IPPROTO_UDP || protocol->dont_fragment || protocol->reservation_token || protocol->even_port)
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 				return 0;
 			}
 		}
@@ -1738,7 +1723,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		if (protocol->even_port && protocol->reservation_token)
 		{
 			/* cannot have both EVEN-PORT and RESERVATION-TOKEN => error 400 */
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 			return 0;
 		}
 
@@ -1747,7 +1732,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			/* RFC6156: cannot have both REQUESTED-ADDRESS-FAMILY and RESERVATION-TOKEN
 			 * => error 400
 			 */
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 400, account->key);
 			return 0;
 		}
 
@@ -1755,13 +1740,11 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		if (protocol->reservation_token)
 		{
 			struct allocation_token* token = NULL;
-
 			/* check if the requested reservation-token exists */
 			if ((token = allocation_token_list_find(&g_token_list, protocol->reservation_token->turn_attr_token)))
 			{
 				relayed_sock = token->sock;
 				has_token = 1;
-
 				/* suppress from the list */
 				turnserver_block_realtime_signal();
 				allocation_token_set_timer(token, 0); /* stop timer */
@@ -1774,7 +1757,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			else
 			{
 				/* token does not exists so token not valid => error 508 */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 508, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 508, account->key);
 				return 0;
 			}
 		}
@@ -1787,7 +1770,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			if (protocol->even_port->turn_attr_flags & (~g_supported_even_port_flags))
 			{
 				/* unsupported flags => error 508 */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 508, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 508, account->key);
 				return 0;
 			}
 		}
@@ -1830,7 +1813,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			if (!family_address)
 			{
 				/* family not supported */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 440, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 440, account->key);
 
 				return -1;
 			}
@@ -1846,16 +1829,14 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				 * address without adding REQUESTED-ADDRESS-FAMILY attribute.
 				 */
 				 /* family not supported */
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 440, saddr, saddr_size, account->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 440, account->key);
 				return -1;
 			}
 		}
 
 		strncpy(str, family_address, INET6_ADDRSTRLEN);
 		str[INET6_ADDRSTRLEN - 1] = 0x00;
-
 		/* after all these checks, allocate an allocation! */
-
 		/* allocate the relayed address or skip this if server has a token,
 		 * try 5 times to find a free port or couple of free ports.
 		 */
@@ -1863,13 +1844,11 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			/* pick up a port (default between 49152 - 65535) */
 			port = (uint16_t)(rand() % (max_port - min_port)) + min_port;
-
 			/* allocate a even port */
 			if (protocol->even_port && (port % 2))
 			{
 				port++;
 			}
-
 			/* TCP or UDP */
 			/* in case of TCP, allow socket to reuse transport address since we create
 			 * another socket that will be bound to the same address
@@ -1899,7 +1878,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 					/* system error */
 
 					close(relayed_sock);
-					turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, account->key);
+					turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 					return -1;
 				}
 
@@ -1909,7 +1888,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 					close(relayed_sock);
 					close(relayed_sock_tcp);
-					turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, account->key);
+					turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 					return -1;
 				}
 			}
@@ -1927,7 +1906,6 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				else
 				{
 					struct allocation_token* token = NULL;
-
 					/* store the reservation */
 					random_bytes_generate(reservation_token, 8);
 
@@ -1945,13 +1923,12 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 					}
 				}
 			}
-
 			quit_loop++;
 		}
 
 		if (relayed_sock == -1)
 		{
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 			return -1;
 		}
 
@@ -1972,13 +1949,13 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 		desc = allocation_desc_new(protocol->reuqestHeader->turn_msg_id, transport_protocol,
 			account->username, account->key, account->realm,
-			protocol->nonce->turn_attr_nonce, (address_type*)& relayed_addr, daddr,
-			saddr, sizeof(struct sockaddr_storage), lifetime);
+			protocol->nonce->turn_attr_nonce, &relayed_addr, daddr,
+			saddr, lifetime);
 
 		if (!desc)
 		{
 			/* send error response with code 500 */
-			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, account->key);
+			turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, account->key);
 			close(relayed_sock);
 			return -1;
 		}
@@ -2029,7 +2006,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				errormsg.turn_msg_allocate_response_create(protocol->reuqestHeader->turn_msg_id);
 				errormsg.turn_attr_xor_relayed_address_create((struct sockaddr*)&relayed_addr, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
 				errormsg.turn_attr_lifetime_create(lifetime);
-			 
+
 				errormsg.turn_attr_xor_mapped_address_create(sock, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
 
 				if (reservation_port)
@@ -2044,10 +2021,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			}
 			catch (const std::exception&)
 			{
-				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, requestMethod, protocol->reuqestHeader->turn_msg_id, 500, desc->key);
 			}
 
-			if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &errormsg) == -1)
+			if (turn_send_message(transport_protocol, sock, &errormsg) == -1)
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
@@ -2068,9 +2045,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * also in TLS
 	 * \return 0 if success, -1 otherwise
 	 */
-	int  turn_server::turnserver_process_createpermission_request(int transport_protocol,
-		socket_base * sock, StunProtocol * protocol, const address_type * saddr,
-		socklen_t saddr_size, struct allocation_desc* desc)
+	int turn_server::turnserver_process_createpermission_request(int transport_protocol,socket_base * sock, StunProtocol * protocol,struct allocation_desc* desc)
 	{
 		uint16_t RequestType = protocol->getRequestType();
 		uint16_t method = protocol->getRequestMethod();
@@ -2096,7 +2071,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			/* too many XOR-PEER-ADDRESS attributes => error 508 */
 			debug(DBG_ATTR, "Too many XOR-PEER-ADDRESS attributes\n");
-			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 508, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 508, desc->key);
 			return -1;
 		}
 
@@ -2104,7 +2079,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			/* no XOR-PEER-ADDRESS => error 400 */
 			debug(DBG_ATTR, "Missing address attribute\n");
-			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 400, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 400, desc->key);
 			return -1;
 		}
 
@@ -2156,7 +2131,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			{
 				/* peer family mismatch => error 443 */
 				debug(DBG_ATTR, "Peer family mismatch\n");
-				turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 443, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 443, desc->key);
 				return -1;
 			}
 
@@ -2178,7 +2153,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			{
 				debug(DBG_ATTR,
 					"TurnServer does not permit to install permission to %s\n", str);
-				turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 403, saddr, saddr_size, desc->key);
+				turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 403, desc->key);
 				return -1;
 			}
 		}
@@ -2239,13 +2214,13 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 		catch (const std::exception&)
 		{
-			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, desc->key);
+			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 500, desc->key);
 		}
 
 		debug(DBG_ATTR, "CreatePermission successful, send success CreatePermission response\n");
 		/* finally send the response */
 
-		if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &errormsg) == -1)
+		if (turn_send_message(transport_protocol, sock,&errormsg) == -1)
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
@@ -2268,8 +2243,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_process_refresh_request(int transport_protocol, socket_base * sock,
-		StunProtocol * protocol, const address_type * saddr,
-		socklen_t saddr_size, struct allocation_desc* desc, struct account_desc* account)
+		StunProtocol * protocol,struct allocation_desc* desc, struct account_desc* account)
 	{
 		uint16_t RequestType = protocol->getRequestType();
 		uint16_t method = protocol->getRequestMethod();
@@ -2313,7 +2287,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			{
 				/* peer family mismatch => error 443 */
 				debug(DBG_ATTR, "Peer family mismatch\n");
-				turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 443, saddr, saddr_size, key);
+				turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 443, key);
 				return -1;
 			}
 		}
@@ -2382,17 +2356,17 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			}
 		}
 
-		StunProtocol* errmessage;
+		StunProtocol errmessage;
 		try
 		{
-			errmessage->turn_msg_refresh_response_create(protocol->reuqestHeader->turn_msg_id);
-			errmessage->turn_attr_lifetime_create(lifetime);
-			errmessage->turn_attr_software_create(SOFTWARE_DESCRIPTION);
-			errmessage->turn_add_message_integrity(key, sizeof(key), 1);
+			errmessage.turn_msg_refresh_response_create(protocol->reuqestHeader->turn_msg_id);
+			errmessage.turn_attr_lifetime_create(lifetime);
+			errmessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			errmessage.turn_add_message_integrity(key, sizeof(key), 1);
 		}
 		catch (const std::exception&)
 		{
-			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 500, saddr, saddr_size, key);
+			turnserver_send_error(transport_protocol, sock, method, protocol->reuqestHeader->turn_msg_id, 500, key);
 			return -1;
 		}
 
@@ -2400,7 +2374,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		debug(DBG_ATTR, "Refresh successful, send success refresh response\n");
 
 		/* finally send the response */
-		if (turn_send_message(transport_protocol, sock, saddr, saddr_size, errmessage) == -1)
+		if (turn_send_message(transport_protocol, sock,&errmessage) == -1)
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}
@@ -2512,12 +2486,11 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 #pragma region 发送socket
 
-	int turn_server::turn_send_message(int transport_protocol, socket_base * sock,
-		const address_type * remoteaddr, int remoteAddrSize, StunProtocol * protocol)
+	int turn_server::turn_send_message(int transport_protocol, socket_base * sock, StunProtocol * protocol)
 	{
 		if (transport_protocol == IPPROTO_UDP)
 		{
-			return this->turn_udp_send(sock, remoteaddr, protocol);
+			return this->turn_udp_send(sock, protocol);
 		}
 		else /* TCP */
 		{
@@ -2525,7 +2498,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 	}
 
-	int turn_server::turn_udp_send(socket_base * sock, const address_type * remoteaddr, StunProtocol * protocol)
+	int turn_server::turn_udp_send(socket_base * sock, StunProtocol * protocol)
 	{
 		ostringstream osstring;
 		boost::archive::binary_oarchive streamReader(osstring);
@@ -2546,20 +2519,6 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		auto senddata = protocol->getMessageData();
 		ssize_t len = manager.tcp_send(senddata, databuflength, (tcp_socket*)sock);
 		return len;
-		/*	ostringstream streamr;
-			boost::archive::binary_oarchive archive(streamr);
-			auto data = protocol->getMessageData();
-			archive << data;
-			char* kxkx = (char*)streamr.str().data();
-
-			ssize_t len = manager.tcp_send(kxkx, 0, (tcp_socket*)sock);
-			return len;*/
-			/*uint16_t requestDataLength = protocol->getRequestLength();
-			streamReader << boost::serialization::make_binary_object(data, requestDataLength);
-			char kxkx[requestDataLength];
-			streamReader.save_binary(kxkx, requestDataLength);
-			ssize_t len = manager.tcp_send(kxkx, requestDataLength,(tcp_socket*)sock);
-			return len;  */
 	}
 
 	int turn_server::turn_tls_send(struct tls_peer* peer, const struct sockaddr* addr,
@@ -2610,8 +2569,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 	 * \return 0 if success, -1 otherwise
 	 */
 	int  turn_server::turnserver_send_error(int transport_protocol, socket_base * sock, int method,
-		const uint8_t * id, int error, const address_type * saddr,
-		socklen_t saddr_size, unsigned char* key)
+		const uint8_t * id, int error, unsigned char* key)
 	{
 		StunProtocol protocol;
 		switch (error)
@@ -2671,7 +2629,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 
 		/* finally send the response */
-		if (turn_send_message(transport_protocol, sock, saddr, saddr_size, &protocol) == -1)
+		if (turn_send_message(transport_protocol, sock, &protocol) == -1)
 		{
 			debug(DBG_ATTR, "turn_send_message failed\n");
 		}

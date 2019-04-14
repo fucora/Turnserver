@@ -42,7 +42,7 @@
 
 struct allocation_desc* allocation_list_find_tuple(struct list_head* list,
 	int transport_protocol, const  address_type* server_addr,
-	const  address_type* client_addr, socklen_t addr_size)
+	const  address_type* client_addr)
 {
 	struct list_head* get = NULL;
 	struct list_head* n = NULL;
@@ -51,9 +51,15 @@ struct allocation_desc* allocation_list_find_tuple(struct list_head* list,
 	{
 		struct allocation_desc* tmp = list_get(get, struct allocation_desc, list);
 
+		auto serveraddr1 = tmp->tuple.server_addr.to_string();
+		auto serveraddr2 = server_addr->to_string();
+
+		auto clientaddr1 = tmp->tuple.client_addr.to_string();
+		auto clientaddr2 = client_addr->to_string();
+		
 		if (tmp->tuple.transport_protocol == transport_protocol &&
-			!memcmp(&tmp->tuple.server_addr, &server_addr, addr_size) &&
-			!memcmp(&tmp->tuple.client_addr, &client_addr, addr_size))
+			clientaddr1.compare(clientaddr2)==0 &&
+			serveraddr1.compare(serveraddr2)==0)
 		{
 			return tmp;
 		}
@@ -557,8 +563,8 @@ void allocation_list_add(struct list_head* list, struct allocation_desc* desc)
 struct allocation_desc* allocation_desc_new(const uint8_t* id,
 	uint8_t transport_protocol, const char* username, const unsigned char* key,
 	const char* realm, const unsigned char* nonce,
-	const address_type* relayed_addr, const address_type* server_addr,
-	const address_type* client_addr, socklen_t addr_size, uint32_t lifetime)
+	const sockaddr_storage* relayed_addr, const address_type* server_addr,
+	const address_type* client_addr, uint32_t lifetime)
 {
 	struct allocation_desc* ret = NULL;
 	size_t len_username = 0;
@@ -570,7 +576,7 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 	}
 
 	if (!username || relayed_addr == NULL || server_addr == NULL || client_addr == NULL ||
-		len_username == 0 || !addr_size || !id || !realm || !key || !nonce)
+		len_username == 0 ||!id || !realm || !key || !nonce)
 	{
 		return NULL;
 	}
@@ -579,10 +585,8 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 	{
 		return NULL;
 	}
-
 	/* copy transaction ID */
 	memcpy(ret->transaction_id, id, 12);
-
 	/* copy authentication information */
 	ret->username = (char*)malloc(len_username + 1);
 	if (!ret->username)
@@ -602,11 +606,11 @@ struct allocation_desc* allocation_desc_new(const uint8_t* id,
 
 	/* initialize the 5-tuple */
 	ret->tuple.transport_protocol = transport_protocol;
-	memcpy(&ret->tuple.server_addr, server_addr, addr_size);
-	memcpy(&ret->tuple.client_addr, client_addr, addr_size);
+	memcpy(&ret->tuple.server_addr, server_addr, sizeof(address_type));
+	memcpy(&ret->tuple.client_addr, client_addr, sizeof(address_type));
 
 	/* copy relayed address */
-	memcpy(&ret->relayed_addr, relayed_addr, addr_size);
+	memcpy(&ret->relayed_addr, relayed_addr, sizeof(sockaddr_storage));
 
 	ret->relayed_transport_protocol = IPPROTO_UDP;
 
