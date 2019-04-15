@@ -154,229 +154,103 @@ Binding method不需要身份验证和其它属性，除非另有说明。
 
 7.2发送请求或指令
   本文档规定了如何通过UDP，TCP或TLS-over-TCP发送STUN消息; 
-   other transport protocols may be added in the future.  The STUN usage
-   must specify which transport protocol is used, and how the agent
-   determines the IP address and port of the recipient.  Section 9
-   describes a DNS-based method of determining the IP address and port
-   of a server that a usage may elect to use.  STUN may be used with
-   anycast addresses, but only with UDP and in usages where
-   authentication is not used.
+  将来可能会添加其他传输协议。STUN用法必须指定使用哪种传输协议，
+  以及代理如何确定收件人的IP地址和端口。第九节描述了一个usage可能会使用的方法，
+  这个方法基于DNS,并且可以确定服务端的ip地址和端口。
+  STUN可能会和广播地址一起使用，但是只能使用UDP并且不能使用身份验证。 
+  在任何时候，客户端都可能有多个未完成的STUN请求使用相同的STUN服务器。
+ （即多个正在处理的事务，使用不同的事务的ID）。
+  没有限制新事务的数量（例如ICE指定的链接检查时的限定数量或者STUN运行在TCP上的时候）。
+  客户端应该通过RTO将新事务发送到服务器，并且限制自己在同一台服务器上最多只有10个未处理事务。 
 
-   At any time, a client MAY have multiple outstanding STUN requests
-   with the same STUN server (that is, multiple transactions in
-   progress, with different transaction IDs).  Absent other limits to
-   the rate of new transactions (such as those specified by ICE for
-   connectivity checks or when STUN is run over TCP), a client SHOULD
-   space new transactions to a server by RTO and SHOULD limit itself to
-   ten outstanding transactions to the same server.
+7.2.1. 通过UDP发送
+   通过UDP运行STUN时，STUN消息可能会遇到丢失的情况。
+   STUN 请求/回应的可靠性是通过客户机应用程序本身重新传输请求消息来实现的。
+   STUN指令不会重新发送。所以UDP是不可靠的。 
 
-7.2.1.  Sending over UDP
+   客户端应该重新发送一个以RTO("Retransmission TimeOut")为时间间隔的请求,
+   RTO时间在每次重传后加倍。 
+   RTO是往返时间(RTT)的估值, 计算方法如RFC 2988所述[RFC2988]，但是有两个例外。
+   首先,RTO的初始值应该是可配置的并且大于500ms（而不是RFC 2988中推荐的3秒）。
+   这种“应该”的例外情况是使用其他机制来派生拥塞阈值（比如在ICE中定义的固定速率流），或者当STUN在具有已知网络容量的非internet环境中使用时。
+   在使用宽带接入网络时，推荐使用500ms。 
+   第二，RTO不应该四舍五入到秒,应保持1ms的精度，与TCP一样，推荐使用Karn算法[KARN87]。
+   当应用于STUN时，RTT估值不应该从STUN的重传事务中计算。 
 
+   RTO的值应该在事务完成后被客户端缓存下来，并用作同一服务器的下一个事务的RTO的起始值（基于服务端IP地址判断）。
+   这个值应该在十分钟后重新初始化。 
+   重传在收到服务端回复前或者达到一定数量前,会一直进行。重传数量应该可配置，默认值是7个。
+   如果在最后一个请求之后，持续时间Rm*RTO而没有响应（如果只有最后一个请求成功，则提供足够的时间来获得响应），
+   客户端应该认为认为事务失败了。RM应该是可以配置的，并且默认值是16。
+   如果存在硬件ICMP错误[RFC1122]， UDP上的STUN事务也会被认为是失败的
+   例如，假设RTO为500ms，请求将在0ms、500ms、1500 ms、3500 ms、7500ms、15500 ms和31500 ms时发送。
+   如果客户在39500 ms后仍未收到响应，客户将认为事务到已超时。
 
-   When running STUN over UDP, it is possible that the STUN message
-   might be dropped by the network.  Reliability of STUN request/
-   response transactions is accomplished through retransmissions of the
+7.2.2.通过TCP或TLS-over-TCP发送
+   对于TCP和TLS-over-TCP，客户机打开到服务器的TCP连接。
+   在STUN的一些用法中,STUN作为TCP连接上的唯一协议发送。
+   在这种情况下，它可以在没有任何额外的帧或解复用的帮助下发送。
 
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 13]
-________________________________________
+   在某些usages中或者为了拓展，它可以通过TCP连接与其他数据进行多路复用。
+   在这种情况下，STUN必须在某种框架协议之上运行，框架协议由usage或extension指定，允许代理提取完整的STUN消息和完整的应用层消息。
  
-RFC 5389                          STUN                      October 2008
+   在第9节中通过DNS过程发现的已知端口上运行的STUN服务只用于单独的STUN，而不用于与其他数据进行多路复用的STUN。
+   因此，在与这些服务器的连接中不使用帧协议。
+   当使用额外的帧时，该用法将指定客户机知道如何应用它以及连接到哪个端口。
+   例如，在ICE连接检查的情况下，这些信息是通过客户机和服务器之间的额外交互获得的。 
 
+   当STUN独自运行TLS-over-TCP时，必须至少实现TLS_RSA_WITH_AES_128_CBC_SHA密码套件，
+   实现还可以支持任何其他加密套件。 
+   当接收到TLS证书消息时，客户机应该验证证书并检查证书标识的站点，
+   如果证书无效或被撤销，或者没有标识适当的一方，客户端必须不发送STUN消息或以其他方式继续执行STUN事务。
+   客户机必须验证服务器的身份，为此，它遵循RFC2818 [RFC2818]第3.1节中定义的识别程序。
+   这些过程假定客户机正在取消对一个URI的引用。
+   出于使用此规范的目的，客户机将第8.1节中使用的域名或IP地址视为已取消引用的URI的主机部分。
+   或者，客户端可以配置一组受信任的域或IP地址;如果接收到标识这些域或IP地址之一的证书，客户机将考虑验证服务器的身份。
+     
+   当STUN通过TLS-over-TCP连接与其他协议进行多路复用时，强制加密套件和TLS处理过程按照这些协议定义的方式运行。
 
-   request message by the client application itself.  STUN indications
-   are not retransmitted; thus, indication transactions over UDP are not
-   reliable.
-
-   A client SHOULD retransmit a STUN request message starting with an
-   interval of RTO ("Retransmission TimeOut"), doubling after each
-   retransmission.  The RTO is an estimate of the round-trip time (RTT),
-   and is computed as described in RFC 2988 [RFC2988], with two
-   exceptions.  First, the initial value for RTO SHOULD be configurable
-   (rather than the 3 s recommended in RFC 2988) and SHOULD be greater
-   than 500 ms.  The exception cases for this "SHOULD" are when other
-   mechanisms are used to derive congestion thresholds (such as the ones
-   defined in ICE for fixed rate streams), or when STUN is used in non-
-   Internet environments with known network capacities.  In fixed-line
-   access links, a value of 500 ms is RECOMMENDED.  Second, the value of
-   RTO SHOULD NOT be rounded up to the nearest second.  Rather, a 1 ms
-   accuracy SHOULD be maintained.  As with TCP, the usage of Karn's
-   algorithm is RECOMMENDED [KARN87].  When applied to STUN, it means
-   that RTT estimates SHOULD NOT be computed from STUN transactions that
-   result in the retransmission of a request.
-
-   The value for RTO SHOULD be cached by a client after the completion
-   of the transaction, and used as the starting value for RTO for the
-   next transaction to the same server (based on equality of IP
-   address).  The value SHOULD be considered stale and discarded after
-   10 minutes.
-
-   Retransmissions continue until a response is received, or until a
-   total of Rc requests have been sent.  Rc SHOULD be configurable and
-   SHOULD have a default of 7.  If, after the last request, a duration
-   equal to Rm times the RTO has passed without a response (providing
-   ample time to get a response if only this final request actually
-   succeeds), the client SHOULD consider the transaction to have failed.
-   Rm SHOULD be configurable and SHOULD have a default of 16.  A STUN
-   transaction over UDP is also considered failed if there has been a
-   hard ICMP error [RFC1122].  For example, assuming an RTO of 500 ms,
-   requests would be sent at times 0 ms, 500 ms, 1500 ms, 3500 ms, 7500
-   ms, 15500 ms, and 31500 ms.  If the client has not received a
-   response after 39500 ms, the client will consider the transaction to
-   have timed out.
-
-7.2.2.  Sending over TCP or TLS-over-TCP
-
-
-   For TCP and TLS-over-TCP, the client opens a TCP connection to the
-   server.
-
-
-
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 14]
-________________________________________
+   TCP上的STUN和TLS-over-TCP上的STUN的可靠性由TCP本身处理，并且在STUN协议级别上不存在重传。
+   但是，对于请求/响应事务，如果客户机在发送SYN建立连接后的Ti秒钟内还没有收到响应，则认为事务超时。
+   Ti应该是可配置的，默认值应该是39.5秒。选择此值是为了均衡缺省初始RTO的TCP和UDP超时。 
+    
+   此外，如果客户机无法建立TCP连接，或者TCP连接被重置，或者在接收到响应之前失败，则认为正在进行的任何请求/响应事务都失败了。
  
-RFC 5389                          STUN                      October 2008
+   客户端可以通过一个TCP(或TLS-over-TCP)连接发送多个事务，并且它可以在接收到前一个请求的响应之前发送另一个请求
+   客户端应该保持连接打开，直到:
 
+   o  没有进一步的STUN请求或指令使用该链接,并且
 
-   In some usages of STUN, STUN is sent as the only protocol over the
-   TCP connection.  In this case, it can be sent without the aid of any
-   additional framing or demultiplexing.  In other usages, or with other
-   extensions, it may be multiplexed with other data over a TCP
-   connection.  In that case, STUN MUST be run on top of some kind of
-   framing protocol, specified by the usage or extension, which allows
-   for the agent to extract complete STUN messages and complete
-   application layer messages.  The STUN service running on the well-
-   known port or ports discovered through the DNS procedures in
-   Section 9 is for STUN alone, and not for STUN multiplexed with other
-   data.  Consequently, no framing protocols are used in connections to
-   those servers.  When additional framing is utilized, the usage will
-   specify how the client knows to apply it and what port to connect to.
-   For example, in the case of ICE connectivity checks, this information
-   is learned through out-of-band negotiation between client and server.
+   o  在链接发送请求后不希望收到任何回复(例如映射地址(MAPPED-ADDRESS或XOR-MAPPED-ADDRESS或中继地址[BEHAVE-TURN]), 并且
 
-   When STUN is run by itself over TLS-over-TCP, the
-   TLS_RSA_WITH_AES_128_CBC_SHA ciphersuite MUST be implemented at a
-   minimum.  Implementations MAY also support any other ciphersuite.
-   When it receives the TLS Certificate message, the client SHOULD
-   verify the certificate and inspect the site identified by the
-   certificate.  If the certificate is invalid or revoked, or if it does
-   not identify the appropriate party, the client MUST NOT send the STUN
-   message or otherwise proceed with the STUN transaction.  The client
-   MUST verify the identity of the server.  To do that, it follows the
-   identification procedures defined in Section 3.1 of RFC 2818
-   [RFC2818].  Those procedures assume the client is dereferencing a
-   URI.  For purposes of usage with this specification, the client
-   treats the domain name or IP address used in Section 8.1 as the host
-   portion of the URI that has been dereferenced.  Alternatively, a
-   client MAY be configured with a set of domains or IP addresses that
-   are trusted; if a certificate is received that identifies one of
-   those domains or IP addresses, the client considers the identity of
-   the server to be verified.
+   o  如果在该端口上复用其他应用程序协议，则使用完该应用程序, 并且
 
-   When STUN is run multiplexed with other protocols over a TLS-over-TCP
-   connection, the mandatory ciphersuites and TLS handling procedures
-   operate as defined by those protocols.
+   o  如果将该端口作为对等端端口使用，并远程对等端建立了通信， 这是一些TCP NAT穿越技术(例如[MMUSIC-ICE-TCP])所要求的。
 
-   Reliability of STUN over TCP and TLS-over-TCP is handled by TCP
-   itself, and there are no retransmissions at the STUN protocol level.
-   However, for a request/response transaction, if the client has not
-   received a response by Ti seconds after it sent the SYN to establish
-   the connection, it considers the transaction to have timed out.  Ti
-   SHOULD be configurable and SHOULD have a default of 39.5s.  This
-   value has been chosen to equalize the TCP and UDP timeouts for the
-   default initial RTO.
+   在服务器端，服务器应该保持连接打开，并让客户机关闭连接，除非服务器确定连接超时(例如，由于客户机断开网络连接)。
+   只有当连接保持打开时，客户机的绑定才会在已经打通的NAT设备中时保持有效。
+   只有客户端知道需要绑定多长时间。
+   当服务端收到的请求还没有回应前，服务端不应该断开TCP链接。 
+   服务端不可能为了发送相应，而重新打开客户端和服务端之间的TCP链接。
+   服务器应该遵循关于连接管理的最佳实践，以防过载。 
 
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 15]
-________________________________________
+7.3. 收到STUN消息
  
-RFC 5389                          STUN                      October 2008
+   本节指定STUN消息的处理. 此处指定的处理是针对此规范中定义的STUN消息；
+   向后兼容性的附加规则在第12节中定义。这些附加过程是可选的，用法可以选择使用它们。
+   首先，定义一组处理操作，但不能定义消息类的。
+   接下来是特定于类的处理，在下面的小节中进行描述。
+     
+   当一个STUN代理接收到一个STUN消息时，它首先检查该消息是否符合第6节的规则。
+   它检查前两位是否为0,magic cookie字段是否有正确的值，消息长度是否合理，方法值是否受支持。
+   它检查消息类是否允许用于特定的方法。
+   如果消息类是“成功响应”或“错误响应”，代理将检查事务ID是否匹配仍在进行中的事务。
+   如果正在使用指纹扩展，代理将检查指纹属性是否存在并包含正确的值。
+   如果检测到任何错误，消息将被无声地丢弃。
+   当STUN与另一个协议进行多路复用时，错误可能表明这不是一个真正的STUN消息;
+   在这种情况下，代理应该尝试将消息解析为不同的协议。
 
-
-   In addition, if the client is unable to establish the TCP connection,
-   or the TCP connection is reset or fails before a response is
-   received, any request/response transaction in progress is considered
-   to have failed.
-
-   The client MAY send multiple transactions over a single TCP (or TLS-
-   over-TCP) connection, and it MAY send another request before
-   receiving a response to the previous.  The client SHOULD keep the
-   connection open until it:
-
-   o  has no further STUN requests or indications to send over that
-      connection, and
-
-   o  has no plans to use any resources (such as a mapped address
-      (MAPPED-ADDRESS or XOR-MAPPED-ADDRESS) or relayed address
-      [BEHAVE-TURN]) that were learned though STUN requests sent over
-      that connection, and
-
-   o  if multiplexing other application protocols over that port, has
-      finished using that other application, and
-
-   o  if using that learned port with a remote peer, has established
-      communications with that remote peer, as is required by some TCP
-      NAT traversal techniques (e.g., [MMUSIC-ICE-TCP]).
-
-   At the server end, the server SHOULD keep the connection open, and
-   let the client close it, unless the server has determined that the
-   connection has timed out (for example, due to the client
-   disconnecting from the network).  Bindings learned by the client will
-   remain valid in intervening NATs only while the connection remains
-   open.  Only the client knows how long it needs the binding.  The
-   server SHOULD NOT close a connection if a request was received over
-   that connection for which a response was not sent.  A server MUST NOT
-   ever open a connection back towards the client in order to send a
-   response.  Servers SHOULD follow best practices regarding connection
-   management in cases of overload.
-
-7.3.  Receiving a STUN Message
-
-
-   This section specifies the processing of a STUN message.  The
-   processing specified here is for STUN messages as defined in this
-   specification; additional rules for backwards compatibility are
-   defined in Section 12.  Those additional procedures are optional, and
-   usages can elect to utilize them.  First, a set of processing
-   operations is applied that is independent of the class.  This is
-   followed by class-specific processing, described in the subsections
-   that follow.
-
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 16]
-________________________________________
- 
-RFC 5389                          STUN                      October 2008
-
-
-   When a STUN agent receives a STUN message, it first checks that the
-   message obeys the rules of Section 6.  It checks that the first two
-   bits are 0, that the magic cookie field has the correct value, that
-   the message length is sensible, and that the method value is a
-   supported method.  It checks that the message class is allowed for
-   the particular method.  If the message class is "Success Response" or
-   "Error Response", the agent checks that the transaction ID matches a
-   transaction that is still in progress.  If the FINGERPRINT extension
-   is being used, the agent checks that the FINGERPRINT attribute is
-   present and contains the correct value.  If any errors are detected,
-   the message is silently discarded.  In the case when STUN is being
-   multiplexed with another protocol, an error may indicate that this is
-   not really a STUN message; in this case, the agent should try to
-   parse the message as a different protocol.
-
-   The STUN agent then does any checks that are required by a
-   authentication mechanism that the usage has specified (see
-   Section 10).
+   然后，STUN代理执行用法指定的身份验证机制所需的任何检查(参见第10节)
 
    Once the authentication checks are done, the STUN agent checks for
    unknown attributes and known-but-unexpected attributes in the
