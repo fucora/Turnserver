@@ -1,0 +1,2400 @@
+备忘录
+    此文档为网络社区详细说明了一个Internet标准跟踪协议，并希望大家广泛讨论提出建议。为了此协议的标准化，请参考当前版本的“ Internet Official Protocol Standards”。这份备忘录的分发是无限制的。
+摘要
+    STUN（Session Traversal Utilities for NAT）是一个为其它协议提供NAT穿越的协议。它能被终端设备用于确定NAT分配给的IP地址和端口，它也能被两台终端设备用于测试网络互通性，也能作为一个keep-alive的协议去位置NAT绑定。STUN能用于目前的绝大多数NAT设备，并不需要NAT设备提供特殊的功能。
+    STUN协议本身并不是一个NAT穿越的解决方案。当然啦，它是一个NAT穿越解决方案中的载体。相对于RFC3489来说，这是一个巨大的改变。
+ 1.介绍
+   本文申明的STUN协议，提供了一个处理NATS的工具。它提供了一种方式，能让终端设备找到NAT设备分配给自己的公网和私网IP地址和端口。它也提供了一种方式，让终端设备位置NAT绑定。为了延展性，协议能测试两台终端设备之间的网络互通性[MMUSIC-ICE]，或者为两者转发网络数据包[BEHAVE-TURN]。为了保证它的工具属性，文档定义了一个可扩展的数据包格式，定义了在多个网络传输协议上的操作流程，并且提供了两者方式的身份验证。
+  STUN旨在被作为NAT穿越方案中的上下文。这些方案被称为STUN标准，每个标准都描述了怎么使用STUN达到NAT穿越的。
+   特别的，一个标准指明了STUN消息什么时候发送，包含了哪些属性，使用什么服务器以及使用哪种认证机制。ICE（Interactive Connectivity Establishment）就是一个STUN 标准。SIP拨号时另一个标准。在某些情况下，一个标准需要根据STUN进行拓展。一个STUN拓展可以使用新方法，属性，错误消息的形式。有关STUN用法的更多信息，请参见第14节。 
+2.从 RFC 3489演变而来
+   STUN 最初定义于 RFC 3489。RFC 3489通常被称为 "经典的STUN", 它代表了解决NAT穿越的一个完整解决方案。在RFC3489中，客户端会发现自己是否在NAT设备后，确定自己的NAT类型，发现自己最外层NAT设备的公网IP地址和端口，然后在协议中一直使用这个IP地址和端口，比如SIP。但是在rfc3489的实战经验发现，这个经典的STUN协议运行的并不足够好。贯穿经典STUN中的IP地址和端口，在对等端上时有时无,它也没有办法判断这种情况，并提供补救措施。此外，经典STUN计算NAT设备类型的算法是由缺陷的,许多的NAT设备不不符合它定义的NAT设备类型。经典STUN也由一个安全性问题，攻击者可以让客户端使用任意的地址，而且根本通过任何加密方式解决这个问题。但现在通过使用更完整的使用STUN的解决方案来缓解这些攻击。 
+   由于这些原因，规范库废弃了RFC 3489,并把它作为完整的NAT穿越方案中的工具。ICE是一个完整的NAT穿越方案，它基于[RFC3264]应答式方法。SIP Outbound [SIP-OUTBOUND]是一个完整的SIP信令穿越方案，它使用STUN方式与众不同。 尽管可以使用经典STUN单独作为NAT穿越的解决方案。这个用法在本文中没有描述，并强烈建议不要这么做。这里描述的新STUN协议仅从经典STUN 略微改变。
+除UDP之外，新STUN协议现在在TCP上也可以运行。可扩展性以更结构化的方式添加到协议中。magic cookie机制可以让STUN和应用层协议分解开来，它在128位的transaction ID中使用32位来记录magic cookie的值，这样可以保持新旧STUN的兼容性。映射地址使用新的异或格式进行编码。还有其他更微小的变化。请参见第19章的更完整列表。
+由于范围的变化，STUN也被从“SimpleTraversal of UDP through NAT”重命名为“Session Traversal Utilities for NAT”。首字母缩略词仍然是STUN，无论如何，这是所有人都记得的。
+3.操作概述
+本节仅供参考
+
+
+                               /-----\
+                             // STUN  \\
+                            |   Server  |
+                             \\       //
+                               \-----/
+
+
+                          +--------------+             Public Internet
+          ................|     NAT 2    |.......................
+                          +--------------+
+
+                          +--------------+             Private NET 2
+          ................|     NAT 1    |.......................
+                          +--------------+
+
+                              /-----\
+                            //  STUN \\
+                           |    Client |
+                            \\       //               Private NET 1
+                              \-----/
+
+
+                 图1：一种可能的STUN结构
+
+   一种可能的STUN结构如图1所示。有两个实体（称为STUN代理）实现STUN协议。图中的下层代理是STUN客户端，它连接到Private NET 1，这个网络连接通过NAT 1设备连接到Private NET 2，Private NET 2 通过NAT 2设备连接到Public Internet。图中最上层代理是服务，并驻留在公共Internet上。
+STUN是一个客户端到服务端的协议，它支持两者类型的事务。一个是请求/响应事务，其中客户端向服务器发送请求，服务器返回响应。第二种是指令事务，其中代理发送指令到服务端或客户端，而且不会产生响应。两种类型的事务都包含了transaction ID，它是随机产生的96位长度的数字。对于请求/响应事务，transaction ID允许客户端将响应与它生成的请求相关联; 对于指示，事务ID用作调试辅助。
+所有STUN消息都以固定标头开头，其中包含方法，类和transaction ID。 方法指明了请求或指令的用途。此规范仅定义了一个方法Binding，其他方法会在其他文档中定义。类指明了请求或指令的类型(请求，成功响应，错误响应,指令)。
+在固定标题之后会出现零个或多个属性，这些属性是 Type-Length-Value扩展，用于传递请求消息的附加信息。 
+   在本文中声明了一个简单的方法叫Binding。Binding方法可以在请求/响应事务或指令中使用。当在请求/响应事务中使用时，Binding方法可用于确定NAT已分配给STUN客户端的特定“binding”。当在请求/响应或指令中使用时，Binding方法也可用于使这些“bindings”保持活动状态。 
+   在Binding请求/响应事务中，绑定请求是从STUN客户端发送到STUN服务器。当Binding请求到达STUN服务器时，它可能已经通过STUN客户端和STUN服务器之间的一个或多个NAT（在图1中有两个这样的NAT）。当绑定请求消息通过NAT时，NAT将修改数据包的源传输地址（即源IP地址和源端口），因此，服务器接收的请求的源传输地址将是最靠近服务器的NAT创建的公网IP地址和端口， 这被叫做反射地址。STUN服务器将反射地址复制到STUN Binding响应中的XOR-MAPPED-ADDRESS属性，并将Binding响应发送回STUN客户端。当此数据包通过
+NAT 传回时，NAT将修改IP标头中的目标传输地址，但STUN响应正文中的XOR-MAPPED-ADDRESS 属性中的传输地址将保持不变。通过这种方式，客户端可以获知最外层NAT相对于STUN服务器分配的反射地址。   
+在一些用法中，STUN必须与其他协议（例如，[ MMUSIC-ICE ]，[ SIP-OUTBOUND ]）复用。在这些用法中，必须有一种方法检查数据包并确定它是否是STUN数据包。STUN在STUN头中提供了三个字段，其中包含可用于此目的的固定值。如果这还不够，则STUN数据包还可以包含FINGERPRINT值，该值可以进一步用于区分数据包。 
+   STUN定义了一组可选过程让协议区分使用，称为机制。这些机制包括DNS发现，
+到备用服务器的重定向技术，用于解复用的指纹属性，以及两种身份验证和消息完整性交换。 身份验证机制的核心是用户名，密码和消息完整性的值。两种身份验证机制包括短期验证和长期验证机制。每种用法都指定了该用法允许的机制。
+    在长期身份验证集中中，客户端和服务器共享预先配置的用户名和密码，并执行摘要Challenge 响应交换，其灵感来自（但细节上不同）于为HTTP [ RFC2617 ] 定义的交换。
+在短期凭证机制中，客户端和服务器在STUN交换之前通过一些外带方法交换用户名和密码。例如，在ICE使用[ MMUSIC-ICE ]中，两个端点使用带外信令来交换用户名和密码。这些用于完整性保护和验证请求和响应。没有使用challenge或nonce。 
+4.术语
+   在本文档中，关键词"MUST", "MUST NOT", "REQUIRED","SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY","OPTIONAL"将按照BCP 14，RFC 2119 [ RFC2119 ]中的描述进行解释，并指示符合STUN实现的要求级别。
+5.定义
+   STUN代理：STUN代理是实现STUN 协议的实体。该实体可以是STUN客户端或STUN 服务器。
+
+   STUN客户端：STUN客户端是发送STUN请求并
+      接收STUN响应的实体。STUN客户端也可以发送指示。
+      在本规范中，术语STUN客户端和客户端是
+      同义词。
+
+   STUN服务器：STUN服务器是接收STUN请求并发送STUN响应的实体。STUN服务器也可以发送指示。在本说明书中，术语STUN服务器和服务器是同义词。
+
+   传输地址：IP地址和端口号的组合（例如UDP或TCP端口号）。
+
+自反传输地址：客户端学习的传输地址，用于标识IP网络上的其他主机（通常是STUN服务器）所看到的客户端。当客户端与其他主机之间存在中间NAT时，自反传输地址表示分配给
+NAT公共端的客户端的映射地址。在STUN响应中从映射的地址属性（MAPPED-ADDRESS或XOR-MAPPED-ADDRESS）学习自反传输地址。
+
+   映射地址：与反身地址相同的含义。这个词是由于历史原因以及MAPPED-ADDRESS和XOR-MAPPED-ADDRESS属性的命名而保留。
+
+   长期凭据：
+      表示客户端和服务器之间共享密钥的用户名和关联密码。
+      当订户
+      注册服务并持续到订户离开
+      服务或明确更改凭证时，通常会向客户端授予长期凭证。
+
+   长期密码：来自长期凭证的密码。
+
+   短期凭证：表示客户端和服务器之间共享密钥的临时用户名和关联密码。短期凭证是在STUN交换之前通过客户端和服务器之间的某种协议机制获得的。短期凭证具有明确的时间范围，其可以基于特定的时间量（例如5分钟）或基于事件（例如SIP对话的终止）。短期凭证的具体范围由应用程序使用定义。
+
+   短期密码：短期凭证的密码组件。
+   STUN指令：没有收到响应的STUN消息。
+   属性：Type-Length-Value（TLV）对象的STUN术语可以添加到STUN消息中。属性分为两种类型：comprehension-required和comprehension-optional。STUN代理可以安全地忽略他们不理解的理解- 可选属性，但如果消息包含不理解的理解所需属性，则无法成功处理消息。
+
+   RTO：重传TimeOut，定义请求传输与该请求的第一次重传之间的初始时间
+
+6. STUN消息结构
+
+
+
+   STUN消息使用二进制的网络格式。 (最重要的字节或八位字节，通常也称为big-endian)。传输顺序在RFC 791 [ RFC0791 ]的附录B中有详细描述。除非另有说明，否则数字常量
+以十进制表示（基数为10）。所有STUN消息必须以一个20字节的头开始，后跟零个或多个属性。STUN标头包含STUN消息类型，magic cookie，Transaction ID和消息长度。 
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |0 0|     STUN Message Type     |         Message Length        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                         Magic Cookie                          |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                                                               |
+      |                     Transaction ID (96 bits)                  |
+      |                                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+                   图2：STUN消息头的格式
+
+   每个STUN消息的最重要的2位必须是零。当STUN与同一端口上的其他协议复用时，这可用于区分STUN数据包与其他协议。
+   STUN Message Type定义了消息类型(request, successresponse, failure response, or indication) 和消息方法 (主要功能)。 
+虽然有四种消息类型，但是可以划分成两种事务类型:
+     请求/响应事务（由请求消息和响应消息组成）和指令事务（由单个指示消息组成）。
+  响应被分为成功响应和错误响应， 以助于快速处理STUN消息。
+ 
+消息类型字段进一步分解为以下结构：
+                        0                 1
+                        2  3  4 5 6 7 8 9 0 1 2 3 4 5
+                       +--+--+-+-+-+-+-+-+-+-+-+-+-+-+
+                       |M |M |M|M|M|C|M|M|M|C|M|M|M|M|
+                       |11|10|9|8|7|1|6|5|4|0|3|2|1|0|
+                       +--+--+-+-+-+-+-+-+-+-+-+-+-+-+
+                      图3：STUN消息类型字段的格式
+M11到M0代表了12位编码的METHOD，C1和C0表示了消息类型（0b00是请求，0b01类是
+指令，0b10类是成功响应， 0b11 类是错误响应）
+该规范定义了一个方法Binding。方法和类是正交的，因此对于每种方法，该方法可以有请求，成功响应，错误响应和指令。定义新方法的扩展必须指出该方法允许哪些类。
+例如，Binding请求具有class = 0b00（request）和method = 0b000000000001（Binding）并被编码为前16位为0x0001。Binding响应具有class = 0b10（成功响应）和
+ method = 0b000000000001，并且被编码为前16位为0x0101。
+   注意：这种不幸的编码是由于在 [ RFC3489 ]中分配的值没有考虑使用位字段编码指示成功和错误。
+    Magic cookie字段必须包含网络字节顺序的固定值0x2112A442 。在RFC 3489 [ RFC3489 ]中，此字段是事务ID的一部分; 将Magic cookie放在此位置允许服务器检测客户端是否理解某些属性在本修订规范中添加了。此外，当STUN与同一端口上的其他协议复用时，它有助于区分STUN数据包和其他协议的数据包。
+事务ID是96位，用于唯一标识STUN事务。对于请求/响应事务,STUN客户端为请求选择事务ID，并由服务器在响应中附带。对于指令，它由发送指令的代理选择。它主要用于将请求与响应相关联，此外，它也在防止网络攻击上作了一些贡献。服务器还使用事务ID作为密钥，以便在所有客户端中唯一地标识每个事务。。因此，事务ID必须从区间0 .. 2 ** 96-1中统一和随机地选择，并且应该是随机加密的。同一请求的重新发送重用相同的
+事务ID，但客户端必须为新事务选择新的事务ID，除非新请求与先前请求在数据上完全相同并从同一传输地址发送到同一IP地址。成功和错误响应必须具有相同的功能事务ID作为其对应的请求。当代理在同一端口上充当STUN服务器和STUN客户端时，代理发送的请求中的事务ID与代理接收的请求中的事务ID 无关。
+  消息长度必须去除掉20字节STUN头的消息的大小（以字节为单位）。由于所有STUN属性都
+填充为4个字节的倍数，因此该字段的最后2位始终为零。这提供了另一种区分STUN数据包和其他协议数据包的方法。
+   在STUN标题的固定部分之后，有零或更多的属性。每个属性都是TLV（Type-Length-Value）编码。编码的细节以及属性本身在第15节中给出。
+7.基本协议程序
+   本节定义了STUN协议的基本过程。它
+   描述了消息的形成方式，消息的发送方式以及消息的
+   处理方式。它还定义
+   了Binding方法的详细处理。本文档
+   中的其他部分描述了在某些
+   情况下用法可能选择使用的可选过程。其他文档可以通过
+   添加新方法，新属性或新的错误响应代码来定义STUN的其他扩展
+
+7.1.形成请求或指示
+在制定请求或指示消息时，代理必须在创建标题时遵循第6节中的规则。此外，消息类必须是“请求”或“指令”（视情况而定），并且该方法必须是Binding或在另一个文档中定义的某种方法。然后，代理会添加方法或用法指定的任何属性。例如，某些用法可能指定代理使用
+身份验证方法（第10节）或FINGERPRINT属性（第8节）。如果代理正在发送请求，它应该为请求添加一个SOFTWARE属性。代理可中包含SOFTWARE属性，具体取决于method。STUN的扩展应该讨论软件是否适用于新的适应症。
+Binding method不需要身份验证和其它属性，除非另有说明。
+
+通过UDP发送的所有STUN消息应该小于路径MTU。如果路径MTU未知，则消息应该是
+ 576字节中的较小者和IPv4 [ RFC1122 ]的第一跳MTU和1280字节的IPv6 [ RFC2460 ]。
+该值对应于IP数据包的总大小。因此，对于IPv4，实际的STUN消息需要小于548字节（576减去20字节的IP报头，减去8字节的UDP报头，假设没有使用IP选项）STUN不提供处理请求在MTU下但响应大于MTU的情况的能力。没有设想这个限制将成为STUN的问题。MTU限制
+应该是一个，而不是必须考虑到STUN本身用于探测MTU特性的情况[ BEHAVE-NAT ]。在外面
+在这个或类似的应用程序中，必须遵循MTU约束。
+
+7.2发送请求或指令
+  本文档规定了如何通过UDP，TCP或TLS-over-TCP发送STUN消息; 
+   other transport protocols may be added in the future.  The STUN usage
+   must specify which transport protocol is used, and how the agent
+   determines the IP address and port of the recipient.  Section 9
+   describes a DNS-based method of determining the IP address and port
+   of a server that a usage may elect to use.  STUN may be used with
+   anycast addresses, but only with UDP and in usages where
+   authentication is not used.
+
+   At any time, a client MAY have multiple outstanding STUN requests
+   with the same STUN server (that is, multiple transactions in
+   progress, with different transaction IDs).  Absent other limits to
+   the rate of new transactions (such as those specified by ICE for
+   connectivity checks or when STUN is run over TCP), a client SHOULD
+   space new transactions to a server by RTO and SHOULD limit itself to
+   ten outstanding transactions to the same server.
+
+7.2.1.  Sending over UDP
+
+
+   When running STUN over UDP, it is possible that the STUN message
+   might be dropped by the network.  Reliability of STUN request/
+   response transactions is accomplished through retransmissions of the
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 13]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   request message by the client application itself.  STUN indications
+   are not retransmitted; thus, indication transactions over UDP are not
+   reliable.
+
+   A client SHOULD retransmit a STUN request message starting with an
+   interval of RTO ("Retransmission TimeOut"), doubling after each
+   retransmission.  The RTO is an estimate of the round-trip time (RTT),
+   and is computed as described in RFC 2988 [RFC2988], with two
+   exceptions.  First, the initial value for RTO SHOULD be configurable
+   (rather than the 3 s recommended in RFC 2988) and SHOULD be greater
+   than 500 ms.  The exception cases for this "SHOULD" are when other
+   mechanisms are used to derive congestion thresholds (such as the ones
+   defined in ICE for fixed rate streams), or when STUN is used in non-
+   Internet environments with known network capacities.  In fixed-line
+   access links, a value of 500 ms is RECOMMENDED.  Second, the value of
+   RTO SHOULD NOT be rounded up to the nearest second.  Rather, a 1 ms
+   accuracy SHOULD be maintained.  As with TCP, the usage of Karn's
+   algorithm is RECOMMENDED [KARN87].  When applied to STUN, it means
+   that RTT estimates SHOULD NOT be computed from STUN transactions that
+   result in the retransmission of a request.
+
+   The value for RTO SHOULD be cached by a client after the completion
+   of the transaction, and used as the starting value for RTO for the
+   next transaction to the same server (based on equality of IP
+   address).  The value SHOULD be considered stale and discarded after
+   10 minutes.
+
+   Retransmissions continue until a response is received, or until a
+   total of Rc requests have been sent.  Rc SHOULD be configurable and
+   SHOULD have a default of 7.  If, after the last request, a duration
+   equal to Rm times the RTO has passed without a response (providing
+   ample time to get a response if only this final request actually
+   succeeds), the client SHOULD consider the transaction to have failed.
+   Rm SHOULD be configurable and SHOULD have a default of 16.  A STUN
+   transaction over UDP is also considered failed if there has been a
+   hard ICMP error [RFC1122].  For example, assuming an RTO of 500 ms,
+   requests would be sent at times 0 ms, 500 ms, 1500 ms, 3500 ms, 7500
+   ms, 15500 ms, and 31500 ms.  If the client has not received a
+   response after 39500 ms, the client will consider the transaction to
+   have timed out.
+
+7.2.2.  Sending over TCP or TLS-over-TCP
+
+
+   For TCP and TLS-over-TCP, the client opens a TCP connection to the
+   server.
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 14]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   In some usages of STUN, STUN is sent as the only protocol over the
+   TCP connection.  In this case, it can be sent without the aid of any
+   additional framing or demultiplexing.  In other usages, or with other
+   extensions, it may be multiplexed with other data over a TCP
+   connection.  In that case, STUN MUST be run on top of some kind of
+   framing protocol, specified by the usage or extension, which allows
+   for the agent to extract complete STUN messages and complete
+   application layer messages.  The STUN service running on the well-
+   known port or ports discovered through the DNS procedures in
+   Section 9 is for STUN alone, and not for STUN multiplexed with other
+   data.  Consequently, no framing protocols are used in connections to
+   those servers.  When additional framing is utilized, the usage will
+   specify how the client knows to apply it and what port to connect to.
+   For example, in the case of ICE connectivity checks, this information
+   is learned through out-of-band negotiation between client and server.
+
+   When STUN is run by itself over TLS-over-TCP, the
+   TLS_RSA_WITH_AES_128_CBC_SHA ciphersuite MUST be implemented at a
+   minimum.  Implementations MAY also support any other ciphersuite.
+   When it receives the TLS Certificate message, the client SHOULD
+   verify the certificate and inspect the site identified by the
+   certificate.  If the certificate is invalid or revoked, or if it does
+   not identify the appropriate party, the client MUST NOT send the STUN
+   message or otherwise proceed with the STUN transaction.  The client
+   MUST verify the identity of the server.  To do that, it follows the
+   identification procedures defined in Section 3.1 of RFC 2818
+   [RFC2818].  Those procedures assume the client is dereferencing a
+   URI.  For purposes of usage with this specification, the client
+   treats the domain name or IP address used in Section 8.1 as the host
+   portion of the URI that has been dereferenced.  Alternatively, a
+   client MAY be configured with a set of domains or IP addresses that
+   are trusted; if a certificate is received that identifies one of
+   those domains or IP addresses, the client considers the identity of
+   the server to be verified.
+
+   When STUN is run multiplexed with other protocols over a TLS-over-TCP
+   connection, the mandatory ciphersuites and TLS handling procedures
+   operate as defined by those protocols.
+
+   Reliability of STUN over TCP and TLS-over-TCP is handled by TCP
+   itself, and there are no retransmissions at the STUN protocol level.
+   However, for a request/response transaction, if the client has not
+   received a response by Ti seconds after it sent the SYN to establish
+   the connection, it considers the transaction to have timed out.  Ti
+   SHOULD be configurable and SHOULD have a default of 39.5s.  This
+   value has been chosen to equalize the TCP and UDP timeouts for the
+   default initial RTO.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 15]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   In addition, if the client is unable to establish the TCP connection,
+   or the TCP connection is reset or fails before a response is
+   received, any request/response transaction in progress is considered
+   to have failed.
+
+   The client MAY send multiple transactions over a single TCP (or TLS-
+   over-TCP) connection, and it MAY send another request before
+   receiving a response to the previous.  The client SHOULD keep the
+   connection open until it:
+
+   o  has no further STUN requests or indications to send over that
+      connection, and
+
+   o  has no plans to use any resources (such as a mapped address
+      (MAPPED-ADDRESS or XOR-MAPPED-ADDRESS) or relayed address
+      [BEHAVE-TURN]) that were learned though STUN requests sent over
+      that connection, and
+
+   o  if multiplexing other application protocols over that port, has
+      finished using that other application, and
+
+   o  if using that learned port with a remote peer, has established
+      communications with that remote peer, as is required by some TCP
+      NAT traversal techniques (e.g., [MMUSIC-ICE-TCP]).
+
+   At the server end, the server SHOULD keep the connection open, and
+   let the client close it, unless the server has determined that the
+   connection has timed out (for example, due to the client
+   disconnecting from the network).  Bindings learned by the client will
+   remain valid in intervening NATs only while the connection remains
+   open.  Only the client knows how long it needs the binding.  The
+   server SHOULD NOT close a connection if a request was received over
+   that connection for which a response was not sent.  A server MUST NOT
+   ever open a connection back towards the client in order to send a
+   response.  Servers SHOULD follow best practices regarding connection
+   management in cases of overload.
+
+7.3.  Receiving a STUN Message
+
+
+   This section specifies the processing of a STUN message.  The
+   processing specified here is for STUN messages as defined in this
+   specification; additional rules for backwards compatibility are
+   defined in Section 12.  Those additional procedures are optional, and
+   usages can elect to utilize them.  First, a set of processing
+   operations is applied that is independent of the class.  This is
+   followed by class-specific processing, described in the subsections
+   that follow.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 16]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   When a STUN agent receives a STUN message, it first checks that the
+   message obeys the rules of Section 6.  It checks that the first two
+   bits are 0, that the magic cookie field has the correct value, that
+   the message length is sensible, and that the method value is a
+   supported method.  It checks that the message class is allowed for
+   the particular method.  If the message class is "Success Response" or
+   "Error Response", the agent checks that the transaction ID matches a
+   transaction that is still in progress.  If the FINGERPRINT extension
+   is being used, the agent checks that the FINGERPRINT attribute is
+   present and contains the correct value.  If any errors are detected,
+   the message is silently discarded.  In the case when STUN is being
+   multiplexed with another protocol, an error may indicate that this is
+   not really a STUN message; in this case, the agent should try to
+   parse the message as a different protocol.
+
+   The STUN agent then does any checks that are required by a
+   authentication mechanism that the usage has specified (see
+   Section 10).
+
+   Once the authentication checks are done, the STUN agent checks for
+   unknown attributes and known-but-unexpected attributes in the
+   message.  Unknown comprehension-optional attributes MUST be ignored
+   by the agent.  Known-but-unexpected attributes SHOULD be ignored by
+   the agent.  Unknown comprehension-required attributes cause
+   processing that depends on the message class and is described below.
+
+   At this point, further processing depends on the message class of the
+   request.
+
+7.3.1.  Processing a Request
+
+
+   If the request contains one or more unknown comprehension-required
+   attributes, the server replies with an error response with an error
+   code of 420 (Unknown Attribute), and includes an UNKNOWN-ATTRIBUTES
+   attribute in the response that lists the unknown comprehension-
+   required attributes.
+
+   The server then does any additional checking that the method or the
+   specific usage requires.  If all the checks succeed, the server
+   formulates a success response as described below.
+
+   When run over UDP, a request received by the server could be the
+   first request of a transaction, or a retransmission.  The server MUST
+   respond to retransmissions such that the following property is
+   preserved: if the client receives the response to the retransmission
+   and not the response that was sent to the original request, the
+   overall state on the client and server is identical to the case where
+   only the response to the original retransmission is received, or
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 17]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   where both responses are received (in which case the client will use
+   the first).  The easiest way to meet this requirement is for the
+   server to remember all transaction IDs received over UDP and their
+   corresponding responses in the last 40 seconds.  However, this
+   requires the server to hold state, and will be inappropriate for any
+   requests which are not authenticated.  Another way is to reprocess
+   the request and recompute the response.  The latter technique MUST
+   only be applied to requests that are idempotent (a request is
+   considered idempotent when the same request can be safely repeated
+   without impacting the overall state of the system) and result in the
+   same success response for the same request.  The Binding method is
+   considered to be idempotent.  Note that there are certain rare
+   network events that could cause the reflexive transport address value
+   to change, resulting in a different mapped address in different
+   success responses.  Extensions to STUN MUST discuss the implications
+   of request retransmissions on servers that do not store transaction
+   state.
+
+7.3.1.1.  Forming a Success or Error Response
+
+
+   When forming the response (success or error), the server follows the
+   rules of Section 6.  The method of the response is the same as that
+   of the request, and the message class is either "Success Response" or
+   "Error Response".
+
+   For an error response, the server MUST add an ERROR-CODE attribute
+   containing the error code specified in the processing above.  The
+   reason phrase is not fixed, but SHOULD be something suitable for the
+   error code.  For certain errors, additional attributes are added to
+   the message.  These attributes are spelled out in the description
+   where the error code is specified.  For example, for an error code of
+   420 (Unknown Attribute), the server MUST include an UNKNOWN-
+   ATTRIBUTES attribute.  Certain authentication errors also cause
+   attributes to be added (see Section 10).  Extensions may define other
+   errors and/or additional attributes to add in error cases.
+
+   If the server authenticated the request using an authentication
+   mechanism, then the server SHOULD add the appropriate authentication
+   attributes to the response (see Section 10).
+
+   The server also adds any attributes required by the specific method
+   or usage.  In addition, the server SHOULD add a SOFTWARE attribute to
+   the message.
+
+   For the Binding method, no additional checking is required unless the
+   usage specifies otherwise.  When forming the success response, the
+   server adds a XOR-MAPPED-ADDRESS attribute to the response, where the
+   contents of the attribute are the source transport address of the
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 18]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   request message.  For UDP, this is the source IP address and source
+   UDP port of the request message.  For TCP and TLS-over-TCP, this is
+   the source IP address and source TCP port of the TCP connection as
+   seen by the server.
+
+7.3.1.2.  Sending the Success or Error Response
+
+
+   The response (success or error) is sent over the same transport as
+   the request was received on.  If the request was received over UDP,
+   the destination IP address and port of the response are the source IP
+   address and port of the received request message, and the source IP
+   address and port of the response are equal to the destination IP
+   address and port of the received request message.  If the request was
+   received over TCP or TLS-over-TCP, the response is sent back on the
+   same TCP connection as the request was received on.
+
+7.3.2.  Processing an Indication
+
+
+   If the indication contains unknown comprehension-required attributes,
+   the indication is discarded and processing ceases.
+
+   The agent then does any additional checking that the method or the
+   specific usage requires.  If all the checks succeed, the agent then
+   processes the indication.  No response is generated for an
+   indication.
+
+   For the Binding method, no additional checking or processing is
+   required, unless the usage specifies otherwise.  The mere receipt of
+   the message by the agent has refreshed the "bindings" in the
+   intervening NATs.
+
+   Since indications are not re-transmitted over UDP (unlike requests),
+   there is no need to handle re-transmissions of indications at the
+   sending agent.
+
+7.3.3.  Processing a Success Response
+
+
+   If the success response contains unknown comprehension-required
+   attributes, the response is discarded and the transaction is
+   considered to have failed.
+
+   The client then does any additional checking that the method or the
+   specific usage requires.  If all the checks succeed, the client then
+   processes the success response.
+
+   For the Binding method, the client checks that the XOR-MAPPED-ADDRESS
+   attribute is present in the response.  The client checks the address
+   family specified.  If it is an unsupported address family, the
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 19]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   attribute SHOULD be ignored.  If it is an unexpected but supported
+   address family (for example, the Binding transaction was sent over
+   IPv4, but the address family specified is IPv6), then the client MAY
+   accept and use the value.
+
+7.3.4.  Processing an Error Response
+
+
+   If the error response contains unknown comprehension-required
+   attributes, or if the error response does not contain an ERROR-CODE
+   attribute, then the transaction is simply considered to have failed.
+
+   The client then does any processing specified by the authentication
+   mechanism (see Section 10).  This may result in a new transaction
+   attempt.
+
+   The processing at this point depends on the error code, the method,
+   and the usage; the following are the default rules:
+
+   o  If the error code is 300 through 399, the client SHOULD consider
+      the transaction as failed unless the ALTERNATE-SERVER extension is
+      being used.  See Section 11.
+
+   o  If the error code is 400 through 499, the client declares the
+      transaction failed; in the case of 420 (Unknown Attribute), the
+      response should contain a UNKNOWN-ATTRIBUTES attribute that gives
+      additional information.
+
+   o  If the error code is 500 through 599, the client MAY resend the
+      request; clients that do so MUST limit the number of times they do
+      this.
+
+   Any other error code causes the client to consider the transaction
+   failed.
+
+8.  FINGERPRINT Mechanism
+
+
+   This section describes an optional mechanism for STUN that aids in
+   distinguishing STUN messages from packets of other protocols when the
+   two are multiplexed on the same transport address.  This mechanism is
+   optional, and a STUN usage must describe if and when it is used.  The
+   FINGERPRINT mechanism is not backwards compatible with RFC 3489, and
+   cannot be used in environments where such compatibility is required.
+
+   In some usages, STUN messages are multiplexed on the same transport
+   address as other protocols, such as the Real Time Transport Protocol
+   (RTP).  In order to apply the processing described in Section 7, STUN
+   messages must first be separated from the application packets.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 20]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   Section 6 describes three fixed fields in the STUN header that can be
+   used for this purpose.  However, in some cases, these three fixed
+   fields may not be sufficient.
+
+   When the FINGERPRINT extension is used, an agent includes the
+   FINGERPRINT attribute in messages it sends to another agent.
+   Section 15.5 describes the placement and value of this attribute.
+   When the agent receives what it believes is a STUN message, then, in
+   addition to other basic checks, the agent also checks that the
+   message contains a FINGERPRINT attribute and that the attribute
+   contains the correct value.  Section 7.3 describes when in the
+   overall processing of a STUN message the FINGERPRINT check is
+   performed.  This additional check helps the agent detect messages of
+   other protocols that might otherwise seem to be STUN messages.
+
+9.  DNS Discovery of a Server
+
+
+   This section describes an optional procedure for STUN that allows a
+   client to use DNS to determine the IP address and port of a server.
+   A STUN usage must describe if and when this extension is used.  To
+   use this procedure, the client must know a server's domain name and a
+   service name; the usage must also describe how the client obtains
+   these.  Hard-coding the domain name of the server into software is
+   NOT RECOMMENDED in case the domain name is lost or needs to change
+   for legal or other reasons.
+
+   When a client wishes to locate a STUN server in the public Internet
+   that accepts Binding request/response transactions, the SRV service
+   name is "stun".  When it wishes to locate a STUN server that accepts
+   Binding request/response transactions over a TLS session, the SRV
+   service name is "stuns".  STUN usages MAY define additional DNS SRV
+   service names.
+
+   The domain name is resolved to a transport address using the SRV
+   procedures specified in [RFC2782].  The DNS SRV service name is the
+   service name provided as input to this procedure.  The protocol in
+   the SRV lookup is the transport protocol the client will run STUN
+   over: "udp" for UDP and "tcp" for TCP.  Note that only "tcp" is
+   defined with "stuns" at this time.
+
+   The procedures of RFC 2782 are followed to determine the server to
+   contact.  RFC 2782 spells out the details of how a set of SRV records
+   is sorted and then tried.  However, RFC 2782 only states that the
+   client should "try to connect to the (protocol, address, service)"
+   without giving any details on what happens in the event of failure.
+   When following these procedures, if the STUN transaction times out
+   without receipt of a response, the client SHOULD retry the request to
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 21]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   the next server in the ordered defined by RFC 2782.  Such a retry is
+   only possible for request/response transmissions, since indication
+   transactions generate no response or timeout.
+
+   The default port for STUN requests is 3478, for both TCP and UDP.
+
+   Administrators of STUN servers SHOULD use this port in their SRV
+   records for UDP and TCP.  In all cases, the port in DNS MUST reflect
+   the one on which the server is listening.  The default port for STUN
+   over TLS is 5349.  Servers can run STUN over TLS on the same port as
+   STUN over TCP if the server software supports determining whether the
+   initial message is a TLS or STUN message.
+
+   If no SRV records were found, the client performs an A or AAAA record
+   lookup of the domain name.  The result will be a list of IP
+   addresses, each of which can be contacted at the default port using
+   UDP or TCP, independent of the STUN usage.  For usages that require
+   TLS, the client connects to one of the IP addresses using the default
+   STUN over TLS port.
+
+10.  Authentication and Message-Integrity Mechanisms
+
+
+   This section defines two mechanisms for STUN that a client and server
+   can use to provide authentication and message integrity; these two
+   mechanisms are known as the short-term credential mechanism and the
+   long-term credential mechanism.  These two mechanisms are optional,
+   and each usage must specify if and when these mechanisms are used.
+   Consequently, both clients and servers will know which mechanism (if
+   any) to follow based on knowledge of which usage applies.  For
+   example, a STUN server on the public Internet supporting ICE would
+   have no authentication, whereas the STUN server functionality in an
+   agent supporting connectivity checks would utilize short-term
+   credentials.  An overview of these two mechanisms is given in
+   Section 3.
+
+   Each mechanism specifies the additional processing required to use
+   that mechanism, extending the processing specified in Section 7.  The
+   additional processing occurs in three different places: when forming
+   a message, when receiving a message immediately after the basic
+   checks have been performed, and when doing the detailed processing of
+   error responses.
+
+10.1.  Short-Term Credential Mechanism
+
+
+   The short-term credential mechanism assumes that, prior to the STUN
+   transaction, the client and server have used some other protocol to
+   exchange a credential in the form of a username and password.  This
+   credential is time-limited.  The time limit is defined by the usage.
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 22]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   As an example, in the ICE usage [MMUSIC-ICE], the two endpoints use
+   out-of-band signaling to agree on a username and password, and this
+   username and password are applicable for the duration of the media
+   session.
+
+   This credential is used to form a message-integrity check in each
+   request and in many responses.  There is no challenge and response as
+   in the long-term mechanism; consequently, replay is prevented by
+   virtue of the time-limited nature of the credential.
+
+10.1.1.  Forming a Request or Indication
+
+
+   For a request or indication message, the agent MUST include the
+   USERNAME and MESSAGE-INTEGRITY attributes in the message.  The HMAC
+   for the MESSAGE-INTEGRITY attribute is computed as described in
+   Section 15.4.  Note that the password is never included in the
+   request or indication.
+
+10.1.2.  Receiving a Request or Indication
+
+
+   After the agent has done the basic processing of a message, the agent
+   performs the checks listed below in order specified:
+
+   o  If the message does not contain both a MESSAGE-INTEGRITY and a
+      USERNAME attribute:
+
+      *  If the message is a request, the server MUST reject the request
+         with an error response.  This response MUST use an error code
+         of 400 (Bad Request).
+
+      *  If the message is an indication, the agent MUST silently
+         discard the indication.
+
+   o  If the USERNAME does not contain a username value currently valid
+      within the server:
+
+      *  If the message is a request, the server MUST reject the request
+         with an error response.  This response MUST use an error code
+         of 401 (Unauthorized).
+
+      *  If the message is an indication, the agent MUST silently
+         discard the indication.
+
+   o  Using the password associated with the username, compute the value
+      for the message integrity as described in Section 15.4.  If the
+      resulting value does not match the contents of the MESSAGE-
+      INTEGRITY attribute:
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 23]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+      *  If the message is a request, the server MUST reject the request
+         with an error response.  This response MUST use an error code
+         of 401 (Unauthorized).
+
+      *  If the message is an indication, the agent MUST silently
+         discard the indication.
+
+   If these checks pass, the agent continues to process the request or
+   indication.  Any response generated by a server MUST include the
+   MESSAGE-INTEGRITY attribute, computed using the password utilized to
+   authenticate the request.  The response MUST NOT contain the USERNAME
+   attribute.
+
+   If any of the checks fail, a server MUST NOT include a MESSAGE-
+   INTEGRITY or USERNAME attribute in the error response.  This is
+   because, in these failure cases, the server cannot determine the
+   shared secret necessary to compute MESSAGE-INTEGRITY.
+
+10.1.3.  Receiving a Response
+
+
+   The client looks for the MESSAGE-INTEGRITY attribute in the response.
+   If present, the client computes the message integrity over the
+   response as defined in Section 15.4, using the same password it
+   utilized for the request.  If the resulting value matches the
+   contents of the MESSAGE-INTEGRITY attribute, the response is
+   considered authenticated.  If the value does not match, or if
+   MESSAGE-INTEGRITY was absent, the response MUST be discarded, as if
+   it was never received.  This means that retransmits, if applicable,
+   will continue.
+
+10.2.  Long-Term Credential Mechanism
+
+
+   The long-term credential mechanism relies on a long-term credential,
+   in the form of a username and password that are shared between client
+   and server.  The credential is considered long-term since it is
+   assumed that it is provisioned for a user, and remains in effect
+   until the user is no longer a subscriber of the system, or is
+   changed.  This is basically a traditional "log-in" username and
+   password given to users.
+
+   Because these usernames and passwords are expected to be valid for
+   extended periods of time, replay prevention is provided in the form
+   of a digest challenge.  In this mechanism, the client initially sends
+   a request, without offering any credentials or any integrity checks.
+   The server rejects this request, providing the user a realm (used to
+   guide the user or agent in selection of a username and password) and
+   a nonce.  The nonce provides the replay protection.  It is a cookie,
+   selected by the server, and encoded in such a way as to indicate a
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 24]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   duration of validity or client identity from which it is valid.  The
+   client retries the request, this time including its username and the
+   realm, and echoing the nonce provided by the server.  The client also
+   includes a message-integrity, which provides an HMAC over the entire
+   request, including the nonce.  The server validates the nonce and
+   checks the message integrity.  If they match, the request is
+   authenticated.  If the nonce is no longer valid, it is considered
+   "stale", and the server rejects the request, providing a new nonce.
+
+   In subsequent requests to the same server, the client reuses the
+   nonce, username, realm, and password it used previously.  In this
+   way, subsequent requests are not rejected until the nonce becomes
+   invalid by the server, in which case the rejection provides a new
+   nonce to the client.
+
+   Note that the long-term credential mechanism cannot be used to
+   protect indications, since indications cannot be challenged.  Usages
+   utilizing indications must either use a short-term credential or omit
+   authentication and message integrity for them.
+
+   Since the long-term credential mechanism is susceptible to offline
+   dictionary attacks, deployments SHOULD utilize passwords that are
+   difficult to guess.  In cases where the credentials are not entered
+   by the user, but are rather placed on a client device during device
+   provisioning, the password SHOULD have at least 128 bits of
+   randomness.  In cases where the credentials are entered by the user,
+   they should follow best current practices around password structure.
+
+10.2.1.  Forming a Request
+
+
+   There are two cases when forming a request.  In the first case, this
+   is the first request from the client to the server (as identified by
+   its IP address and port).  In the second case, the client is
+   submitting a subsequent request once a previous request/response
+   transaction has completed successfully.  Forming a request as a
+   consequence of a 401 or 438 error response is covered in
+   Section 10.2.3 and is not considered a "subsequent request" and thus
+   does not utilize the rules described in Section 10.2.1.2.
+
+10.2.1.1.  First Request
+
+
+   If the client has not completed a successful request/response
+   transaction with the server (as identified by hostname, if the DNS
+   procedures of Section 9 are used, else IP address if not), it SHOULD
+   omit the USERNAME, MESSAGE-INTEGRITY, REALM, and NONCE attributes.
+   In other words, the very first request is sent as if there were no
+   authentication or message integrity applied.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 25]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+10.2.1.2.  Subsequent Requests
+
+
+   Once a request/response transaction has completed successfully, the
+   client will have been presented a realm and nonce by the server, and
+   selected a username and password with which it authenticated.  The
+   client SHOULD cache the username, password, realm, and nonce for
+   subsequent communications with the server.  When the client sends a
+   subsequent request, it SHOULD include the USERNAME, REALM, and NONCE
+   attributes with these cached values.  It SHOULD include a MESSAGE-
+   INTEGRITY attribute, computed as described in Section 15.4 using the
+   cached password.
+
+10.2.2.  Receiving a Request
+
+
+   After the server has done the basic processing of a request, it
+   performs the checks listed below in the order specified:
+
+   o  If the message does not contain a MESSAGE-INTEGRITY attribute, the
+      server MUST generate an error response with an error code of 401
+      (Unauthorized).  This response MUST include a REALM value.  It is
+      RECOMMENDED that the REALM value be the domain name of the
+      provider of the STUN server.  The response MUST include a NONCE,
+      selected by the server.  The response SHOULD NOT contain a
+      USERNAME or MESSAGE-INTEGRITY attribute.
+
+   o  If the message contains a MESSAGE-INTEGRITY attribute, but is
+      missing the USERNAME, REALM, or NONCE attribute, the server MUST
+      generate an error response with an error code of 400 (Bad
+      Request).  This response SHOULD NOT include a USERNAME, NONCE,
+      REALM, or MESSAGE-INTEGRITY attribute.
+
+   o  If the NONCE is no longer valid, the server MUST generate an error
+      response with an error code of 438 (Stale Nonce).  This response
+      MUST include NONCE and REALM attributes and SHOULD NOT include the
+      USERNAME or MESSAGE-INTEGRITY attribute.  Servers can invalidate
+      nonces in order to provide additional security.  See Section 4.3
+      of [RFC2617] for guidelines.
+
+   o  If the username in the USERNAME attribute is not valid, the server
+      MUST generate an error response with an error code of 401
+      (Unauthorized).  This response MUST include a REALM value.  It is
+      RECOMMENDED that the REALM value be the domain name of the
+      provider of the STUN server.  The response MUST include a NONCE,
+      selected by the server.  The response SHOULD NOT contain a
+      USERNAME or MESSAGE-INTEGRITY attribute.
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 26]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   o  Using the password associated with the username in the USERNAME
+      attribute, compute the value for the message integrity as
+      described in Section 15.4.  If the resulting value does not match
+      the contents of the MESSAGE-INTEGRITY attribute, the server MUST
+      reject the request with an error response.  This response MUST use
+      an error code of 401 (Unauthorized).  It MUST include REALM and
+      NONCE attributes and SHOULD NOT include the USERNAME or MESSAGE-
+      INTEGRITY attribute.
+
+   If these checks pass, the server continues to process the request.
+   Any response generated by the server (excepting the cases described
+   above) MUST include the MESSAGE-INTEGRITY attribute, computed using
+   the username and password utilized to authenticate the request.  The
+   REALM, NONCE, and USERNAME attributes SHOULD NOT be included.
+
+10.2.3.  Receiving a Response
+
+
+   If the response is an error response with an error code of 401
+   (Unauthorized), the client SHOULD retry the request with a new
+   transaction.  This request MUST contain a USERNAME, determined by the
+   client as the appropriate username for the REALM from the error
+   response.  The request MUST contain the REALM, copied from the error
+   response.  The request MUST contain the NONCE, copied from the error
+   response.  The request MUST contain the MESSAGE-INTEGRITY attribute,
+   computed using the password associated with the username in the
+   USERNAME attribute.  The client MUST NOT perform this retry if it is
+   not changing the USERNAME or REALM or its associated password, from
+   the previous attempt.
+
+   If the response is an error response with an error code of 438 (Stale
+   Nonce), the client MUST retry the request, using the new NONCE
+   supplied in the 438 (Stale Nonce) response.  This retry MUST also
+   include the USERNAME, REALM, and MESSAGE-INTEGRITY.
+
+   The client looks for the MESSAGE-INTEGRITY attribute in the response
+   (either success or failure).  If present, the client computes the
+   message integrity over the response as defined in Section 15.4, using
+   the same password it utilized for the request.  If the resulting
+   value matches the contents of the MESSAGE-INTEGRITY attribute, the
+   response is considered authenticated.  If the value does not match,
+   or if MESSAGE-INTEGRITY was absent, the response MUST be discarded,
+   as if it was never received.  This means that retransmits, if
+   applicable, will continue.
+
+
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 27]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+11.  ALTERNATE-SERVER Mechanism
+
+
+   This section describes a mechanism in STUN that allows a server to
+   redirect a client to another server.  This extension is optional, and
+   a usage must define if and when this extension is used.
+
+   A server using this extension redirects a client to another server by
+   replying to a request message with an error response message with an
+   error code of 300 (Try Alternate).  The server MUST include an
+   ALTERNATE-SERVER attribute in the error response.  The error response
+   message MAY be authenticated; however, there are uses cases for
+   ALTERNATE-SERVER where authentication of the response is not possible
+   or practical.
+
+   A client using this extension handles a 300 (Try Alternate) error
+   code as follows.  The client looks for an ALTERNATE-SERVER attribute
+   in the error response.  If one is found, then the client considers
+   the current transaction as failed, and reattempts the request with
+   the server specified in the attribute, using the same transport
+   protocol used for the previous request.  That request, if
+   authenticated, MUST utilize the same credentials that the client
+   would have used in the request to the server that performed the
+   redirection.  If the client has been redirected to a server on which
+   it has already tried this request within the last five minutes, it
+   MUST ignore the redirection and consider the transaction to have
+   failed.  This prevents infinite ping-ponging between servers in case
+   of redirection loops.
+
+12.  Backwards Compatibility with RFC 3489
+
+
+   This section defines procedures that allow a degree of backwards
+   compatibility with the original protocol defined in RFC 3489
+   [RFC3489].  This mechanism is optional, meant to be utilized only in
+   cases where a new client can connect to an old server, or vice versa.
+   A usage must define if and when this procedure is used.
+
+   Section 19 lists all the changes between this specification and RFC
+   3489 [RFC3489].  However, not all of these differences are important,
+   because "classic STUN" was only used in a few specific ways.  For the
+   purposes of this extension, the important changes are the following.
+   In RFC 3489:
+
+   o  UDP was the only supported transport.
+
+   o  The field that is now the magic cookie field was a part of the
+      transaction ID field, and transaction IDs were 128 bits long.
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 28]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   o  The XOR-MAPPED-ADDRESS attribute did not exist, and the Binding
+      method used the MAPPED-ADDRESS attribute instead.
+
+   o  There were three comprehension-required attributes, RESPONSE-
+      ADDRESS, CHANGE-REQUEST, and CHANGED-ADDRESS, that have been
+      removed from this specification.
+
+      *  CHANGE-REQUEST and CHANGED-ADDRESS are now part of the NAT
+         Behavior Discovery usage [BEHAVE-NAT], and the other is
+         deprecated.
+
+12.1.  Changes to Client Processing
+
+
+   A client that wants to interoperate with an [RFC3489] server SHOULD
+   send a request message that uses the Binding method, contains no
+   attributes, and uses UDP as the transport protocol to the server.  If
+   successful, the success response received from the server will
+   contain a MAPPED-ADDRESS attribute rather than an XOR-MAPPED-ADDRESS
+   attribute.  A client seeking to interoperate with an older server
+   MUST be prepared to receive either.  Furthermore, the client MUST
+   ignore any Reserved comprehension-required attributes that might
+   appear in the response.  Of the Reserved attributes in Section 18.2,
+   0x0002, 0x0004, 0x0005, and 0x000B may appear in Binding responses
+   from a server compliant to RFC 3489.  Other than this change, the
+   processing of the response is identical to the procedures described
+   above.
+
+12.2.  Changes to Server Processing
+
+
+   A STUN server can detect when a given Binding request message was
+   sent from an RFC 3489 [RFC3489] client by the absence of the correct
+   value in the magic cookie field.  When the server detects an RFC 3489
+   client, it SHOULD copy the value seen in the magic cookie field in
+   the Binding request to the magic cookie field in the Binding response
+   message, and insert a MAPPED-ADDRESS attribute instead of an XOR-
+   MAPPED-ADDRESS attribute.
+
+   The client might, in rare situations, include either the RESPONSE-
+   ADDRESS or CHANGE-REQUEST attributes.  In these situations, the
+   server will view these as unknown comprehension-required attributes
+   and reply with an error response.  Since the mechanisms utilizing
+   those attributes are no longer supported, this behavior is
+   acceptable.
+
+   The RFC 3489 version of STUN lacks both the magic cookie and the
+   FINGERPRINT attribute that allows for a very high probability of
+   correctly identifying STUN messages when multiplexed with other
+   protocols.  Therefore, STUN implementations that are backwards
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 29]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   compatible with RFC 3489 SHOULD NOT be used in cases where STUN will
+   be multiplexed with another protocol.  However, that should not be an
+   issue as such multiplexing was not available in RFC 3489.
+
+13.  Basic Server Behavior
+
+
+   This section defines the behavior of a basic, stand-alone STUN
+   server.  A basic STUN server provides clients with server reflexive
+   transport addresses by receiving and replying to STUN Binding
+   requests.
+
+   The STUN server MUST support the Binding method.  It SHOULD NOT
+   utilize the short-term or long-term credential mechanism.  This is
+   because the work involved in authenticating the request is more than
+   the work in simply processing it.  It SHOULD NOT utilize the
+   ALTERNATE-SERVER mechanism for the same reason.  It MUST support UDP
+   and TCP.  It MAY support STUN over TCP/TLS; however, TLS provides
+   minimal security benefits in this basic mode of operation.  It MAY
+   utilize the FINGERPRINT mechanism but MUST NOT require it.  Since the
+   stand-alone server only runs STUN, FINGERPRINT provides no benefit.
+   Requiring it would break compatibility with RFC 3489, and such
+   compatibility is desirable in a stand-alone server.  Stand-alone STUN
+   servers SHOULD support backwards compatibility with [RFC3489]
+   clients, as described in Section 12.
+
+   It is RECOMMENDED that administrators of STUN servers provide DNS
+   entries for those servers as described in Section 9.
+
+   A basic STUN server is not a solution for NAT traversal by itself.
+   However, it can be utilized as part of a solution through STUN
+   usages.  This is discussed further in Section 14.
+
+14.  STUN Usages
+
+
+   STUN by itself is not a solution to the NAT traversal problem.
+   Rather, STUN defines a tool that can be used inside a larger
+   solution.  The term "STUN usage" is used for any solution that uses
+   STUN as a component.
+
+   At the time of writing, three STUN usages are defined: Interactive
+   Connectivity Establishment (ICE) [MMUSIC-ICE], Client-initiated
+   connections for SIP [SIP-OUTBOUND], and NAT Behavior Discovery
+   [BEHAVE-NAT].  Other STUN usages may be defined in the future.
+
+   A STUN usage defines how STUN is actually utilized -- when to send
+   requests, what to do with the responses, and which optional
+   procedures defined here (or in an extension to STUN) are to be used.
+   A usage would also define:
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 30]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   o  Which STUN methods are used.
+
+   o  What authentication and message-integrity mechanisms are used.
+
+   o  The considerations around manual vs. automatic key derivation for
+      the integrity mechanism, as discussed in [RFC4107].
+
+   o  What mechanisms are used to distinguish STUN messages from other
+      messages.  When STUN is run over TCP, a framing mechanism may be
+      required.
+
+   o  How a STUN client determines the IP address and port of the STUN
+      server.
+
+   o  Whether backwards compatibility to RFC 3489 is required.
+
+   o  What optional attributes defined here (such as FINGERPRINT and
+      ALTERNATE-SERVER) or in other extensions are required.
+
+   In addition, any STUN usage must consider the security implications
+   of using STUN in that usage.  A number of attacks against STUN are
+   known (see the Security Considerations section in this document), and
+   any usage must consider how these attacks can be thwarted or
+   mitigated.
+
+   Finally, a usage must consider whether its usage of STUN is an
+   example of the Unilateral Self-Address Fixing approach to NAT
+   traversal, and if so, address the questions raised in RFC 3424
+   [RFC3424].
+
+15.  STUN Attributes
+
+
+   After the STUN header are zero or more attributes.  Each attribute
+   MUST be TLV encoded, with a 16-bit type, 16-bit length, and value.
+   Each STUN attribute MUST end on a 32-bit boundary.  As mentioned
+   above, all fields in an attribute are transmitted most significant
+   bit first.
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |         Type                  |            Length             |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                         Value (variable)                ....
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                    Figure 4: Format of STUN Attributes
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 31]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   The value in the length field MUST contain the length of the Value
+   part of the attribute, prior to padding, measured in bytes.  Since
+   STUN aligns attributes on 32-bit boundaries, attributes whose content
+   is not a multiple of 4 bytes are padded with 1, 2, or 3 bytes of
+   padding so that its value contains a multiple of 4 bytes.  The
+   padding bits are ignored, and may be any value.
+
+   Any attribute type MAY appear more than once in a STUN message.
+   Unless specified otherwise, the order of appearance is significant:
+   only the first occurrence needs to be processed by a receiver, and
+   any duplicates MAY be ignored by a receiver.
+
+   To allow future revisions of this specification to add new attributes
+   if needed, the attribute space is divided into two ranges.
+   Attributes with type values between 0x0000 and 0x7FFF are
+   comprehension-required attributes, which means that the STUN agent
+   cannot successfully process the message unless it understands the
+   attribute.  Attributes with type values between 0x8000 and 0xFFFF are
+   comprehension-optional attributes, which means that those attributes
+   can be ignored by the STUN agent if it does not understand them.
+
+   The set of STUN attribute types is maintained by IANA.  The initial
+   set defined by this specification is found in Section 18.2.
+
+   The rest of this section describes the format of the various
+   attributes defined in this specification.
+
+15.1.  MAPPED-ADDRESS
+
+
+   The MAPPED-ADDRESS attribute indicates a reflexive transport address
+   of the client.  It consists of an 8-bit address family and a 16-bit
+   port, followed by a fixed-length value representing the IP address.
+   If the address family is IPv4, the address MUST be 32 bits.  If the
+   address family is IPv6, the address MUST be 128 bits.  All fields
+   must be in network byte order.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 32]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   The format of the MAPPED-ADDRESS attribute is:
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |0 0 0 0 0 0 0 0|    Family     |           Port                |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                                                               |
+      |                 Address (32 bits or 128 bits)                 |
+      |                                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+               Figure 5: Format of MAPPED-ADDRESS Attribute
+
+   The address family can take on the following values:
+
+   0x01:IPv4
+   0x02:IPv6
+
+   The first 8 bits of the MAPPED-ADDRESS MUST be set to 0 and MUST be
+   ignored by receivers.  These bits are present for aligning parameters
+   on natural 32-bit boundaries.
+
+   This attribute is used only by servers for achieving backwards
+   compatibility with RFC 3489 [RFC3489] clients.
+
+15.2.  XOR-MAPPED-ADDRESS
+
+
+   The XOR-MAPPED-ADDRESS attribute is identical to the MAPPED-ADDRESS
+   attribute, except that the reflexive transport address is obfuscated
+   through the XOR function.
+
+   The format of the XOR-MAPPED-ADDRESS is:
+
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |x x x x x x x x|    Family     |         X-Port                |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |                X-Address (Variable)
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+             Figure 6: Format of XOR-MAPPED-ADDRESS Attribute
+
+   The Family represents the IP address family, and is encoded
+   identically to the Family in MAPPED-ADDRESS.
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 33]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   X-Port is computed by taking the mapped port in host byte order,
+   XOR'ing it with the most significant 16 bits of the magic cookie, and
+   then the converting the result to network byte order.  If the IP
+   address family is IPv4, X-Address is computed by taking the mapped IP
+   address in host byte order, XOR'ing it with the magic cookie, and
+   converting the result to network byte order.  If the IP address
+   family is IPv6, X-Address is computed by taking the mapped IP address
+   in host byte order, XOR'ing it with the concatenation of the magic
+   cookie and the 96-bit transaction ID, and converting the result to
+   network byte order.
+
+   The rules for encoding and processing the first 8 bits of the
+   attribute's value, the rules for handling multiple occurrences of the
+   attribute, and the rules for processing address families are the same
+   as for MAPPED-ADDRESS.
+
+   Note: XOR-MAPPED-ADDRESS and MAPPED-ADDRESS differ only in their
+   encoding of the transport address.  The former encodes the transport
+   address by exclusive-or'ing it with the magic cookie.  The latter
+   encodes it directly in binary.  RFC 3489 originally specified only
+   MAPPED-ADDRESS.  However, deployment experience found that some NATs
+   rewrite the 32-bit binary payloads containing the NAT's public IP
+   address, such as STUN's MAPPED-ADDRESS attribute, in the well-meaning
+   but misguided attempt at providing a generic ALG function.  Such
+   behavior interferes with the operation of STUN and also causes
+   failure of STUN's message-integrity checking.
+
+15.3.  USERNAME
+
+
+   The USERNAME attribute is used for message integrity.  It identifies
+   the username and password combination used in the message-integrity
+   check.
+
+   The value of USERNAME is a variable-length value.  It MUST contain a
+   UTF-8 [RFC3629] encoded sequence of less than 513 bytes, and MUST
+   have been processed using SASLprep [RFC4013].
+
+15.4.  MESSAGE-INTEGRITY
+
+
+   The MESSAGE-INTEGRITY attribute contains an HMAC-SHA1 [RFC2104] of
+   the STUN message.  The MESSAGE-INTEGRITY attribute can be present in
+   any STUN message type.  Since it uses the SHA1 hash, the HMAC will be
+   20 bytes.  The text used as input to HMAC is the STUN message,
+   including the header, up to and including the attribute preceding the
+   MESSAGE-INTEGRITY attribute.  With the exception of the FINGERPRINT
+   attribute, which appears after MESSAGE-INTEGRITY, agents MUST ignore
+   all other attributes that follow MESSAGE-INTEGRITY.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 34]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   The key for the HMAC depends on whether long-term or short-term
+   credentials are in use.  For long-term credentials, the key is 16
+   bytes:
+
+            key = MD5(username ":" realm ":" SASLprep(password))
+
+   That is, the 16-byte key is formed by taking the MD5 hash of the
+   result of concatenating the following five fields: (1) the username,
+   with any quotes and trailing nulls removed, as taken from the
+   USERNAME attribute (in which case SASLprep has already been applied);
+   (2) a single colon; (3) the realm, with any quotes and trailing nulls
+   removed; (4) a single colon; and (5) the password, with any trailing
+   nulls removed and after processing using SASLprep.  For example, if
+   the username was 'user', the realm was 'realm', and the password was
+   'pass', then the 16-byte HMAC key would be the result of performing
+   an MD5 hash on the string 'user:realm:pass', the resulting hash being
+   0x8493fbc53ba582fb4c044c456bdc40eb.
+
+   For short-term credentials:
+
+                          key = SASLprep(password)
+
+   where MD5 is defined in RFC 1321 [RFC1321] and SASLprep() is defined
+   in RFC 4013 [RFC4013].
+
+   The structure of the key when used with long-term credentials
+   facilitates deployment in systems that also utilize SIP.  Typically,
+   SIP systems utilizing SIP's digest authentication mechanism do not
+   actually store the password in the database.  Rather, they store a
+   value called H(A1), which is equal to the key defined above.
+
+   Based on the rules above, the hash used to construct MESSAGE-
+   INTEGRITY includes the length field from the STUN message header.
+   Prior to performing the hash, the MESSAGE-INTEGRITY attribute MUST be
+   inserted into the message (with dummy content).  The length MUST then
+   be set to point to the length of the message up to, and including,
+   the MESSAGE-INTEGRITY attribute itself, but excluding any attributes
+   after it.  Once the computation is performed, the value of the
+   MESSAGE-INTEGRITY attribute can be filled in, and the value of the
+   length in the STUN header can be set to its correct value -- the
+   length of the entire message.  Similarly, when validating the
+   MESSAGE-INTEGRITY, the length field should be adjusted to point to
+   the end of the MESSAGE-INTEGRITY attribute prior to calculating the
+   HMAC.  Such adjustment is necessary when attributes, such as
+   FINGERPRINT, appear after MESSAGE-INTEGRITY.
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 35]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+15.5.  FINGERPRINT
+
+
+   The FINGERPRINT attribute MAY be present in all STUN messages.  The
+   value of the attribute is computed as the CRC-32 of the STUN message
+   up to (but excluding) the FINGERPRINT attribute itself, XOR'ed with
+   the 32-bit value 0x5354554e (the XOR helps in cases where an
+   application packet is also using CRC-32 in it).  The 32-bit CRC is
+   the one defined in ITU V.42 [ITU.V42.2002], which has a generator
+   polynomial of x32+x26+x23+x22+x16+x12+x11+x10+x8+x7+x5+x4+x2+x+1.
+   When present, the FINGERPRINT attribute MUST be the last attribute in
+   the message, and thus will appear after MESSAGE-INTEGRITY.
+
+   The FINGERPRINT attribute can aid in distinguishing STUN packets from
+   packets of other protocols.  See Section 8.
+
+   As with MESSAGE-INTEGRITY, the CRC used in the FINGERPRINT attribute
+   covers the length field from the STUN message header.  Therefore,
+   this value must be correct and include the CRC attribute as part of
+   the message length, prior to computation of the CRC.  When using the
+   FINGERPRINT attribute in a message, the attribute is first placed
+   into the message with a dummy value, then the CRC is computed, and
+   then the value of the attribute is updated.  If the MESSAGE-INTEGRITY
+   attribute is also present, then it must be present with the correct
+   message-integrity value before the CRC is computed, since the CRC is
+   done over the value of the MESSAGE-INTEGRITY attribute as well.
+
+15.6.  ERROR-CODE
+
+
+   The ERROR-CODE attribute is used in error response messages.  It
+   contains a numeric error code value in the range of 300 to 699 plus a
+   textual reason phrase encoded in UTF-8 [RFC3629], and is consistent
+   in its code assignments and semantics with SIP [RFC3261] and HTTP
+   [RFC2616].  The reason phrase is meant for user consumption, and can
+   be anything appropriate for the error code.  Recommended reason
+   phrases for the defined error codes are included in the IANA registry
+   for error codes.  The reason phrase MUST be a UTF-8 [RFC3629] encoded
+   sequence of less than 128 characters (which can be as long as 763
+   bytes).
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |           Reserved, should be 0         |Class|     Number    |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |      Reason Phrase (variable)                                ..
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                      Figure 7: ERROR-CODE Attribute
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 36]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   To facilitate processing, the class of the error code (the hundreds
+   digit) is encoded separately from the rest of the code, as shown in
+   Figure 7.
+
+   The Reserved bits SHOULD be 0, and are for alignment on 32-bit
+   boundaries.  Receivers MUST ignore these bits.  The Class represents
+   the hundreds digit of the error code.  The value MUST be between 3
+   and 6.  The Number represents the error code modulo 100, and its
+   value MUST be between 0 and 99.
+
+   The following error codes, along with their recommended reason
+   phrases, are defined:
+
+   300  Try Alternate: The client should contact an alternate server for
+        this request.  This error response MUST only be sent if the
+        request included a USERNAME attribute and a valid MESSAGE-
+        INTEGRITY attribute; otherwise, it MUST NOT be sent and error
+        code 400 (Bad Request) is suggested.  This error response MUST
+        be protected with the MESSAGE-INTEGRITY attribute, and receivers
+        MUST validate the MESSAGE-INTEGRITY of this response before
+        redirecting themselves to an alternate server.
+
+             Note: Failure to generate and validate message integrity
+             for a 300 response allows an on-path attacker to falsify a
+             300 response thus causing subsequent STUN messages to be
+             sent to a victim.
+
+   400  Bad Request: The request was malformed.  The client SHOULD NOT
+        retry the request without modification from the previous
+        attempt.  The server may not be able to generate a valid
+        MESSAGE-INTEGRITY for this error, so the client MUST NOT expect
+        a valid MESSAGE-INTEGRITY attribute on this response.
+
+   401  Unauthorized: The request did not contain the correct
+        credentials to proceed.  The client should retry the request
+        with proper credentials.
+
+   420  Unknown Attribute: The server received a STUN packet containing
+        a comprehension-required attribute that it did not understand.
+        The server MUST put this unknown attribute in the UNKNOWN-
+        ATTRIBUTE attribute of its error response.
+
+   438  Stale Nonce: The NONCE used by the client was no longer valid.
+        The client should retry, using the NONCE provided in the
+        response.
+
+   500  Server Error: The server has suffered a temporary error.  The
+        client should try again.
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 37]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+15.7.  REALM
+
+
+   The REALM attribute may be present in requests and responses.  It
+   contains text that meets the grammar for "realm-value" as described
+   in RFC 3261 [RFC3261] but without the double quotes and their
+   surrounding whitespace.  That is, it is an unquoted realm-value (and
+   is therefore a sequence of qdtext or quoted-pair).  It MUST be a
+   UTF-8 [RFC3629] encoded sequence of less than 128 characters (which
+   can be as long as 763 bytes), and MUST have been processed using
+   SASLprep [RFC4013].
+
+   Presence of the REALM attribute in a request indicates that long-term
+   credentials are being used for authentication.  Presence in certain
+   error responses indicates that the server wishes the client to use a
+   long-term credential for authentication.
+
+15.8.  NONCE
+
+
+   The NONCE attribute may be present in requests and responses.  It
+   contains a sequence of qdtext or quoted-pair, which are defined in
+   RFC 3261 [RFC3261].  Note that this means that the NONCE attribute
+   will not contain actual quote characters.  See RFC 2617 [RFC2617],
+   Section 4.3, for guidance on selection of nonce values in a server.
+
+   It MUST be less than 128 characters (which can be as long as 763
+   bytes).
+
+15.9.  UNKNOWN-ATTRIBUTES
+
+
+   The UNKNOWN-ATTRIBUTES attribute is present only in an error response
+   when the response code in the ERROR-CODE attribute is 420.
+
+   The attribute contains a list of 16-bit values, each of which
+   represents an attribute type that was not understood by the server.
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |      Attribute 1 Type           |     Attribute 2 Type        |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |      Attribute 3 Type           |     Attribute 4 Type    ...
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+             Figure 8: Format of UNKNOWN-ATTRIBUTES Attribute
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 38]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+      Note: In [RFC3489], this field was padded to 32 by duplicating the
+      last attribute.  In this version of the specification, the normal
+      padding rules for attributes are used instead.
+
+15.10.  SOFTWARE
+
+
+   The SOFTWARE attribute contains a textual description of the software
+   being used by the agent sending the message.  It is used by clients
+   and servers.  Its value SHOULD include manufacturer and version
+   number.  The attribute has no impact on operation of the protocol,
+   and serves only as a tool for diagnostic and debugging purposes.  The
+   value of SOFTWARE is variable length.  It MUST be a UTF-8 [RFC3629]
+   encoded sequence of less than 128 characters (which can be as long as
+   763 bytes).
+
+15.11.  ALTERNATE-SERVER
+
+
+   The alternate server represents an alternate transport address
+   identifying a different STUN server that the STUN client should try.
+
+   It is encoded in the same way as MAPPED-ADDRESS, and thus refers to a
+   single server by IP address.  The IP address family MUST be identical
+   to that of the source IP address of the request.
+
+16.  Security Considerations
+
+
+16.1.  Attacks against the Protocol
+
+
+16.1.1.  Outside Attacks
+
+
+   An attacker can try to modify STUN messages in transit, in order to
+   cause a failure in STUN operation.  These attacks are detected for
+   both requests and responses through the message-integrity mechanism,
+   using either a short-term or long-term credential.  Of course, once
+   detected, the manipulated packets will be dropped, causing the STUN
+   transaction to effectively fail.  This attack is possible only by an
+   on-path attacker.
+
+   An attacker that can observe, but not modify, STUN messages in-
+   transit (for example, an attacker present on a shared access medium,
+   such as Wi-Fi), can see a STUN request, and then immediately send a
+   STUN response, typically an error response, in order to disrupt STUN
+   processing.  This attack is also prevented for messages that utilize
+   MESSAGE-INTEGRITY.  However, some error responses, those related to
+   authentication in particular, cannot be protected by MESSAGE-
+   INTEGRITY.  When STUN itself is run over a secure transport protocol
+   (e.g., TLS), these attacks are completely mitigated.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 39]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   Depending on the STUN usage, these attacks may be of minimal
+   consequence and thus do not require message integrity to mitigate.
+   For example, when STUN is used to a basic STUN server to discover a
+   server reflexive candidate for usage with ICE, authentication and
+   message integrity are not required since these attacks are detected
+   during the connectivity check phase.  The connectivity checks
+   themselves, however, require protection for proper operation of ICE
+   overall.  As described in Section 14, STUN usages describe when
+   authentication and message integrity are needed.
+
+   Since STUN uses the HMAC of a shared secret for authentication and
+   integrity protection, it is subject to offline dictionary attacks.
+   When authentication is utilized, it SHOULD be with a strong password
+   that is not readily subject to offline dictionary attacks.
+   Protection of the channel itself, using TLS, mitigates these attacks.
+   However, STUN is most often run over UDP and in those cases, strong
+   passwords are the only way to protect against these attacks.
+
+16.1.2.  Inside Attacks
+
+
+   A rogue client may try to launch a DoS attack against a server by
+   sending it a large number of STUN requests.  Fortunately, STUN
+   requests can be processed statelessly by a server, making such
+   attacks hard to launch.
+
+   A rogue client may use a STUN server as a reflector, sending it
+   requests with a falsified source IP address and port.  In such a
+   case, the response would be delivered to that source IP and port.
+   There is no amplification of the number of packets with this attack
+   (the STUN server sends one packet for each packet sent by the
+   client), though there is a small increase in the amount of data,
+   since STUN responses are typically larger than requests.  This attack
+   is mitigated by ingress source address filtering.
+
+   Revealing the specific software version of the agent through the
+   SOFTWARE attribute might allow them to become more vulnerable to
+   attacks against software that is known to contain security holes.
+   Implementers SHOULD make usage of the SOFTWARE attribute a
+   configurable option.
+
+16.2.  Attacks Affecting the Usage
+
+
+   This section lists attacks that might be launched against a usage of
+   STUN.  Each STUN usage must consider whether these attacks are
+   applicable to it, and if so, discuss counter-measures.
+
+   Most of the attacks in this section revolve around an attacker
+   modifying the reflexive address learned by a STUN client through a
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 40]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   Binding request/response transaction.  Since the usage of the
+   reflexive address is a function of the usage, the applicability and
+   remediation of these attacks are usage-specific.  In common
+   situations, modification of the reflexive address by an on-path
+   attacker is easy to do.  Consider, for example, the common situation
+   where STUN is run directly over UDP.  In this case, an on-path
+   attacker can modify the source IP address of the Binding request
+   before it arrives at the STUN server.  The STUN server will then
+   return this IP address in the XOR-MAPPED-ADDRESS attribute to the
+   client, and send the response back to that (falsified) IP address and
+   port.  If the attacker can also intercept this response, it can
+   direct it back towards the client.  Protecting against this attack by
+   using a message-integrity check is impossible, since a message-
+   integrity value cannot cover the source IP address, since the
+   intervening NAT must be able to modify this value.  Instead, one
+   solution to preventing the attacks listed below is for the client to
+   verify the reflexive address learned, as is done in ICE [MMUSIC-ICE].
+   Other usages may use other means to prevent these attacks.
+
+16.2.1.  Attack I: Distributed DoS (DDoS) against a Target
+
+
+   In this attack, the attacker provides one or more clients with the
+   same faked reflexive address that points to the intended target.
+   This will trick the STUN clients into thinking that their reflexive
+   addresses are equal to that of the target.  If the clients hand out
+   that reflexive address in order to receive traffic on it (for
+   example, in SIP messages), the traffic will instead be sent to the
+   target.  This attack can provide substantial amplification,
+   especially when used with clients that are using STUN to enable
+   multimedia applications.  However, it can only be launched against
+   targets for which packets from the STUN server to the target pass
+   through the attacker, limiting the cases in which it is possible.
+
+16.2.2.  Attack II: Silencing a Client
+
+
+   In this attack, the attacker provides a STUN client with a faked
+   reflexive address.  The reflexive address it provides is a transport
+   address that routes to nowhere.  As a result, the client won't
+   receive any of the packets it expects to receive when it hands out
+   the reflexive address.  This exploitation is not very interesting for
+   the attacker.  It impacts a single client, which is frequently not
+   the desired target.  Moreover, any attacker that can mount the attack
+   could also deny service to the client by other means, such as
+   preventing the client from receiving any response from the STUN
+   server, or even a DHCP server.  As with the attack in Section 16.2.1,
+   this attack is only possible when the attacker is on path for packets
+   sent from the STUN server towards this unused IP address.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 41]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+16.2.3.  Attack III: Assuming the Identity of a Client
+
+
+   This attack is similar to attack II.  However, the faked reflexive
+   address points to the attacker itself.  This allows the attacker to
+   receive traffic that was destined for the client.
+
+16.2.4.  Attack IV: Eavesdropping
+
+
+   In this attack, the attacker forces the client to use a reflexive
+   address that routes to itself.  It then forwards any packets it
+   receives to the client.  This attack would allow the attacker to
+   observe all packets sent to the client.  However, in order to launch
+   the attack, the attacker must have already been able to observe
+   packets from the client to the STUN server.  In most cases (such as
+   when the attack is launched from an access network), this means that
+   the attacker could already observe packets sent to the client.  This
+   attack is, as a result, only useful for observing traffic by
+   attackers on the path from the client to the STUN server, but not
+   generally on the path of packets being routed towards the client.
+
+16.3.  Hash Agility Plan
+
+
+   This specification uses HMAC-SHA-1 for computation of the message
+   integrity.  If, at a later time, HMAC-SHA-1 is found to be
+   compromised, the following is the remedy that will be applied.
+
+   We will define a STUN extension that introduces a new message-
+   integrity attribute, computed using a new hash.  Clients would be
+   required to include both the new and old message-integrity attributes
+   in their requests or indications.  A new server will utilize the new
+   message-integrity attribute, and an old one, the old.  After a
+   transition period where mixed implementations are in deployment, the
+   old message-integrity attribute will be deprecated by another
+   specification, and clients will cease including it in requests.
+
+   It is also important to note that the HMAC is done using a key that
+   is itself computed using an MD5 of the user's password.  The choice
+   of the MD5 hash was made because of the existence of legacy databases
+   that store passwords in that form.  If future work finds that an HMAC
+   of an MD5 input is not secure, and a different hash is needed, it can
+   also be changed using this plan.  However, this would require
+   administrators to repopulate their databases.
+
+17.  IAB Considerations
+
+
+   The IAB has studied the problem of Unilateral Self-Address Fixing
+   (UNSAF), which is the general process by which a client attempts to
+   determine its address in another realm on the other side of a NAT
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 42]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   through a collaborative protocol reflection mechanism (RFC3424
+   [RFC3424]).  STUN can be used to perform this function using a
+   Binding request/response transaction if one agent is behind a NAT and
+   the other is on the public side of the NAT.
+
+   The IAB has mandated that protocols developed for this purpose
+   document a specific set of considerations.  Because some STUN usages
+   provide UNSAF functions (such as ICE [MMUSIC-ICE] ), and others do
+   not (such as SIP Outbound [SIP-OUTBOUND]), answers to these
+   considerations need to be addressed by the usages themselves.
+
+18.  IANA Considerations
+
+
+   IANA has created three new registries: a "STUN Methods Registry", a
+   "STUN Attributes Registry", and a "STUN Error Codes Registry".  IANA
+   has also changed the name of the assigned IANA port for STUN from
+   "nat-stun-port" to "stun".
+
+18.1.  STUN Methods Registry
+
+
+   A STUN method is a hex number in the range 0x000 - 0xFFF.  The
+   encoding of STUN method into a STUN message is described in
+   Section 6.
+
+   The initial STUN methods are:
+
+   0x000: (Reserved)
+   0x001: Binding
+   0x002: (Reserved; was SharedSecret)
+
+   STUN methods in the range 0x000 - 0x7FF are assigned by IETF Review
+   [RFC5226].  STUN methods in the range 0x800 - 0xFFF are assigned by
+   Designated Expert [RFC5226].  The responsibility of the expert is to
+   verify that the selected codepoint(s) are not in use and that the
+   request is not for an abnormally large number of codepoints.
+   Technical review of the extension itself is outside the scope of the
+   designated expert responsibility.
+
+18.2.  STUN Attribute Registry
+
+
+   A STUN Attribute type is a hex number in the range 0x0000 - 0xFFFF.
+   STUN attribute types in the range 0x0000 - 0x7FFF are considered
+   comprehension-required; STUN attribute types in the range 0x8000 -
+   0xFFFF are considered comprehension-optional.  A STUN agent handles
+   unknown comprehension-required and comprehension-optional attributes
+   differently.
+
+   The initial STUN Attributes types are:
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 43]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   Comprehension-required range (0x0000-0x7FFF):
+     0x0000: (Reserved)
+     0x0001: MAPPED-ADDRESS
+     0x0002: (Reserved; was RESPONSE-ADDRESS)
+     0x0003: (Reserved; was CHANGE-ADDRESS)
+     0x0004: (Reserved; was SOURCE-ADDRESS)
+     0x0005: (Reserved; was CHANGED-ADDRESS)
+     0x0006: USERNAME
+     0x0007: (Reserved; was PASSWORD)
+     0x0008: MESSAGE-INTEGRITY
+     0x0009: ERROR-CODE
+     0x000A: UNKNOWN-ATTRIBUTES
+     0x000B: (Reserved; was REFLECTED-FROM)
+     0x0014: REALM
+     0x0015: NONCE
+     0x0020: XOR-MAPPED-ADDRESS
+
+   Comprehension-optional range (0x8000-0xFFFF)
+     0x8022: SOFTWARE
+     0x8023: ALTERNATE-SERVER
+     0x8028: FINGERPRINT
+
+   STUN Attribute types in the first half of the comprehension-required
+   range (0x0000 - 0x3FFF) and in the first half of the comprehension-
+   optional range (0x8000 - 0xBFFF) are assigned by IETF Review
+   [RFC5226].  STUN Attribute types in the second half of the
+   comprehension-required range (0x4000 - 0x7FFF) and in the second half
+   of the comprehension-optional range (0xC000 - 0xFFFF) are assigned by
+   Designated Expert [RFC5226].  The responsibility of the expert is to
+   verify that the selected codepoint(s) are not in use, and that the
+   request is not for an abnormally large number of codepoints.
+   Technical review of the extension itself is outside the scope of the
+   designated expert responsibility.
+
+18.3.  STUN Error Code Registry
+
+
+   A STUN error code is a number in the range 0 - 699.  STUN error codes
+   are accompanied by a textual reason phrase in UTF-8 [RFC3629] that is
+   intended only for human consumption and can be anything appropriate;
+   this document proposes only suggested values.
+
+   STUN error codes are consistent in codepoint assignments and
+   semantics with SIP [RFC3261] and HTTP [RFC2616].
+
+   The initial values in this registry are given in Section 15.6.
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 44]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   New STUN error codes are assigned based on IETF Review [RFC5226].
+   The specification must carefully consider how clients that do not
+   understand this error code will process it before granting the
+   request.  See the rules in Section 7.3.4.
+
+18.4.  STUN UDP and TCP Port Numbers
+
+
+   IANA has previously assigned port 3478 for STUN.  This port appears
+   in the IANA registry under the moniker "nat-stun-port".  In order to
+   align the DNS SRV procedures with the registered protocol service,
+   IANA is requested to change the name of protocol assigned to port
+   3478 from "nat-stun-port" to "stun", and the textual name from
+   "Simple Traversal of UDP Through NAT (STUN)" to "Session Traversal
+   Utilities for NAT", so that the IANA port registry would read:
+
+   stun   3478/tcp   Session Traversal Utilities for NAT (STUN) port
+   stun   3478/udp   Session Traversal Utilities for NAT (STUN) port
+
+   In addition, IANA has assigned port number 5349 for the "stuns"
+   service, defined over TCP and UDP.  The UDP port is not currently
+   defined; however, it is reserved for future use.
+
+19.  Changes since RFC 3489
+
+
+   This specification obsoletes RFC 3489 [RFC3489].  This specification
+   differs from RFC 3489 in the following ways:
+
+   o  Removed the notion that STUN is a complete NAT traversal solution.
+      STUN is now a tool that can be used to produce a NAT traversal
+      solution.  As a consequence, changed the name of the protocol to
+      Session Traversal Utilities for NAT.
+
+   o  Introduced the concept of STUN usages, and described what a usage
+      of STUN must document.
+
+   o  Removed the usage of STUN for NAT type detection and binding
+      lifetime discovery.  These techniques have proven overly brittle
+      due to wider variations in the types of NAT devices than described
+      in this document.  Removed the RESPONSE-ADDRESS, CHANGED-ADDRESS,
+      CHANGE-REQUEST, SOURCE-ADDRESS, and REFLECTED-FROM attributes.
+
+   o  Added a fixed 32-bit magic cookie and reduced length of
+      transaction ID by 32 bits.  The magic cookie begins at the same
+      offset as the original transaction ID.
+
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 45]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   o  Added the XOR-MAPPED-ADDRESS attribute, which is included in
+      Binding responses if the magic cookie is present in the request.
+      Otherwise, the RFC 3489 behavior is retained (that is, Binding
+      response includes MAPPED-ADDRESS).  See discussion in XOR-MAPPED-
+      ADDRESS regarding this change.
+
+   o  Introduced formal structure into the message type header field,
+      with an explicit pair of bits for indication of request, response,
+      error response, or indication.  Consequently, the message type
+      field is split into the class (one of the previous four) and
+      method.
+
+   o  Explicitly point out that the most significant 2 bits of STUN are
+      0b00, allowing easy differentiation with RTP packets when used
+      with ICE.
+
+   o  Added the FINGERPRINT attribute to provide a method of definitely
+      detecting the difference between STUN and another protocol when
+      the two protocols are multiplexed together.
+
+   o  Added support for IPv6.  Made it clear that an IPv4 client could
+      get a v6 mapped address, and vice versa.
+
+   o  Added long-term-credential-based authentication.
+
+   o  Added the SOFTWARE, REALM, NONCE, and ALTERNATE-SERVER attributes.
+
+   o  Removed the SharedSecret method, and thus the PASSWORD attribute.
+      This method was almost never implemented and is not needed with
+      current usages.
+
+   o  Removed recommendation to continue listening for STUN responses
+      for 10 seconds in an attempt to recognize an attack.
+
+   o  Changed transaction timers to be more TCP friendly.
+
+   o  Removed the STUN example that centered around the separation of
+      the control and media planes.  Instead, provided more information
+      on using STUN with protocols.
+
+   o  Defined a generic padding mechanism that changes the
+      interpretation of the length attribute.  This would, in theory,
+      break backwards compatibility.  However, the mechanism in RFC 3489
+      never worked for the few attributes that weren't aligned naturally
+      on 32-bit boundaries.
+
+   o  REALM, SERVER, reason phrases, and NONCE limited to 127
+      characters.  USERNAME to 513 bytes.
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 46]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   o  Changed the DNS SRV procedures for TCP and TLS.  UDP remains the
+      same as before.
+
+20.  Contributors
+
+
+   Christian Huitema and Joel Weinberger were original co-authors of RFC
+   3489.
+
+21.  Acknowledgements
+
+
+   The authors would like to thank Cedric Aoun, Pete Cordell, Cullen
+   Jennings, Bob Penfield, Xavier Marjou, Magnus Westerlund, Miguel
+   Garcia, Bruce Lowekamp, and Chris Sullivan for their comments, and
+   Baruch Sterman and Alan Hawrylyshen for initial implementations.
+   Thanks for Leslie Daigle, Allison Mankin, Eric Rescorla, and Henning
+   Schulzrinne for IESG and IAB input on this work.
+
+22.  References
+
+
+22.1.  Normative References
+
+
+   [ITU.V42.2002]    International Telecommunications Union, "Error-
+                     correcting Procedures for DCEs Using Asynchronous-
+                     to-Synchronous Conversion", ITU-T Recommendation
+                     V.42, March 2002.
+
+   [RFC0791]         Postel, J., "Internet Protocol", STD 5, RFC 791,
+                     September 1981.
+
+   [RFC1122]         Braden, R., "Requirements for Internet Hosts -
+                     Communication Layers", STD 3, RFC 1122,
+                     October 1989.
+
+   [RFC1321]         Rivest, R., "The MD5 Message-Digest Algorithm",
+                     RFC 1321, April 1992.
+
+   [RFC2104]         Krawczyk, H., Bellare, M., and R. Canetti, "HMAC:
+                     Keyed-Hashing for Message Authentication",
+                     RFC 2104, February 1997.
+
+   [RFC2119]         Bradner, S., "Key words for use in RFCs to Indicate
+                     Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC2460]         Deering, S. and R. Hinden, "Internet Protocol,
+                     Version 6 (IPv6) Specification", RFC 2460,
+                     December 1998.
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 47]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   [RFC2617]         Franks, J., Hallam-Baker, P., Hostetler, J.,
+                     Lawrence, S., Leach, P., Luotonen, A., and L.
+                     Stewart, "HTTP Authentication: Basic and Digest
+                     Access Authentication", RFC 2617, June 1999.
+
+   [RFC2782]         Gulbrandsen, A., Vixie, P., and L. Esibov, "A DNS
+                     RR for specifying the location of services (DNS
+                     SRV)", RFC 2782, February 2000.
+
+   [RFC2818]         Rescorla, E., "HTTP Over TLS", RFC 2818, May 2000.
+
+   [RFC2988]         Paxson, V. and M. Allman, "Computing TCP's
+                     Retransmission Timer", RFC 2988, November 2000.
+
+   [RFC3629]         Yergeau, F., "UTF-8, a transformation format of ISO
+                     10646", STD 63, RFC 3629, November 2003.
+
+   [RFC4013]         Zeilenga, K., "SASLprep: Stringprep Profile for
+                     User Names and Passwords", RFC 4013, February 2005.
+
+22.2.  Informative References
+
+
+   [BEHAVE-NAT]      MacDonald, D. and B. Lowekamp, "NAT Behavior
+                     Discovery Using STUN", Work in Progress, July 2008.
+
+   [BEHAVE-TURN]     Rosenberg, J., Mahy, R., and P. Matthews,
+                     "Traversal Using Relays around NAT (TURN): Relay
+                     Extensions to Session  Traversal Utilities for NAT
+                     (STUN)", Work in Progress, July 2008.
+
+   [KARN87]          Karn, P. and C. Partridge, "Improving Round-Trip
+                     Time Estimates in Reliable Transport Protocols",
+                     SIGCOMM 1987, August 1987.
+
+   [MMUSIC-ICE]      Rosenberg, J., "Interactive Connectivity
+                     Establishment (ICE): A Protocol for Network Address
+                     Translator (NAT) Traversal for Offer/Answer
+                     Protocols", Work in Progress, October 2007.
+
+   [MMUSIC-ICE-TCP]  Rosenberg, J., "TCP Candidates with Interactive
+                     Connectivity Establishment (ICE)", Work
+                     in Progress, July 2008.
+
+   [RFC2616]         Fielding, R., Gettys, J., Mogul, J., Frystyk, H.,
+                     Masinter, L., Leach, P., and T. Berners-Lee,
+                     "Hypertext Transfer Protocol -- HTTP/1.1",
+                     RFC 2616, June 1999.
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 48]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+   [RFC3261]         Rosenberg, J., Schulzrinne, H., Camarillo, G.,
+                     Johnston, A., Peterson, J., Sparks, R., Handley,
+                     M., and E. Schooler, "SIP: Session Initiation
+                     Protocol", RFC 3261, June 2002.
+
+   [RFC3264]         Rosenberg, J. and H. Schulzrinne, "An Offer/Answer
+                     Model with Session Description Protocol (SDP)",
+                     RFC 3264, June 2002.
+
+   [RFC3424]         Daigle, L. and IAB, "IAB Considerations for
+                     UNilateral Self-Address Fixing (UNSAF) Across
+                     Network Address Translation", RFC 3424,
+                     November 2002.
+
+   [RFC3489]         Rosenberg, J., Weinberger, J., Huitema, C., and R.
+                     Mahy, "STUN - Simple Traversal of User Datagram
+                     Protocol (UDP) Through Network Address Translators
+                     (NATs)", RFC 3489, March 2003.
+
+   [RFC4107]         Bellovin, S. and R. Housley, "Guidelines for
+                     Cryptographic Key Management", BCP 107, RFC 4107,
+                     June 2005.
+
+   [RFC5226]         Narten, T. and H. Alvestrand, "Guidelines for
+                     Writing an IANA Considerations Section in RFCs",
+                     BCP 26, RFC 5226, May 2008.
+
+   [SIP-OUTBOUND]    Jennings, C. and R. Mahy, "Managing Client
+                     Initiated Connections in the Session Initiation
+                     Protocol  (SIP)", Work in Progress, June 2008.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 49]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+Appendix A.  C Snippet to Determine STUN Message Types
+
+
+   Given a 16-bit STUN message type value in host byte order in msg_type
+   parameter, below are C macros to determine the STUN message types:
+
+   #define IS_REQUEST(msg_type)       (((msg_type) & 0x0110) == 0x0000)
+   #define IS_INDICATION(msg_type)    (((msg_type) & 0x0110) == 0x0010)
+   #define IS_SUCCESS_RESP(msg_type)  (((msg_type) & 0x0110) == 0x0100)
+   #define IS_ERR_RESP(msg_type)      (((msg_type) & 0x0110) == 0x0110)
+
+
+Authors' Addresses
+
+   Jonathan Rosenberg
+   Cisco
+   Edison, NJ
+   US
+
+   EMail: jdrosen@cisco.com
+   URI:   http://www.jdrosen.net
+
+
+   Rohan Mahy
+   Unaffiliated
+
+   EMail: rohan@ekabal.com
+
+
+   Philip Matthews
+   Unaffiliated
+
+   EMail: philip_matthews@magma.ca
+
+
+   Dan Wing
+   Cisco
+   771 Alder Drive
+   San Jose, CA  95035
+   US
+
+   EMail: dwing@cisco.com
+
+
+
+
+
+
+
+
+
+
+Rosenberg, et al.           Standards Track                    [Page 50]
+________________________________________
+ 
+RFC 5389                          STUN                      October 2008
+
+
+Full Copyright Statement
+
+   Copyright (C) The IETF Trust (2008).
+
+   This document is subject to the rights, licenses and restrictions
+   contained in BCP 78, and except as set forth therein, the authors
+   retain all their rights.
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY, THE IETF TRUST AND
+   THE INTERNET ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF
+   THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+Intellectual Property
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
