@@ -44,7 +44,7 @@ static const uint8_t g_supported_even_port_flags = 0x80;
 socketListener manager(8888);
 
 turn_server::turn_server()
-{
+{ 
 	INIT_LIST(_allocation_list);
 	INIT_LIST(g_denied_address_list);
 	INIT_LIST(g_tcp_socket_list);
@@ -53,6 +53,8 @@ turn_server::turn_server()
 
 turn_server::~turn_server()
 {
+	
+
 }
 
 int turn_server::StartServer() {

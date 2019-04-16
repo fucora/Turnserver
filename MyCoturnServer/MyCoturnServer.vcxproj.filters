@@ -79,5 +79,6 @@
   <ItemGroup>
     <Text Include="readme.txt" />
     <Text Include="rfc5389.txt" />
+    <Text Include="rfc5766.txt" />
   </ItemGroup>
 </Project>

@@ -111,6 +111,7 @@
   <ItemGroup>
     <Text Include="readme.txt" />
     <Text Include="rfc5389.txt" />
+    <Text Include="rfc5766.txt" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Link>

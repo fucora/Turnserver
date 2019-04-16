@@ -380,13 +380,16 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock
 	uint16_t port = 0;
 	uint8_t family = 0;
 	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
-
+	
+	  
 	if (transport_protocol == IPPROTO_TCP)
 	{
 		auto tcpsocket = (tcp_socket*)sock;
 		port = tcpsocket->remote_endpoint().port();
-		auto addstr = inet_addr(tcpsocket->remote_endpoint().address().to_string().data());
-		ptr = (uint8_t*)(&addstr);
+
+		sockaddr_in* addr_in = (sockaddr_in*)malloc(sizeof(sockaddr_in));
+		addr_in->sin_addr.s_addr = inet_addr(tcpsocket->remote_endpoint().address().to_string().data());	  
+	    ptr = (uint8_t*)(&addr_in->sin_addr); 
 
 		if (tcpsocket->remote_endpoint().address().is_v4()) {
 			family = STUN_ATTR_FAMILY_IPV4;
@@ -400,8 +403,10 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock
 	{
 		auto udpsocket = (udp_socket*)sock;
 		port = udpsocket->remote_endpoint().port();
-		auto addstr = inet_addr(udpsocket->remote_endpoint().address().to_string().data());
-		ptr = (uint8_t*)(&addstr);
+
+		sockaddr_in6* addr_in = (sockaddr_in6*)malloc(sizeof(sockaddr_in6)); 
+		inet_pton(AF_INET6, udpsocket->remote_endpoint().address().to_string().data(), &addr_in->sin6_addr);		 
+		ptr = (uint8_t*)(&addr_in->sin6_addr);
 
 		if (udpsocket->remote_endpoint().address().is_v4()) {
 			family = STUN_ATTR_FAMILY_IPV4;
@@ -469,7 +474,7 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 	 * XOR-RELAYED-ADDRESS
 	 */
 	size_t len = 0;
-	uint8_t* p = (uint8_t*)& cookie;
+	uint8_t* p = (uint8_t*)&cookie;
 	size_t i = 0;
 	uint16_t msb_cookie = 0;
 
@@ -509,9 +514,9 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 	ret->turn_attr_reserved = 0;
 	ret->turn_attr_family = family;
 	ret->turn_attr_port = htons(port);
-	memcpy(ret->turn_attr_address, pOfAddr, len); 
+	memcpy(ret->turn_attr_address, pOfAddr, len);
 	if (type == TURN_ATTR_XOR_RELAYED_ADDRESS)
-	{ 
+	{
 		this->relayed_addr = (struct turn_attr_xor_relayed_address*)ret;
 		this->relayed_addr_totalLength_nothsVal = sizeof(struct turn_attr_xor_relayed_address) + len;
 		this->addHeaderMsgLength(this->relayed_addr_totalLength_nothsVal);
