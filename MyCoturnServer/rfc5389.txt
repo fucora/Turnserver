@@ -767,8 +767,8 @@ Binding method不需要身份验证和其它属性，除非另有说明。
   X-Port的计算方法是将映射端口按主机字节顺序排序，
   将其与magic cookie的最高16位进行异或，然后将结果转换为网络字节顺序。
   如果IP地址族是IPv4，则通过以主机字节顺序获取映射的IP地址，
-  使用magic cookie对其进行异或，并将结果转换为网络字节顺序来计算X地址。
-  如果IP地址族是IPv6，则通过以主机字节顺序获取映射的IP地址来计算X地址，
+  使用magic cookie对其进行异或，并将结果转换为网络字节顺序来计算X-Address。
+  如果IP地址族是IPv6，则通过以主机字节顺序获取映射的IP地址来计算X-Address，
   通过magic cookie和96位事务ID的串联对其进行异或，并将结果转换为网络字节顺序。
 
    The rules for encoding and processing the first 8 bits of the
