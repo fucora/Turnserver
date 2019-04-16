@@ -646,7 +646,6 @@ Binding method不需要身份验证和其它属性，除非另有说明。
 
 14.  STUN用法
 
-
    STUN本身不是NAT遍历问题的解决方案。 
    相反，STUN定义了一个可以在更大的解决方案中使用的工具。 
    术语“STUN用法”用于任何使用STUN作为组件的解决方案。
@@ -681,14 +680,12 @@ Binding method不需要身份验证和其它属性，除非另有说明。
    最后，用法必须考虑其使用STUN是否是NAT遍历的单边自解地方法的示例，
    如果是，请解决RFC 3424 [RFC3424]中提出的问题。
 
-15.  STUN Attributes
+15.  STUN属性
 
-
-   After the STUN header are zero or more attributes.  Each attribute
-   MUST be TLV encoded, with a 16-bit type, 16-bit length, and value.
-   Each STUN attribute MUST end on a 32-bit boundary.  As mentioned
-   above, all fields in an attribute are transmitted most significant
-   bit first.
+   STUN头之后是零个或多个属性。
+   每个属性必须是TLV编码的，具有16位类型，16位长度和值。
+   每个STUN属性必须以32位边界结束。 
+   如上所述，属性中的所有字段首先发送最高有效位。
 
        0                   1                   2                   3
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -698,46 +695,37 @@ Binding method不需要身份验证和其它属性，除非另有说明。
       |                         Value (variable)                ....
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-                    Figure 4: Format of STUN Attributes
+                             图4：STUN属性的格式
  
-   The value in the length field MUST contain the length of the Value
-   part of the attribute, prior to padding, measured in bytes.  Since
-   STUN aligns attributes on 32-bit boundaries, attributes whose content
-   is not a multiple of 4 bytes are padded with 1, 2, or 3 bytes of
-   padding so that its value contains a multiple of 4 bytes.  The
-   padding bits are ignored, and may be any value.
+   长度字段中的值必须包含属性的Value部分的长度，在填充之前，以字节为单位。 
+   由于STUN在32位边界上对齐属性，因此内容不是4个字节的倍数的属性将填充1,2或3个字节的填充，
+   以使其值包含4个字节的倍数。 填充位被忽略，并且可以是任何值。
 
-   Any attribute type MAY appear more than once in a STUN message.
-   Unless specified otherwise, the order of appearance is significant:
-   only the first occurrence needs to be processed by a receiver, and
-   any duplicates MAY be ignored by a receiver.
+   任何属性类型都可能在STUN消息中出现多次。
+   除非另有说明，否则出现的顺序是重要的：
+   只有第一次出现需要由接收者处理，并且接收者可以忽略任何重复。
 
-   To allow future revisions of this specification to add new attributes
-   if needed, the attribute space is divided into two ranges.
-   Attributes with type values between 0x0000 and 0x7FFF are
-   comprehension-required attributes, which means that the STUN agent
-   cannot successfully process the message unless it understands the
-   attribute.  Attributes with type values between 0x8000 and 0xFFFF are
-   comprehension-optional attributes, which means that those attributes
-   can be ignored by the STUN agent if it does not understand them.
+   为了允许将来修订此规范以在需要时添加新属性，
+   属性空间将分为两个范围。 类型值介于0x0000和0x7FFF之间的属性是需要理解的属性，
+   除非它理解该属性否则STUN代理无法成功处理消息。 
+   类型值介于0x8000和0xFFFF之间的属性是可选理解的属性，
+   这意味着如果STUN代理不理解这些属性， 则可以忽略这些属性。 
 
-   The set of STUN attribute types is maintained by IANA.  The initial
-   set defined by this specification is found in Section 18.2.
+   STAN属性类型集由IANA维护。 本规范定义的初始集可在第18.2节中找到。
 
-   The rest of this section describes the format of the various
-   attributes defined in this specification.
+   本节的其余部分描述了本规范中定义的各种属性的格式。
 
 15.1.  MAPPED-ADDRESS
 
 
-   The MAPPED-ADDRESS attribute indicates a reflexive transport address
-   of the client.  It consists of an 8-bit address family and a 16-bit
-   port, followed by a fixed-length value representing the IP address.
-   If the address family is IPv4, the address MUST be 32 bits.  If the
-   address family is IPv6, the address MUST be 128 bits.  All fields
-   must be in network byte order.
+   MAPPED-ADDRESS属性指示客户端的自反传输地址。 
+   它由一个8位地址族和一个16位端口组成，
+   后跟一个表示IP地址的固定长度值。 
+   如果地址族是IPv4，则地址必须是32位。 
+   如果地址族是IPv6，则地址必须是128位。 
+   所有字段必须按网络字节顺序排列。
     
-   The format of the MAPPED-ADDRESS attribute is:
+   MAPPED-ADDRESS属性的格式为:
 
        0                   1                   2                   3
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -749,28 +737,20 @@ Binding method不需要身份验证和其它属性，除非另有说明。
       |                                                               |
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-               Figure 5: Format of MAPPED-ADDRESS Attribute
+                      图5：MAPPED-ADDRESS属性的格式
 
-   The address family can take on the following values:
-
+   地址族可以采用以下值：
    0x01:IPv4
    0x02:IPv6
 
-   The first 8 bits of the MAPPED-ADDRESS MUST be set to 0 and MUST be
-   ignored by receivers.  These bits are present for aligning parameters
-   on natural 32-bit boundaries.
+   MAPPED-ADDRESS的前8位必须设置为0，接收器必须忽略它。 这些位用于在自然32位边界上对齐参数。
 
-   This attribute is used only by servers for achieving backwards
-   compatibility with RFC 3489 [RFC3489] clients.
+   此属性仅供服务器使用，以实现与RFC 3489 [RFC3489]客户端的向后兼容性。
 
 15.2.  XOR-MAPPED-ADDRESS
-
-
-   The XOR-MAPPED-ADDRESS attribute is identical to the MAPPED-ADDRESS
-   attribute, except that the reflexive transport address is obfuscated
-   through the XOR function.
-
-   The format of the XOR-MAPPED-ADDRESS is:
+ 
+   XOR-MAPPED-ADDRESS属性与MAPPED-ADDRESS属性相同，只是反身传输地址通过XOR函数进行模糊处理。 
+   XOR-MAPPED-ADDRESS的格式是:
 
       0                   1                   2                   3
       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -780,21 +760,16 @@ Binding method不需要身份验证和其它属性，除非另有说明。
      |                X-Address (Variable)
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-             Figure 6: Format of XOR-MAPPED-ADDRESS Attribute
+                    图6：XOR-MAPPED-ADDRESS属性的格式
 
-   The Family represents the IP address family, and is encoded
-   identically to the Family in MAPPED-ADDRESS.
+  Family表示IP地址族，其编码方式与MAPPED-ADDRESS中的Family相同。
  
-   X-Port is computed by taking the mapped port in host byte order,
-   XOR'ing it with the most significant 16 bits of the magic cookie, and
-   then the converting the result to network byte order.  If the IP
-   address family is IPv4, X-Address is computed by taking the mapped IP
-   address in host byte order, XOR'ing it with the magic cookie, and
-   converting the result to network byte order.  If the IP address
-   family is IPv6, X-Address is computed by taking the mapped IP address
-   in host byte order, XOR'ing it with the concatenation of the magic
-   cookie and the 96-bit transaction ID, and converting the result to
-   network byte order.
+  X-Port的计算方法是将映射端口按主机字节顺序排序，
+  将其与magic cookie的最高16位进行异或，然后将结果转换为网络字节顺序。
+  如果IP地址族是IPv4，则通过以主机字节顺序获取映射的IP地址，
+  使用magic cookie对其进行异或，并将结果转换为网络字节顺序来计算X地址。
+  如果IP地址族是IPv6，则通过以主机字节顺序获取映射的IP地址来计算X地址，
+  通过magic cookie和96位事务ID的串联对其进行异或，并将结果转换为网络字节顺序。
 
    The rules for encoding and processing the first 8 bits of the
    attribute's value, the rules for handling multiple occurrences of the
