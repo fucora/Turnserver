@@ -252,299 +252,143 @@ Binding method不需要身份验证和其它属性，除非另有说明。
 
    然后，STUN代理执行用法指定的身份验证机制所需的任何检查(参见第10节)
 
-   Once the authentication checks are done, the STUN agent checks for
-   unknown attributes and known-but-unexpected attributes in the
-   message.  Unknown comprehension-optional attributes MUST be ignored
-   by the agent.  Known-but-unexpected attributes SHOULD be ignored by
-   the agent.  Unknown comprehension-required attributes cause
-   processing that depends on the message class and is described below.
+   完成身份验证检查后，STUN代理将检查消息中未知的属性和已知但未预料到的属性。
+   未知的可选理解的属性必须被代理忽略。
+   代理应该忽略已知但未预料到的属性。
+   未知的需要理解的属性导致依赖于消息类的处理，如下所述
+   此时，进一步的处理取决于请求的消息类。
+  
+7.3.1. 处理请求
 
-   At this point, further processing depends on the message class of the
-   request.
+   如果请求包含一个或多个未知的需要理解的属性，
+   服务器将用错误代码420(未知属性)响应一个错误响应，
+   并在响应中包含一个未知属性，该属性列出了未知的需要理解的属性
+    
+   然后，服务器执行方法或特定用法所需的所有检查。如果所有检查都成功，
+   服务器将按照下面的描述制定一个成功响应。
 
-7.3.1.  Processing a Request
+   当运行UDP时，服务器接收到的请求可以是事务的第一个请求，也可以是重传。
+   服务器必须对重新传输作出响应，以便保留以下属性：
 
+   如果客户机接收到对重传的响应，而不是发送到原始请求的响应，
+   则客户机和服务器上的总体状态与仅接收到对原始重传的响应或同时接收到两个响应的情况相同
+   （在这种情况下，客户机将使用第一个响应）。 
+   
+   满足此要求的最简单方法是让服务器记住在UDP上收到的所有事务ID及其在过去40秒内的相应响应。
+   但是，这个要求服务器保持状态，并且不适合未经过身份验证的请求。 
+   另一种方法是重新处理请求并重新计算响应。 
+   后一种技术必须仅应用于幂等的请求（当相同的请求可以安全地重复而不影响系统的整体状态时，请求被认为是幂等的）
+   并且对同一请求产生相同的成功响应。 绑定方法被认为是幂等的。 
+   请注意，某些罕见的网络事件可能导致自反传输地址值发生更改，
+   从而导致不同的映射地址不同成功的回应。
+   STUN的扩展必须讨论请求重传对不存储事务状态的服务器的影响
 
-   If the request contains one or more unknown comprehension-required
-   attributes, the server replies with an error response with an error
-   code of 420 (Unknown Attribute), and includes an UNKNOWN-ATTRIBUTES
-   attribute in the response that lists the unknown comprehension-
-   required attributes.
+7.3.1.1. 形成成功或错误响应
 
-   The server then does any additional checking that the method or the
-   specific usage requires.  If all the checks succeed, the server
-   formulates a success response as described below.
+   在形成响应（成功或错误）时，服务器遵循第6节的规则。
+   响应的方法与请求的方法相同，并且消息类是“成功响应”或“错误响应”。
+   对于错误响应，服务器必须添加一个ERROR-CODE属性，该属性包含上述处理中指定的错误代码。
+   原因短语不是固定的，但应该是适合错误代码的东西。
+   对于某些错误，将向消息添加其他属性。
+   这些属性在指定错误代码的描述中有详细说明。
+   例如，对于错误代码420（未知属性），服务器必须包含UNKNOWN-ATTRIBUTES属性。
+   某些身份验证错误也会导致添加属性（参见第10节）.
+   扩展可以定义其他错误或附加属性来添加错误情况。
 
-   When run over UDP, a request received by the server could be the
-   first request of a transaction, or a retransmission.  The server MUST
-   respond to retransmissions such that the following property is
-   preserved: if the client receives the response to the retransmission
-   and not the response that was sent to the original request, the
-   overall state on the client and server is identical to the case where
-   only the response to the original retransmission is received, or
+   如果服务器使用身份验证机制对请求进行了身份验证，那么服务器应该向响应添加适当的身份验证属性（参见第10节）。
+   服务器还添加特定方法或用法所需的任何属性。此外，服务器应该向消息添加一个SOFTWARE属性。
+   对于绑定方法，不需要进行额外的检查，除非用法另有规定。
 
+   在形成成功响应时，服务器向响应添加一个xor-mapped-address属性，其中该属性的内容是请求消息的源传输地址。
+   对于UDP，这是请求消息的源IP地址和源UDP端口。
+   对于TCP和TLS-over-TCP，这是服务器看到的TCP连接的源IP地址和源TCP端口。
 
+7.3.1.2. 发送成功或错误响应
+   响应（成功或错误）和请求使用相同的传输方式发送。
+   如果通过UDP接收到请求，则响应的目标IP地址和端口为接收到的请求消息的源IP地址和端口，
+   响应的源IP地址和端口等于接收到的请求消息的目标IP地址和端口。
+   如果通过TCP或TLS-over-TCP接收到请求，则响应将通过与接收请求相同的TCP连接发送回。 
 
-Rosenberg, et al.           Standards Track                    [Page 17]
-________________________________________
+7.3.2. 处理指令
+   如果指令含有未知的需要理解的属性，则抛弃指令。 
+   然后，代理将执行任何附加检查，以确保该方法或特定用法需要。
+   如果所有检查都成功，代理将处理指令。不对指令返回消息。 
+
+   对于绑定方法，不需要进行额外的检查或处理，除非用法另有规定。代理仅仅收到消息就刷新了中间NAT中的“绑定”。
+   由于指示不会通过UDP重新传输（与请求不同），因此不需要在发送代理处处理指示的重新传输。
+
+7.3.3.  处理成功响应
  
-RFC 5389                          STUN                      October 2008
-
-
-   where both responses are received (in which case the client will use
-   the first).  The easiest way to meet this requirement is for the
-   server to remember all transaction IDs received over UDP and their
-   corresponding responses in the last 40 seconds.  However, this
-   requires the server to hold state, and will be inappropriate for any
-   requests which are not authenticated.  Another way is to reprocess
-   the request and recompute the response.  The latter technique MUST
-   only be applied to requests that are idempotent (a request is
-   considered idempotent when the same request can be safely repeated
-   without impacting the overall state of the system) and result in the
-   same success response for the same request.  The Binding method is
-   considered to be idempotent.  Note that there are certain rare
-   network events that could cause the reflexive transport address value
-   to change, resulting in a different mapped address in different
-   success responses.  Extensions to STUN MUST discuss the implications
-   of request retransmissions on servers that do not store transaction
-   state.
-
-7.3.1.1.  Forming a Success or Error Response
-
-
-   When forming the response (success or error), the server follows the
-   rules of Section 6.  The method of the response is the same as that
-   of the request, and the message class is either "Success Response" or
-   "Error Response".
-
-   For an error response, the server MUST add an ERROR-CODE attribute
-   containing the error code specified in the processing above.  The
-   reason phrase is not fixed, but SHOULD be something suitable for the
-   error code.  For certain errors, additional attributes are added to
-   the message.  These attributes are spelled out in the description
-   where the error code is specified.  For example, for an error code of
-   420 (Unknown Attribute), the server MUST include an UNKNOWN-
-   ATTRIBUTES attribute.  Certain authentication errors also cause
-   attributes to be added (see Section 10).  Extensions may define other
-   errors and/or additional attributes to add in error cases.
-
-   If the server authenticated the request using an authentication
-   mechanism, then the server SHOULD add the appropriate authentication
-   attributes to the response (see Section 10).
-
-   The server also adds any attributes required by the specific method
-   or usage.  In addition, the server SHOULD add a SOFTWARE attribute to
-   the message.
-
-   For the Binding method, no additional checking is required unless the
-   usage specifies otherwise.  When forming the success response, the
-   server adds a XOR-MAPPED-ADDRESS attribute to the response, where the
-   contents of the attribute are the source transport address of the
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 18]
-________________________________________
+   如果成功响应包含未知的需要理解的属性，则将丢弃响应并认为事务已失败。
  
-RFC 5389                          STUN                      October 2008
+   之后，客户机执行该方法或特定用法所需的任何附加检查。如果所有检查都成功，则客户端将处理成功响应。
+   对于绑定方法，客户机检查响应中是否存在xor-mapped-address属性。
+   客户端检查指定的地址族。如果它是不受支持的地址族，则应忽略该属性。
 
+   如果它是意外但受支持的地址系列（例如，绑定事务是通过IPv4发送的，但指定的地址是IPv6），
+   则客户端可以接受并使用该值。 
 
-   request message.  For UDP, this is the source IP address and source
-   UDP port of the request message.  For TCP and TLS-over-TCP, this is
-   the source IP address and source TCP port of the TCP connection as
-   seen by the server.
+7.3.4.  处理错误响应
+   如果错误响应包含不知道的需要理解的属性，或者如果错误响应不包含RROR-CODE属性，那么交易就被简单地认为失败了。
+   然后，客户机执行由身份验证机制指定的所有处理（参见第10节）。这可能导致新的事务尝试。
 
-7.3.1.2.  Sending the Success or Error Response
+   此时的处理取决于错误代码、方法和用法；以下是默认规则：
+   
+   o  如果错误代码是300到399，除非使用ALTERNATE-SERVER扩展，否则客户端应将事务视为失败。见第11节。
 
+   o  如果错误代码是400到499，则客户端声明事务失败；如果是420（未知属性），则响应应包含一个UNKNOWN-ATTRIBUTES属性，该属性提供附加信息。.
 
-   The response (success or error) is sent over the same transport as
-   the request was received on.  If the request was received over UDP,
-   the destination IP address and port of the response are the source IP
-   address and port of the received request message, and the source IP
-   address and port of the response are equal to the destination IP
-   address and port of the received request message.  If the request was
-   received over TCP or TLS-over-TCP, the response is sent back on the
-   same TCP connection as the request was received on.
+   o  如果错误代码是500到599，客户机可以重新发送请求；这样做的客户机必须限制他们这样做的次数。
 
-7.3.2.  Processing an Indication
+   任何其他错误代码都会导致客户端认为事务失败。
 
-
-   If the indication contains unknown comprehension-required attributes,
-   the indication is discarded and processing ceases.
-
-   The agent then does any additional checking that the method or the
-   specific usage requires.  If all the checks succeed, the agent then
-   processes the indication.  No response is generated for an
-   indication.
-
-   For the Binding method, no additional checking or processing is
-   required, unless the usage specifies otherwise.  The mere receipt of
-   the message by the agent has refreshed the "bindings" in the
-   intervening NATs.
-
-   Since indications are not re-transmitted over UDP (unlike requests),
-   there is no need to handle re-transmissions of indications at the
-   sending agent.
-
-7.3.3.  Processing a Success Response
-
-
-   If the success response contains unknown comprehension-required
-   attributes, the response is discarded and the transaction is
-   considered to have failed.
-
-   The client then does any additional checking that the method or the
-   specific usage requires.  If all the checks succeed, the client then
-   processes the success response.
-
-   For the Binding method, the client checks that the XOR-MAPPED-ADDRESS
-   attribute is present in the response.  The client checks the address
-   family specified.  If it is an unsupported address family, the
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 19]
-________________________________________
+8.  指纹机制
  
-RFC 5389                          STUN                      October 2008
+   本节描述了一种可选的stun机制，当两个协议在同一传输地址上多路复用时，
+   该机制有助于区分stun消息和其他协议的包。
+   这个机制是可选的，STUN用法必须描述是否以及何时使用。
+   指纹机制与RFC3489不兼容，并且不能在需要这种兼容性的环境中使用。.
 
+   在某些应用中，stun消息在与其他协议（如实时传输协议（RTP））相同的传输地址上进行多路复用。
+   为了应用第7节中描述的处理，必须首先将stun消息与应用程序包分开。
+    
+   第6节描述了stun头中可以用于此目的的三个固定字段。但是，在某些情况下，这三个固定字段可能不够 
+   使用指纹扩展时，代理在发送给另一个代理的消息中包含指纹属性。 
+   第15.5节描述了该属性的位置和值。
+   当代理接收到它认为是STUN消息的内容时，除了其他基本检查外，代理还检查消息是否包含指纹属性以及该属性是否包含正确的值。
+   第7.3节描述了在特技信息的整体处理过程中，何时执行指纹检查。
+   此附加检查有助于代理检测其他协议的消息，这些消息可能在其他情况下看起来像是STUN消息。
 
-   attribute SHOULD be ignored.  If it is an unexpected but supported
-   address family (for example, the Binding transaction was sent over
-   IPv4, but the address family specified is IPv6), then the client MAY
-   accept and use the value.
-
-7.3.4.  Processing an Error Response
-
-
-   If the error response contains unknown comprehension-required
-   attributes, or if the error response does not contain an ERROR-CODE
-   attribute, then the transaction is simply considered to have failed.
-
-   The client then does any processing specified by the authentication
-   mechanism (see Section 10).  This may result in a new transaction
-   attempt.
-
-   The processing at this point depends on the error code, the method,
-   and the usage; the following are the default rules:
-
-   o  If the error code is 300 through 399, the client SHOULD consider
-      the transaction as failed unless the ALTERNATE-SERVER extension is
-      being used.  See Section 11.
-
-   o  If the error code is 400 through 499, the client declares the
-      transaction failed; in the case of 420 (Unknown Attribute), the
-      response should contain a UNKNOWN-ATTRIBUTES attribute that gives
-      additional information.
-
-   o  If the error code is 500 through 599, the client MAY resend the
-      request; clients that do so MUST limit the number of times they do
-      this.
-
-   Any other error code causes the client to consider the transaction
-   failed.
-
-8.  FINGERPRINT Mechanism
-
-
-   This section describes an optional mechanism for STUN that aids in
-   distinguishing STUN messages from packets of other protocols when the
-   two are multiplexed on the same transport address.  This mechanism is
-   optional, and a STUN usage must describe if and when it is used.  The
-   FINGERPRINT mechanism is not backwards compatible with RFC 3489, and
-   cannot be used in environments where such compatibility is required.
-
-   In some usages, STUN messages are multiplexed on the same transport
-   address as other protocols, such as the Real Time Transport Protocol
-   (RTP).  In order to apply the processing described in Section 7, STUN
-   messages must first be separated from the application packets.
-
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 20]
-________________________________________
+9.  服务器的DNS发现
  
-RFC 5389                          STUN                      October 2008
+   本节描述了一个可选的stun过程，该过程允许客户端使用DNS来确定服务器的IP地址和端口。
+   STUN用法必须描述是否和何时使用此扩展。要使用此过程，客户机必须知道服务器的域名和服务名称；
+    
+   用法还必须描述客户机如何获得这些信息。为防止域名丢失或因法律或其他原因需要更改，不建议将服务器的域名硬编码在软件里。
+   当客户端希望在公共Internet中找到接受绑定请求/响应事务的stun服务器时，srv服务名称为“stun”。
+   当它希望找到使用TLS接受绑定请求/响应事务的stun服务器时，srv服务名称为“stuns”。
+   stun用法可以定义其他DNS SRV服务名称。
+   使用[rfc2782]中指定的srv过程将域名解析为传输地址。
+   DNS SRV服务名称是是此过程的所说的服务名称。
+   DNS发现中的传输协议就是客户端将运行stun的传输协议：udp和udp，tcp和tcp。
+   注意，此时只有“tcp”被定义为“stuns”。 
 
+   按照RFC2782的过程确定要联系的服务器。
+   RFC2782详细说明了如何对一组SRV记录进行排序和尝试。
+   但是，RFC2782只声明客户机应该“尝试连接到（协议、地址、服务）”，而不提供在发生故障时发生的任何细节。
+   当遵循这些过程时，如果STUN事务超时而没有收到响应，则客户端应该重新尝试请求到RFC 2782定义的有序命令中的下一个服务器。
+   这种重试仅对请求/响应传输是可能的，因为指令事务不产生响应或超时.
 
-   Section 6 describes three fixed fields in the STUN header that can be
-   used for this purpose.  However, in some cases, these three fixed
-   fields may not be sufficient.
+   对于TCP和UDP，STUN请求的默认端口是3478。
+   STUN服务器的管理员应该在他们的SRV记录中使用此端口来获取UDP和TCP。
+   在所有情况下，DNS中的端口必须反映服务器正在侦听的端口。
+   STUN over TLS的默认端口是5349.如果服务器软件支持确定初始消息是TLS还是STUN消息，
+   则服务器可以在与STUN相同的端口上通过TLS运行STUN over STLS。
 
-   When the FINGERPRINT extension is used, an agent includes the
-   FINGERPRINT attribute in messages it sends to another agent.
-   Section 15.5 describes the placement and value of this attribute.
-   When the agent receives what it believes is a STUN message, then, in
-   addition to other basic checks, the agent also checks that the
-   message contains a FINGERPRINT attribute and that the attribute
-   contains the correct value.  Section 7.3 describes when in the
-   overall processing of a STUN message the FINGERPRINT check is
-   performed.  This additional check helps the agent detect messages of
-   other protocols that might otherwise seem to be STUN messages.
-
-9.  DNS Discovery of a Server
-
-
-   This section describes an optional procedure for STUN that allows a
-   client to use DNS to determine the IP address and port of a server.
-   A STUN usage must describe if and when this extension is used.  To
-   use this procedure, the client must know a server's domain name and a
-   service name; the usage must also describe how the client obtains
-   these.  Hard-coding the domain name of the server into software is
-   NOT RECOMMENDED in case the domain name is lost or needs to change
-   for legal or other reasons.
-
-   When a client wishes to locate a STUN server in the public Internet
-   that accepts Binding request/response transactions, the SRV service
-   name is "stun".  When it wishes to locate a STUN server that accepts
-   Binding request/response transactions over a TLS session, the SRV
-   service name is "stuns".  STUN usages MAY define additional DNS SRV
-   service names.
-
-   The domain name is resolved to a transport address using the SRV
-   procedures specified in [RFC2782].  The DNS SRV service name is the
-   service name provided as input to this procedure.  The protocol in
-   the SRV lookup is the transport protocol the client will run STUN
-   over: "udp" for UDP and "tcp" for TCP.  Note that only "tcp" is
-   defined with "stuns" at this time.
-
-   The procedures of RFC 2782 are followed to determine the server to
-   contact.  RFC 2782 spells out the details of how a set of SRV records
-   is sorted and then tried.  However, RFC 2782 only states that the
-   client should "try to connect to the (protocol, address, service)"
-   without giving any details on what happens in the event of failure.
-   When following these procedures, if the STUN transaction times out
-   without receipt of a response, the client SHOULD retry the request to
-
-
-
-
-Rosenberg, et al.           Standards Track                    [Page 21]
-________________________________________
- 
-RFC 5389                          STUN                      October 2008
-
-
-   the next server in the ordered defined by RFC 2782.  Such a retry is
-   only possible for request/response transmissions, since indication
-   transactions generate no response or timeout.
-
-   The default port for STUN requests is 3478, for both TCP and UDP.
-
-   Administrators of STUN servers SHOULD use this port in their SRV
-   records for UDP and TCP.  In all cases, the port in DNS MUST reflect
-   the one on which the server is listening.  The default port for STUN
-   over TLS is 5349.  Servers can run STUN over TLS on the same port as
-   STUN over TCP if the server software supports determining whether the
-   initial message is a TLS or STUN message.
-
-   If no SRV records were found, the client performs an A or AAAA record
-   lookup of the domain name.  The result will be a list of IP
-   addresses, each of which can be contacted at the default port using
-   UDP or TCP, independent of the STUN usage.  For usages that require
-   TLS, the client connects to one of the IP addresses using the default
-   STUN over TLS port.
+   如果未找到SRV记录，则客户端将执行域名的A或AAAA记录查找。 
+   结果将是一个IP地址列表，每个IP地址都可以使用UDP或TCP在默认端口联系，
+   而与STUN使用无关。 对于需要TLS的用法，
+   客户端使用默认的STUN over TLS端口连接到其中一个IP地址。
 
 10.  Authentication and Message-Integrity Mechanisms
 
