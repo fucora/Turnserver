@@ -1,26 +1,27 @@
-  Traversal Using Relays around NAT (TURN):
+﻿  Traversal Using Relays around NAT (TURN):
      Relay Extensions to Session Traversal Utilities for NAT (STUN)
 
 Abstract
 
-   �������λ��NAT���棬��ô��ĳЩ����£�
-   �����������޷�ֱ���������������Եȷ���ͨ�š� 
-   ����Щ����£���������ʹ�ó䵱ͨ���м̵��м�ڵ�ķ��� 
-   �ù淶������һ�ֳ�ΪTURN������NAT�ı�������Э�飬
-   ��Э���������������м̵Ĳ�����ʹ���м�����Ե��彻�����顣 
-   TURN������һЩ�м̿���Э��Ĳ�֮ͬ�������������ͻ���ʹ�õ����м̵�ַ�����Ե���ͨ�š�
+   如果主机位于NAT后面，那么在某些情况下，
+   该主机可能无法直接与其他主机（对等方）通信。 
+   在这些情况下，主机必须使用充当通信中继的中间节点的服务。 
+   该规范定义了一种称为TURN（遍历NAT的遍历）的协议，
+   该协议允许主机控制中继的操作并使用中继与其对等体交换分组。 
+   TURN与其他一些中继控制协议的不同之处在于它允许客户端使用单个中继地址与多个对等体通信。
 
-������¼��״̬
+本备忘录的状态
 
-   ����Internet��׼�����ĵ���
-   ���ĵ���Internet����������Ĳ�Ʒ
-  ��IETF���� ��������IETF�����Ĺ�ʶ��
-   ���Ѿ���������飬���ѻ�û���������ָ��С��
-  ��IESG������׼������ �й�Internet��׼�ĸ�����Ϣ����μ�RFC 5741�ĵ�2�ڡ�
+   这是Internet标准跟踪文档。
+   本文档是Internet工程任务组的产品
+  （IETF）。 它代表了IETF社区的共识。
+   它已经过公众审查，并已获得互联网工程指导小组
+  （IESG）的批准发布。 有关Internet标准的更多信息，请参见RFC 5741的第2节。
 
-  �йر��ĵ��ĵ�ǰ״̬���κο����Լ�����ṩ��������Ϣ�������http://www.rfc-editor.org/info/rfc5766��
+  有关本文档的当前状态，任何勘误以及如何提供反馈的信息，请访
+  问http://www.rfc-editor.org/info/rfc5766。
    
-��Ȩ����
+版权声明
 
    Copyright (c) 2010 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
@@ -119,71 +120,69 @@ Table of Contents
 	  
 1.  Introduction
 
-   NAT�������������ϣ�������������������ݰ�������һЩ����Ҳ������NAT֮�� 
-   Ϊ�ˣ����漰����������ʹ�á���ס��������μ�[RFC5128]��
-   ���Է���ֱ��ͨ��·��; Ҳ����˵��
-   ͨ������NAT��·������һ����������һ��������ͨ��·��������������κ��м̡�
+   NAT后面的主机可能希望与其他主机交换数据包，其中一些主机也可能在NAT之后。 
+   为此，所涉及的主机可以使用“打孔”技术（参见[RFC5128]）
+   尝试发现直接通信路径; 也就是说，
+   通过介入NAT和路由器从一个主机到另一个主机的通信路径，但不会遍历任何中继。
 
-   ��[RFC5128]��[RFC4787]���������������������λ�ڱ��ֲ��ѵ�NAT֮�����׼�����ʧ�ܡ�
-   ���磬�������������λ�ھ��С������ڵ�ַ��ӳ�䡱
-   �������ڵ�ַ�Ͷ˿ڵ�ӳ�䡱��ӳ����Ϊ��NAT֮�����׼���ͨ����ʧ�ܡ�
+   如[RFC5128]和[RFC4787]中所述，如果两个主机都位于表现不佳的NAT之后，则打孔技术将失败。
+   例如，如果两个主机都位于具有“依赖于地址的映射”
+   或“依赖于地址和端口的映射”的映射行为的NAT之后，则打孔技术通常会失败。
    
-   ���Ҳ���ֱ��ͨ��·��ʱ������ʹ�ó䵱�����м̵��м������ķ��� 
-   ���м�ͨ��λ�ڹ���Internet�У���������λ��NAT���������֮���м����ݰ���
+   当找不到直接通信路径时，必须使用充当分组中继的中间主机的服务。 
+   此中继通常位于公共Internet中，并在两个位于NAT后面的主机之间中继数据包。
 
-   �ù淶������һ����ΪTURN��Э�飬������NAT�������������ΪTURN�ͻ��ˣ�������һ����������ΪTURN���������䵱�м̡�
-   �ͻ��˿��԰��ŷ����������ݰ��м̵�ĳЩ������������Ϊ�Եȶˣ��ʹ�ĳЩ������������Ϊ�Եȶˣ��м̣�
-   ���ҿ��Կ����������м̵ķ��档
-   �ͻ���ͨ����ȡIP��ַ�Ͷ˿�����ɴ˲�������������Ϊ�м̴����ַ��
-   ���Ե��彫���鷢�͵��м̵Ĵ����ַʱ���������������м̵��ͻ��ˡ�
-   ���ͻ�����������������ݰ�ʱ��������ʹ���м̵Ĵ����ַ��ΪԴ�����м̵��ʵ��ĶԵȶˡ�
+   该规范定义了一个名为TURN的协议，它允许NAT后面的主机（称为TURN客户端）请求另一个主机（称为TURN服务器）充当中继。
+   客户端可以安排服务器将数据包中继到某些其他主机（称为对等端）和从某些其他主机（称为对等端）中继，
+   并且可以控制如何完成中继的方面。
+   客户端通过获取IP地址和端口来完成此操作服务器，称为中继传输地址。
+   当对等体将分组发送到中继的传输地址时，服务器将分组中继到客户端。
+   当客户端向服务器发送数据包时，服务器使用中继的传输地址作为源将其中继到适当的对等端。
 
-   ʹ��TURN�Ŀͻ��˱�����һЩ�������м̵Ĵ����ַ���ݸ���Եȶˣ�
-   ����Ҫ�˽�ÿ���Եȷ���IP��ַ�Ͷ˿ڣ���ȷ�е�˵��ÿ���Եȷ��ķ������Է������ַ������ĵ�2�ڣ���
-   ���������һ�㳬����TURNЭ��ķ�Χ��
-   ��������һ�ַ������ÿͻ��˺ͶԵȶ˽��������ʼ���Ϣ��
-   ��һ�ַ����ǿͻ��˼���Եȷ�ʹ��ר�õġ���顱�򡰻�ϡ�Э�飨�й���ϸ��Ϣ�������[RFC5128]����
+   使用TURN的客户端必须有一些方法将中继的传输地址传递给其对等端，
+   并且要了解每个对等方的IP地址和端口（更确切地说，每个对等方的服务器自反传输地址，请参阅第2节）。
+   如何做到这一点超出了TURN协议的范围。
+   可以做的一种方法是让客户端和对等端交换电子邮件消息。
+   另一种方法是客户端及其对等方使用专用的“简介”或“会合”协议（有关详细信息，请参阅[RFC5128]）。
 
-   ���TURN��ICE [RFC5245]һ��ʹ�ã�
-   ���м̵Ĵ����ַ�Լ��Ե����IP��ַ�Ͷ˿���ICE��ѡ��Ϣ��ͨ��Э��Я����
+   如果TURN与ICE [RFC5245]一起使用，
+   则中继的传输地址以及对等体的IP地址和端口在ICE候选信息中通过协议携带。
 
-   ���磬���ʹ��TURN��ICE��Ϊʹ��SIP [RFC3261]�Ķ�ý����������һ���֣�
-   ��SIP�����ڻ��Э��Ľ�ɫ����SIP��Ϣ��������Я��ICE��ѡ��Ϣ��
-   ���TURN��ICE��ĳЩ��������Э��һ��ʹ�ã�
-   ��[MMUSIC-ICE-NONSIP]�ṩ�йؼ���Э�����ִ�еķ����ָ����
+   例如，如果使用TURN和ICE作为使用SIP [RFC3261]的多媒体解决方案的一部分，
+   则SIP服务于会合协议的角色，在SIP消息的主体内携带ICE候选信息。
+   如果TURN和ICE与某些其他集合协议一起使用，
+   则[MMUSIC-ICE-NONSIP]提供有关集合协议必须执行的服务的指导。
      
-   ����ʹ��TURN��������ʵ��NAT�������������֮���ͨ�źܿ��ܻ������ã�
-   ���Ƕ���TURN���������ṩ�̶��Գɱ��ܸߣ���Ϊ������ͨ����Ҫ�ܴ�Ĵ�����
+   尽管使用TURN服务器来实现NAT后面的两个主机之间的通信很可能会起作用，
+   但是对于TURN服务器的提供商而言成本很高，因为服务器通常需要很大的带宽。
    
-   ��ˣ����ֻ���޷��ҵ�ֱ��ͨ��·��ʱ��ʹ��TURN��������
-   ���ͻ��˺ͶԵȷ�ʹ��ICE��ȷ��ͨ��·��ʱ��
-   ICE������ʹ�ô�׼���������ֱ��·����
-   �������Ҳ���ֱ��·��ʱ��ʹ��TURN��������
+   因此，最好只在无法找到直接通信路径时才使用TURN服务器。
+   当客户端和对等方使用ICE来确定通信路径时，
+   ICE将首先使用打孔技术来搜索直接路径，
+   并且在找不到直接路径时仅使用TURN服务器。
 
-   TURN�����������֧��ʹ��SIP���ź�֪ͨ�Ķ�ý��Ự��
-   ����SIP֧�ֲַ棬���TURN֧��ÿ���м̴����ַ�Ķ���Եȣ�����������֧�ֵĹ��ܣ����磬SOCKS [RFC1928]����
-   ���ǣ�TURNҲ�������������͵�Ӧ�á�
+   TURN最初发明用于支持使用SIP发信号通知的多媒体会话。
+   由于SIP支持分叉，因此TURN支持每个中继传输地址的多个对等：其他方法不支持的功能（例如，SOCKS [RFC1928]）。
+   但是，TURN也适用于其他类型的应用。
 
-   TURN�ڽϴ��ICE NAT��Խ�취�б����Ϊһ�����֡� 
-   �ش�TURN��ʵʩ�߶�ICE���е��飬�����濼�ǽ���������Ӧ�á�
-   ���ǣ�������û��ICE�������ʹ��TURN��
+   TURN在较大的ICE NAT穿越办法中被设计为一个部分。 
+   敦促TURN的实施者对ICE进行调查，并认真考虑将其用于其应用。
+   但是，可以在没有ICE的情况下使用TURN。
 
-   TURN��STUN��NAT��Խͨ�ŵ�ʵ�ó���Э��[RFC5389]����չ�� 
-   ����������ܲ���ȫ����TURN��Ϣ��STUN��ʽ����Ϣ�� 
-   ���ĵĶ���Ӧ����ϤSTUN��
+   TURN是STUN（NAT穿越通信的实用程序）协议[RFC5389]的扩展。 
+   大多数（尽管不是全部）TURN消息是STUN格式的消息。 
+   本文的读者应该熟悉STUN。
 
 2.  Overview of Operation
 
-   This section gives an overview of the operation of TURN.  It is non-
-   normative.
+   本节概述了TURN的操作。 这是非规范性的。
 
-   In a typical configuration, a TURN client is connected to a private
-   network [RFC1918] and through one or more NATs to the public
-   Internet.  On the public Internet is a TURN server.  Elsewhere in the
-   Internet are one or more peers with which the TURN client wishes to
-   communicate.  These peers may or may not be behind one or more NATs.
-   The client uses the server as a relay to send packets to these peers
-   and to receive packets from these peers.
+   在典型配置中，TURN客户端连接到专用网络[RFC1918]
+   并通过一个或多个NAT连接到公共因特网。
+   在公共Internet上是TURN服务器。
+   互联网中的其他地方是TURN客户端希望与之通信的一个或多个对等体。
+   这些对等体可能或可能不在一个或多个NAT后面。
+   客户端使用服务器作为中继来向这些对等体发送数据包并从这些对等体接收数据包。
     
                                         Peer A
                                         Server-Reflexive    +---------+
@@ -216,75 +215,59 @@ Table of Contents
              Transport Address   Transport Address   Address
              192.0.2.1:7000      192.0.2.15:50000     192.0.2.210:49191
 
-                                 Figure 1
+                                 图1
 
-   Figure 1 shows a typical deployment.  In this figure, the TURN client
-   and the TURN server are separated by a NAT, with the client on the
-   private side and the server on the public side of the NAT.  This NAT
-   is assumed to be a "bad" NAT; for example, it might have a mapping
-   property of "address-and-port-dependent mapping" (see [RFC4787]).
+   图1显示了典型部署。在此图中，TURN客户端和TURN服务器由NAT分隔，
+   客户端位于私有端，服务器位于NAT的公共端。 
+   在此图中，TURN客户端和TURN服务器由NAT分隔，客户端位于私有端，服务器位于NAT的公共端。
+   客户端与服务器通信的组合（IP地址，端口）称为客户端的HOST TRANSPORT ADDRESS。
+    (IP地址和端口的组合称为TRANSPORT ADDRESS。)
 
-   The client talks to the server from a (IP address, port) combination
-   called the client's HOST TRANSPORT ADDRESS.  (The combination of an
-   IP address and port is called a TRANSPORT ADDRESS.)
-
-   The client sends TURN messages from its host transport address to a
-   transport address on the TURN server that is known as the TURN SERVER
-   TRANSPORT ADDRESS.  The client learns the TURN server transport
-   address through some unspecified means (e.g., configuration), and
-   this address is typically used by many clients simultaneously.
+   客户端将TURN消息从其主机传输地址发送到TURN服务器上的传输地址，
+   该地址称为TURN SERVER TRANSPORT ADDRESS。 
+   客户端通过一些未指定的手段（例如，配置）得到TURN服务器传输地址，
+   并且该地址通常由许多客户端同时使用。 
     
-   Since the client is behind a NAT, the server sees packets from the
-   client as coming from a transport address on the NAT itself.  This
-   address is known as the client's SERVER-REFLEXIVE transport address;
-   packets sent by the server to the client's server-reflexive transport
-   address will be forwarded by the NAT to the client's host transport
-   address.
+   由于客户端位于NAT后面，因此服务器将来自客户端的数据包视为来自NAT本身的传输地址。
+   此地址称为客户端的SERVER-REFLEXIVE传输地址（就是客户端的外网地址）：
+   服务器发送到客户端的外网地址的数据包将由NAT转发到客户端的内网地址。
+   
+   客户端使用TURN命令在服务器上创建和操作ALLOCATION。
+   ALLOCATION是服务器上的数据结构。
+   此数据结构包含用于分配的中继传输地址等。
+   此数据结构包含用于中继传输地址（RELAYED TRANSPORT ADDRESS）等。
+   中继传输地址是服务器上的传输地址，对等端可以使用该地址使服务器将数据中继到客户端。
+   一个Allocation操作用它的中继地址作为唯一标识(端口). 
 
-   The client uses TURN commands to create and manipulate an ALLOCATION
-   on the server.  An allocation is a data structure on the server.
-   This data structure contains, amongst other things, the RELAYED
-   TRANSPORT ADDRESS for the allocation.  The relayed transport address
-   is the transport address on the server that peers can use to have the
-   server relay data to the client.  An allocation is uniquely
-   identified by its relayed transport address.
+   一旦创建了allocation，客户端就可以向服务
+   器发送应用程序数据以及指令数据将被发送到哪个对等体，
+   并且服务器将该数据中继到适当的对等体。 
 
-   Once an allocation is created, the client can send application data
-   to the server along with an indication of to which peer the data is
-   to be sent, and the server will relay this data to the appropriate
-   peer.  The client sends the application data to the server inside a
-   TURN message; at the server, the data is extracted from the TURN
-   message and sent to the peer in a UDP datagram.  In the reverse
-   direction, a peer can send application data in a UDP datagram to the
-   relayed transport address for the allocation; the server will then
-   encapsulate this data inside a TURN message and send it to the client
-   along with an indication of which peer sent the data.  Since the TURN
-   message always contains an indication of which peer the client is
-   communicating with, the client can use a single allocation to
-   communicate with multiple peers.
-
-   When the peer is behind a NAT, then the client must identify the peer
-   using its server-reflexive transport address rather than its host
-   transport address.  For example, to send application data to Peer A
-   in the example above, the client must specify 192.0.2.150:32102 (Peer
-   A's server-reflexive transport address) rather than 192.168.100.2:
-   49582 (Peer A's host transport address).
-
-   Each allocation on the server belongs to a single client and has
-   exactly one relayed transport address that is used only by that
-   allocation.  Thus, when a packet arrives at a relayed transport
-   address on the server, the server knows for which client the data is
-   intended.
-
-   The client may have multiple allocations on a server at the same
-   time.
+   客户端在TURN消息内将应用程序数据发送到服务器; 
+   在服务器上，从TURN消息中提取数据并使用UDP将数据发送给对等端。
+   在相反的方向上，对等端可以将UDP数据报文中的应用数据发送
+   到allocation中的relayed transport address。
+   然后，服务器将此数据封装在TURN消息中，并将其发送到客户端，
+   同时指示哪个对等端发送了数据。
     
-2.1.  Transports
+   由于TURN消息始终包含客户端与哪个对等端通信的指令，
+   因此客户端可以使用一个allocation来与多个对等体通信。
+   
+   当对等体端于NAT后面时，客户端必须使用其外网地址而不是其内网地址来识别对等体。 
+   
+   例如，要在上面的示例中将应用程序数据发送到对等端A，
+   客户端必须指定192.0.2.150:32102（对等端A的服务器外网地址）
+   而不是192.168.100.2：49582（对等方A的内网地址）。
+   服务器上的每个allocation都属于一个客户端，
+   并且只有一个仅由该allocation使用的中继传输地址。     
+   因此，当数据包到达服务器上的中继传输地址时，服务器知道数据是针对哪个客户端。  
+   客户端可能同时在服务器上进行多个allocation。 
+    
+2.1.  网络传输方式
 
-   TURN, as defined in this specification, always uses UDP between the
-   server and the peer.  However, this specification allows the use of
-   any one of UDP, TCP, or Transport Layer Security (TLS) over TCP to
-   carry the TURN messages between the client and the server.
+   如本规范中所定义的，TURN始终在服务器和对等体之间使用UDP。
+   但是，此规范允许通过TCP使用UDP，TCP或TLS over TCP
+   中的任何一个来在客户端和服务器之间传送TURN消息。 
 
            +----------------------------+---------------------+
            | TURN client to TURN server | TURN server to peer |
@@ -294,112 +277,88 @@ Table of Contents
            |        TLS over TCP        |         UDP         |
            +----------------------------+---------------------+
 
-   If TCP or TLS-over-TCP is used between the client and the server,
-   then the server will convert between these transports and UDP
-   transport when relaying data to/from the peer.
-
-   Since this version of TURN only supports UDP between the server and
-   the peer, it is expected that most clients will prefer to use UDP
-   between the client and the server as well.  That being the case, some
-   readers may wonder: Why also support TCP and TLS-over-TCP?
-
-   TURN supports TCP transport between the client and the server because
-   some firewalls are configured to block UDP entirely.  These firewalls
-   block UDP but not TCP, in part because TCP has properties that make
-   the intention of the nodes being protected by the firewall more
-   obvious to the firewall.  For example, TCP has a three-way handshake
-   that makes in clearer that the protected node really wishes to have
-   that particular connection established, while for UDP the best the
-   firewall can do is guess which flows are desired by using filtering
-   rules.  Also, TCP has explicit connection teardown; while for UDP,
-   the firewall has to use timers to guess when the flow is finished.
-
-   TURN supports TLS-over-TCP transport between the client and the
-   server because TLS provides additional security properties not
-   provided by TURN's default digest authentication; properties that
-   some clients may wish to take advantage of.  In particular, TLS
-   provides a way for the client to ascertain that it is talking to the
-   correct server, and provides for confidentiality of TURN control
-   messages.  TURN does not require TLS because the overhead of using
-   TLS is higher than that of digest authentication; for example, using
-   TLS likely means that most application data will be doubly encrypted
-   (once by TLS and once to ensure it is still encrypted in the UDP
-   datagram).
+   如果在客户端和服务器之间使用TCP或TLS-over-TCP，
+   然后，当向对等端发送数据时，服务器将在这些传输和UDP传输之间进行转换。
     
-   There is a planned extension to TURN to add support for TCP between
-   the server and the peers [TURN-TCP].  For this reason, allocations
-   that use UDP between the server and the peers are known as UDP
-   allocations, while allocations that use TCP between the server and
-   the peers are known as TCP allocations.  This specification describes
-   only UDP allocations.
+   由于此版本的TURN仅支持服务器和对等体之间的UDP，
+   预计大多数客户端也会更亲相遇在客户端和服务器之间使用UDP。
+   在这种情况下，一些读者可能会想：为什么还支持TCP和TLS-over-TCP？
 
-   TURN, as defined in this specification, only supports IPv4.  All IP
-   addresses in this specification must be IPv4 addresses.  There is a
-   planned extension to TURN to add support for IPv6 and for relaying
-   between IPv4 and IPv6 [TURN-IPv6].
+   TURN支持客户端和服务器之间的TCP传输，因为某些防火墙配置为完全阻止UDP。
+   这些防火墙阻止UDP但不阻止TCP，部分原因是防火墙比较亲相遇使用TCP。 
 
-   In some applications for TURN, the client may send and receive
-   packets other than TURN packets on the host transport address it uses
-   to communicate with the server.  This can happen, for example, when
-   using TURN with ICE.  In these cases, the client can distinguish TURN
-   packets from other packets by examining the source address of the
-   arriving packet: those arriving from the TURN server will be TURN
-   packets.
+   例如，TCP具有三次握手，更清楚地表明受保护节点确实希望建立该特定连接，
+   而对于UDP，防火墙可以做的最好的事情就是通过使用过滤规则来猜测需要哪些流。     
+   此外，TCP有明确的连接断开; 而对于UDP，防火墙必须使用计时器来猜测流程何时完成。
+   TURN支持客户端和服务器之间的TLS-over-TCP传输，
+   因为TLS提供了TURN默认身份验证所不能提供的其他安全属性。 
+   某些客户可能希望利用的属性。     
+   特别地，TLS为客户端提供了一种方法，以确定它正在与正确的服务器通信，并提供TURN控制消息的机密性。 
+   
+   TURN不需要TLS，因为使用TLS的开销高于tcp自带的认证的开销;  
+   例如，使用TLS可能意味着大多数应用程序数据将被双重加密
+  （一次通过TLS，一次确保它仍然在UDP数据报中加密）。
+   TURN有计划的扩展，以在服务器和对等端之间添加对TCP的支持[TURN-TCP]。
+   因此，在服务器和对等端之间使用UDP的allocation称为UDP allocation，
+   而在服务器和对等体之间使用TCP的allocation称为TCP allocation。
+  
+   该规范仅描述UDP分配。
+
+   如本说明书中所定义的，TURN仅支持IPv4。本规范中的地址必须是IPv4地址。
+   TURN计划扩展以增加对IPv6的支持以及IPv4和IPv6之间的中继[TURN-IPv6]。
+
+   在TURN的一些应用中，客户端可以在其用于与服务器通信的
+   主机传输地址上发送和接收除TURN分组之外的数据包。
+   例如，当使用TURN和ICE时会发生这种情况。
+
+   在这些情况下，客户端可以通过检查到达数据包的源地址来区分TURN数据包和其他数据包：
+   从TURN服务器到达的那些将是TURN包。
 
 2.2.  Allocations
 
-   To create an allocation on the server, the client uses an Allocate
-   transaction.  The client sends an Allocate request to the server, and
-   the server replies with an Allocate success response containing the
-   allocated relayed transport address.  The client can include
-   attributes in the Allocate request that describe the type of
-   allocation it desires (e.g., the lifetime of the allocation).  Since
-   relaying data has security implications, the server requires that the
-   client authenticate itself, typically using STUN's long-term
-   credential mechanism, to show that it is authorized to use the
-   server.
-
-   Once a relayed transport address is allocated, a client must keep the
-   allocation alive.  To do this, the client periodically sends a
-   Refresh request to the server.  TURN deliberately uses a different
-   method (Refresh rather than Allocate) for refreshes to ensure that
-   the client is informed if the allocation vanishes for some reason.
-
-   The frequency of the Refresh transaction is determined by the
-   lifetime of the allocation.  The default lifetime of an allocation is
-   10 minutes -- this value was chosen to be long enough so that
-   refreshing is not typically a burden on the client, while expiring
-   allocations where the client has unexpectedly quit in a timely
-   manner.  However, the client can request a longer lifetime in the
-   Allocate request and may modify its request in a Refresh request, and
-   the server always indicates the actual lifetime in the response.  The
-   client must issue a new Refresh transaction within "lifetime" seconds
+   要在服务器上创建Allocate，客户端使用Allocate事务。  
+   客户端向服务器发送Allocate请求，服务器回复包含分配的中继传输地址的Allocate成功响应。   
+   客户端可以在allocation请求中包括描述allocation类型的属性（例如，the lifetime of the allocation）。
+   由于中继数据具有安全隐患，
+   因此服务器要求客户端通过自身进行身份验证
+  （通常使用STUN的长期凭据机制），以表明它已被授权使用服务器。
+  
+   一旦分配了中继传输地址，客户端必须保持allocation存活。 
+   为此，客户端会定期向服务器发送Refresh请求。 
+   TURN故意使用不同的方法（刷新而不是分配）进行刷新，
+   以确保在allocation因某种原因消失时通知客户端。 
+   刷新事务的频率由分配的生命周期决定。
+   分配的默认生命周期为10分钟--选择此值足够长，
+   以便刷新通常不会对客户端造成负担，
+   同时使客户端意外退出的分配到期。 
+   选择此值足够长，以便刷新通常不会给客户带来负担，
+   当用户意外退出时，allocation的生命周期将会失效。 
     
-   of the previous Allocate or Refresh transaction.  Once a client no
-   longer wishes to use an allocation, it should delete the allocation
-   using a Refresh request with a requested lifetime of 0.
+   但是，客户端可以在Allocate请求中请求更长的生命周期，
+   并可以在刷新请求中修改其请求，
+   并且服务器始终指示响应中的实际生命周期。
+    
+   客户端必须在上一次Allocate或Refresh事务的“lifetime”秒内发出新的刷新事务。  
+   一旦客户端不再希望使用allocation，它应该使用请求生存期为0的Refresh请求删除allocation。
+  
+   服务器和客户端都跟踪一个称为5元祖的值。
+   在客户端，5元组由客户端的内网地址，端口，
 
-   Both the server and client keep track of a value known as the
-   5-TUPLE.  At the client, the 5-tuple consists of the client's host
-   transport address, the server transport address, and the transport
-   protocol used by the client to communicate with the server.  At the
-   server, the 5-tuple value is the same except that the client's host
-   transport address is replaced by the client's server-reflexive
-   address, since that is the client's address as seen by the server.
+   服务器外网地址,端口和客户端用于和服务器通信的传输协议(ip4或者ip6)组成。
+   因为这是服务器看到的客户端地址。 
 
-   Both the client and the server remember the 5-tuple used in the
-   Allocate request.  Subsequent messages between the client and the
-   server use the same 5-tuple.  In this way, the client and server know
-   which allocation is being referred to.  If the client wishes to
-   allocate a second relayed transport address, it must create a second
-   allocation using a different 5-tuple (e.g., by using a different
-   client host address or port).
+   客户端和服务器都在本地记住Allocate请求中使用的5元组。
+   客户端和服务器之间的后续消息使用相同的5元组。  
+   
+   通过这种方式，客户端和服务器知道正在引用哪个allocation。
 
-      NOTE: While the terminology used in this document refers to
-      5-tuples, the TURN server can store whatever identifier it likes
-      that yields identical results.  Specifically, an implementation
-      may use a file-descriptor in place of a 5-tuple to represent a TCP
-      connection.
+   如果客户希望分配第二个中继传输地址，
+   它必须使用不同的5元组创建第二个分配
+  （例如，通过使用不同的客户端内网地址或端口）。 
+
+   注意：虽然本文档中使用的术语是指5元组，
+   TURN服务器可以存储它喜欢的任何标识符，产生相同的结果。   
+   的，实现可以使用文件描述符代替5元组来表示TCP连接。
 
   TURN                                 TURN           Peer          Peer
   client                               server          A             B
