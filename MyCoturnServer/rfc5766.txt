@@ -3,49 +3,24 @@
 
 Abstract
 
-   If a host is located behind a NAT, then in certain situations it can
-   be impossible for that host to communicate directly with other hosts
-   (peers).  In these situations, it is necessary for the host to use
-   the services of an intermediate node that acts as a communication
-   relay.  This specification defines a protocol, called TURN (Traversal
-   Using Relays around NAT), that allows the host to control the
-   operation of the relay and to exchange packets with its peers using
-   the relay.  TURN differs from some other relay control protocols in
-   that it allows a client to communicate with multiple peers using a
-   single relay address.
+   如果主机位于NAT后面，那么在某些情况下，
+   该主机可能无法直接与其他主机（对等方）通信。 
+   在这些情况下，主机必须使用充当通信中继的中间节点的服务。 
+   该规范定义了一种称为TURN（遍历NAT的遍历）的协议，
+   该协议允许主机控制中继的操作并使用中继与其对等体交换分组。 
+   TURN与其他一些中继控制协议的不同之处在于它允许客户端使用单个中继地址与多个对等体通信。
 
-   The TURN protocol was designed to be used as part of the ICE
-   (Interactive Connectivity Establishment) approach to NAT traversal,
-   though it also can be used without ICE.
+本备忘录的状态
 
-Status of This Memo
+   这是Internet标准跟踪文档。
+   本文档是Internet工程任务组的产品
+  （IETF）。 它代表了IETF社区的共识。
+   它已经过公众审查，并已获得互联网工程指导小组
+  （IESG）的批准发布。 有关Internet标准的更多信息，请参见RFC 5741的第2节。
 
-   This is an Internet Standards Track document.
-
-   This document is a product of the Internet Engineering Task Force
-   (IETF).  It represents the consensus of the IETF community.  It has
-   received public review and has been approved for publication by the
-   Internet Engineering Steering Group (IESG).  Further information on
-   Internet Standards is available in Section 2 of RFC 5741.
-
-   Information about the current status of this document, any errata,
-   and how to provide feedback on it may be obtained at
-   http://www.rfc-editor.org/info/rfc5766.
-
-
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                    [Page 1]
- 
-RFC 5766                          TURN                        April 2010
-
-
-Copyright Notice
+  有关本文档的当前状态，任何勘误以及如何提供反馈的信息，请访问http://www.rfc-editor.org/info/rfc5766。
+   
+版权声明
 
    Copyright (c) 2010 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
@@ -92,15 +67,7 @@ Table of Contents
      9.3.  Receiving a CreatePermission Response  . . . . . . . . . . 35
    10. Send and Data Methods  . . . . . . . . . . . . . . . . . . . . 35
      10.1. Forming a Send Indication  . . . . . . . . . . . . . . . . 35
-     10.2. Receiving a Send Indication  . . . . . . . . . . . . . . . 35
-
-
-
-Mahy, et al.                 Standards Track                    [Page 2]
- 
-RFC 5766                          TURN                        April 2010
-
-
+     10.2. Receiving a Send Indication  . . . . . . . . . . . . . . . 35 
      10.3. Receiving a UDP Datagram . . . . . . . . . . . . . . . . . 36
      10.4. Receiving a Data Indication  . . . . . . . . . . . . . . . 37
    11. Channels . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
@@ -149,98 +116,61 @@ RFC 5766                          TURN                        April 2010
    21. References . . . . . . . . . . . . . . . . . . . . . . . . . . 64
      21.1. Normative References . . . . . . . . . . . . . . . . . . . 64
      21.2. Informative References . . . . . . . . . . . . . . . . . . 64
-
-
-
-Mahy, et al.                 Standards Track                    [Page 3]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	  
 1.  Introduction
 
-   A host behind a NAT may wish to exchange packets with other hosts,
-   some of which may also be behind NATs.  To do this, the hosts
-   involved can use "hole punching" techniques (see [RFC5128]) in an
-   attempt discover a direct communication path; that is, a
-   communication path that goes from one host to another through
-   intervening NATs and routers, but does not traverse any relays.
+   NAT后面的主机可能希望与其他主机交换数据包，其中一些主机也可能在NAT之后。 
+   为此，所涉及的主机可以使用“打孔”技术（参见[RFC5128]）
+   尝试发现直接通信路径; 也就是说，
+   通过介入NAT和路由器从一个主机到另一个主机的通信路径，但不会遍历任何中继。
 
-   As described in [RFC5128] and [RFC4787], hole punching techniques
-   will fail if both hosts are behind NATs that are not well behaved.
-   For example, if both hosts are behind NATs that have a mapping
-   behavior of "address-dependent mapping" or "address- and port-
-   dependent mapping", then hole punching techniques generally fail.
+   如[RFC5128]和[RFC4787]中所述，如果两个主机都位于表现不佳的NAT之后，则打孔技术将失败。
+   例如，如果两个主机都位于具有“依赖于地址的映射”
+   或“依赖于地址和端口的映射”的映射行为的NAT之后，则打孔技术通常会失败。
+   
+   当找不到直接通信路径时，必须使用充当分组中继的中间主机的服务。 
+   此中继通常位于公共Internet中，并在两个位于NAT后面的主机之间中继数据包。
 
-   When a direct communication path cannot be found, it is necessary to
-   use the services of an intermediate host that acts as a relay for the
-   packets.  This relay typically sits in the public Internet and relays
-   packets between two hosts that both sit behind NATs.
+   该规范定义了一个名为TURN的协议，它允许NAT后面的主机（称为TURN客户端）请求另一个主机（称为TURN服务器）充当中继。
+   客户端可以安排服务器将数据包中继到某些其他主机（称为对等端）和从某些其他主机（称为对等端）中继，
+   并且可以控制如何完成中继的方面。
+   客户端通过获取IP地址和端口来完成此操作服务器，称为中继传输地址。
+   当对等体将分组发送到中继的传输地址时，服务器将分组中继到客户端。
+   当客户端向服务器发送数据包时，服务器使用中继的传输地址作为源将其中继到适当的对等端。
 
-   This specification defines a protocol, called TURN, that allows a
-   host behind a NAT (called the TURN client) to request that another
-   host (called the TURN server) act as a relay.  The client can arrange
-   for the server to relay packets to and from certain other hosts
-   (called peers) and can control aspects of how the relaying is done.
-   The client does this by obtaining an IP address and port on the
-   server, called the relayed transport address.  When a peer sends a
-   packet to the relayed transport address, the server relays the packet
-   to the client.  When the client sends a data packet to the server,
-   the server relays it to the appropriate peer using the relayed
-   transport address as the source.
+   使用TURN的客户端必须有一些方法将中继的传输地址传递给其对等端，
+   并且要了解每个对等方的IP地址和端口（更确切地说，每个对等方的服务器自反传输地址，请参阅第2节）。
+   如何做到这一点超出了TURN协议的范围。
+   可以做的一种方法是让客户端和对等端交换电子邮件消息。
+   另一种方法是客户端及其对等方使用专用的“简介”或“会合”协议（有关详细信息，请参阅[RFC5128]）。
 
-   A client using TURN must have some way to communicate the relayed
-   transport address to its peers, and to learn each peer's IP address
-   and port (more precisely, each peer's server-reflexive transport
-   address, see Section 2).  How this is done is out of the scope of the
-   TURN protocol.  One way this might be done is for the client and
-   peers to exchange email messages.  Another way is for the client and
-   its peers to use a special-purpose "introduction" or "rendezvous"
-   protocol (see [RFC5128] for more details).
+   如果TURN与ICE [RFC5245]一起使用，
+   则中继的传输地址以及对等体的IP地址和端口在ICE候选信息中通过协议携带。
 
-   If TURN is used with ICE [RFC5245], then the relayed transport
-   address and the IP addresses and ports of the peers are included in
-   the ICE candidate information that the rendezvous protocol must
-   carry.  For example, if TURN and ICE are used as part of a multimedia
-   solution using SIP [RFC3261], then SIP serves the role of the
-   rendezvous protocol, carrying the ICE candidate information inside
-   the body of SIP messages.  If TURN and ICE are used with some other
+   例如，如果使用TURN和ICE作为使用SIP [RFC3261]的多媒体解决方案的一部分，
+   则SIP服务于会合协议的角色，在SIP消息的主体内携带ICE候选信息。
+   如果TURN和ICE与某些其他集合协议一起使用，
+   则[MMUSIC-ICE-NONSIP]提供有关集合协议必须执行的服务的指导。
+     
+   尽管使用TURN服务器来实现NAT后面的两个主机之间的通信很可能会起作用，
+   但是对于TURN服务器的提供商而言成本很高，因为服务器通常需要很大的带宽。
+   
+   因此，最好只在无法找到直接通信路径时才使用TURN服务器。
+   当客户端和对等方使用ICE来确定通信路径时，
+   ICE将首先使用打孔技术来搜索直接路径，
+   并且在找不到直接路径时仅使用TURN服务器。
 
+   TURN最初发明用于支持使用SIP发信号通知的多媒体会话。
+   由于SIP支持分叉，因此TURN支持每个中继传输地址的多个对等：其他方法不支持的功能（例如，SOCKS [RFC1928]）。
+   但是，TURN也适用于其他类型的应用。
 
+   TURN在较大的ICE NAT穿越办法中被设计为一个部分。 
+   敦促TURN的实施者对ICE进行调查，并认真考虑将其用于其应用。
+   但是，可以在没有ICE的情况下使用TURN。
 
-Mahy, et al.                 Standards Track                    [Page 4]
- 
-RFC 5766                          TURN                        April 2010
-
-
-   rendezvous protocol, then [MMUSIC-ICE-NONSIP] provides guidance on
-   the services the rendezvous protocol must perform.
-
-   Though the use of a TURN server to enable communication between two
-   hosts behind NATs is very likely to work, it comes at a high cost to
-   the provider of the TURN server, since the server typically needs a
-   high-bandwidth connection to the Internet.  As a consequence, it is
-   best to use a TURN server only when a direct communication path
-   cannot be found.  When the client and a peer use ICE to determine the
-   communication path, ICE will use hole punching techniques to search
-   for a direct path first and only use a TURN server when a direct path
-   cannot be found.
-
-   TURN was originally invented to support multimedia sessions signaled
-   using SIP.  Since SIP supports forking, TURN supports multiple peers
-   per relayed transport address; a feature not supported by other
-   approaches (e.g., SOCKS [RFC1928]).  However, care has been taken to
-   make sure that TURN is suitable for other types of applications.
-
-   TURN was designed as one piece in the larger ICE approach to NAT
-   traversal.  Implementors of TURN are urged to investigate ICE and
-   seriously consider using it for their application.  However, it is
-   possible to use TURN without ICE.
-
-   TURN is an extension to the STUN (Session Traversal Utilities for
-   NAT) protocol [RFC5389].  Most, though not all, TURN messages are
-   STUN-formatted messages.  A reader of this document should be
-   familiar with STUN.
+   TURN是STUN（NAT穿越通信的实用程序）协议[RFC5389]的扩展。 
+   大多数（尽管不是全部）TURN消息是STUN格式的消息。 
+   本文的读者应该熟悉STUN。
 
 2.  Overview of Operation
 
@@ -254,21 +184,7 @@ RFC 5766                          TURN                        April 2010
    communicate.  These peers may or may not be behind one or more NATs.
    The client uses the server as a relay to send packets to these peers
    and to receive packets from these peers.
-
-
-
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                    [Page 5]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
                                         Peer A
                                         Server-Reflexive    +---------+
                                         Transport Address   |         |
@@ -317,14 +233,7 @@ RFC 5766                          TURN                        April 2010
    TRANSPORT ADDRESS.  The client learns the TURN server transport
    address through some unspecified means (e.g., configuration), and
    this address is typically used by many clients simultaneously.
-
-
-
-Mahy, et al.                 Standards Track                    [Page 6]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    Since the client is behind a NAT, the server sees packets from the
    client as coming from a transport address on the NAT itself.  This
    address is known as the client's SERVER-REFLEXIVE transport address;
@@ -369,18 +278,7 @@ RFC 5766                          TURN                        April 2010
 
    The client may have multiple allocations on a server at the same
    time.
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                    [Page 7]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
 2.1.  Transports
 
    TURN, as defined in this specification, always uses UDP between the
@@ -427,16 +325,7 @@ RFC 5766                          TURN                        April 2010
    TLS likely means that most application data will be doubly encrypted
    (once by TLS and once to ensure it is still encrypted in the UDP
    datagram).
-
-
-
-
-
-Mahy, et al.                 Standards Track                    [Page 8]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    There is a planned extension to TURN to add support for TCP between
    the server and the peers [TURN-TCP].  For this reason, allocations
    that use UDP between the server and the peers are known as UDP
@@ -485,14 +374,7 @@ RFC 5766                          TURN                        April 2010
    Allocate request and may modify its request in a Refresh request, and
    the server always indicates the actual lifetime in the response.  The
    client must issue a new Refresh transaction within "lifetime" seconds
-
-
-
-Mahy, et al.                 Standards Track                    [Page 9]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    of the previous Allocate or Refresh transaction.  Once a client no
    longer wishes to use an allocation, it should delete the allocation
    using a Refresh request with a requested lifetime of 0.
@@ -539,16 +421,7 @@ RFC 5766                          TURN                        April 2010
 
                                  Figure 2
 
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 10]
  
-RFC 5766                          TURN                        April 2010
-
-
    In Figure 2, the client sends an Allocate request to the server
    without credentials.  Since the server requires that all requests be
    authenticated using STUN's long-term credential mechanism, the server
@@ -591,20 +464,7 @@ RFC 5766                          TURN                        April 2010
    Note that permissions are within the context of an allocation, so
    adding or expiring a permission in one allocation does not affect
    other allocations.
-
-
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 11]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
 2.4.  Send Mechanism
 
    There are two mechanisms for the client and peers to exchange
@@ -651,16 +511,7 @@ RFC 5766                          TURN                        April 2010
    then relay these to a peer.  To partly mitigate this attack, TURN
    requires that the client install a permission towards a peer before
    sending data to it using a Send indication.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 12]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
   TURN                                 TURN           Peer          Peer
   client                               server          A             B
     |                                    |             |             |
@@ -709,14 +560,7 @@ RFC 5766                          TURN                        April 2010
 
    This second way uses an alternate packet format known as the
    ChannelData message.  The ChannelData message does not use the STUN
-
-
-
-Mahy, et al.                 Standards Track                   [Page 13]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    header used by other TURN messages, but instead has a 4-byte header
    that includes a number known as a channel number.  Each channel
    number in use is bound to a specific peer and thus serves as a
@@ -765,14 +609,7 @@ RFC 5766                          TURN                        April 2010
    specifying the transport address of Peer A and a channel number
    (0x4001).  After that, the client can send application data
    encapsulated inside ChannelData messages to Peer A: this is shown as
-
-
-
-Mahy, et al.                 Standards Track                   [Page 14]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    "[0x4001] data" where 0x4001 is the channel number.  When the
    ChannelData message arrives at the server, the server transfers the
    data to a UDP datagram and sends it to Peer A (which is the peer
@@ -821,14 +658,7 @@ RFC 5766                          TURN                        April 2010
       the server;
 
    o  ICMP messages are not relayed by the server;
-
-
-
-Mahy, et al.                 Standards Track                   [Page 15]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    o  There is no end-to-end fragmentation, since the packet is re-
       assembled at the server.
 
@@ -877,14 +707,7 @@ RFC 5766                          TURN                        April 2010
    fragmentation is to use a path MTU discovery algorithm to determine
    the maximum amount of application data that can be sent without
    fragmentation.
-
-
-
-Mahy, et al.                 Standards Track                   [Page 16]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    Unfortunately, because servers implementing this version of TURN do
    not relay ICMP messages, the classic path MTU discovery algorithm
    defined in [RFC1191] is not able to discover the MTU of the
@@ -931,16 +754,7 @@ RFC 5766                          TURN                        April 2010
    suggestion that the client try an alternate server.  To avoid certain
    types of attacks, the client must use the same credentials with the
    alternate server as it would have with the initial server.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 17]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
 3.  Terminology
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -989,14 +803,7 @@ RFC 5766                          TURN                        April 2010
    Peer Transport Address:  The transport address of the peer as seen by
       the server.  When the peer is behind a NAT, this is the peer's
       server-reflexive transport address.
-
-
-
-Mahy, et al.                 Standards Track                   [Page 18]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
    Allocation:  The relayed transport address granted to a client
       through an Allocate request, along with related state, such as
       permissions and expiration timers.
@@ -1044,15 +851,7 @@ RFC 5766                          TURN                        April 2010
    mechanism.  The server MUST demand that all requests from the client
    be authenticated using this mechanism, or that a equally strong or
    stronger mechanism for client authentication is used.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 19]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    Note that the long-term credential mechanism applies only to requests
    and cannot be used to authenticate indications; thus, indications in
    TURN are never authenticated.  If the server requires requests to be
@@ -1098,17 +897,7 @@ RFC 5766                          TURN                        April 2010
 
    TURN does not use the backwards-compatibility mechanism described in
    [RFC5389].
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 20]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    TURN, as defined in this specification, only supports IPv4.  The
    client's IP address, the server's IP address, and all IP addresses
    appearing in a relayed transport address MUST be IPv4 addresses.
@@ -1157,14 +946,7 @@ RFC 5766                          TURN                        April 2010
    allowed number of allocations active at one time with a 486
    (Allocation Quota Exceeded) (see Section 6.2), and should discard
    application data traffic that exceeds the bandwidth quota.
-
-
-
-Mahy, et al.                 Standards Track                   [Page 21]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
 5.  Allocations
 
    All TURN operations revolve around allocations, and all TURN messages
@@ -1213,14 +995,7 @@ RFC 5766                          TURN                        April 2010
    seconds (10 minutes), but the client can request a different value in
    the Allocate and Refresh request.  Allocations can only be refreshed
    using the Refresh request; sending data to a peer does not refresh an
-
-
-
-Mahy, et al.                 Standards Track                   [Page 22]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    allocation.  When an allocation expires, the state data associated
    with the allocation can be freed.
 
@@ -1269,14 +1044,7 @@ RFC 5766                          TURN                        April 2010
 
    If the client wishes the server to initialize the time-to-expiry
    field of the allocation to some value other than the default
-
-
-
-Mahy, et al.                 Standards Track                   [Page 23]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    lifetime, then it MAY include a LIFETIME attribute specifying its
    desired value.  This is just a request, and the server may elect to
    use a different value.  Note that the server will ignore requests to
@@ -1325,14 +1093,7 @@ RFC 5766                          TURN                        April 2010
        Request) error.  Otherwise, if the attribute is included but
        specifies a protocol other that UDP, the server rejects the
        request with a 442 (Unsupported Transport Protocol) error.
-
-
-
-Mahy, et al.                 Standards Track                   [Page 24]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	    
    4.  The request may contain a DONT-FRAGMENT attribute.  If it does,
        but the server does not support sending UDP datagrams with the DF
        bit set to 1 (see Section 12), then the server treats the DONT-
@@ -1381,13 +1142,7 @@ RFC 5766                          TURN                        April 2010
       particular allocation, since the Allocate request containing the
       RESERVATION-TOKEN uses a different 5-tuple than the Allocate
       request that made the reservation.  The 5-tuple for the Allocate
-
-
-
-Mahy, et al.                 Standards Track                   [Page 25]
- 
-RFC 5766                          TURN                        April 2010
-
+	   
 
       request containing the RESERVATION-TOKEN attribute can be any
       allowed 5-tuple; it can use a different client IP address and
@@ -1435,16 +1190,7 @@ RFC 5766                          TURN                        April 2010
       ports from the underlying OS and then later assign them to
       allocations; for example, a server may choose this technique to
       implement the EVEN-PORT attribute.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 26]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
    The server determines the initial value of the time-to-expiry field
    as follows.  If the request contains a LIFETIME attribute, then the
    server computes the minimum of the client's proposed lifetime and the
@@ -1493,14 +1239,7 @@ RFC 5766                          TURN                        April 2010
       achieve this using the so-called "stateless stack approach" as
       follows.  To detect retransmissions when the original request was
       successful in creating an allocation, the server can store the
-
-
-
-Mahy, et al.                 Standards Track                   [Page 27]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
       transaction id that created the request with the allocation data
       and compare it with incoming Allocate requests on the same
       5-tuple.  Once such a request is detected, the server can stop
@@ -1549,14 +1288,7 @@ RFC 5766                          TURN                        April 2010
    structure to track what is happening on the server.  In particular,
    the client needs to remember the actual lifetime received back from
    the server, rather than the value sent to the server in the request.
-
-
-
-Mahy, et al.                 Standards Track                   [Page 28]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    The client must also remember the 5-tuple used for the request and
    the username and password it used to authenticate the request to
    ensure that it reuses them for subsequent messages.  The client also
@@ -1602,17 +1334,7 @@ RFC 5766                          TURN                        April 2010
       failed and SHOULD notify the user or operator.  The client SHOULD
       NOT send any further requests to this server until it believes the
       problem has been fixed.
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 29]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
    o  403 (Forbidden): The request is valid, but the server is refusing
       to perform it, likely due to administrative restrictions.  The
       client considers the current transaction as having failed.  The
@@ -1660,15 +1382,7 @@ RFC 5766                          TURN                        April 2010
       considers the current transaction as having failed.  The client
       SHOULD wait at least 1 minute before trying to create any more
       allocations on the server.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 30]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
    o  508 (Insufficient Capacity): The server has no more relayed
       transport addresses available, or has none with the requested
       properties, or the one that was reserved is no longer available.
@@ -1717,14 +1431,7 @@ RFC 5766                          TURN                        April 2010
    if the request contains a LIFETIME attribute and the attribute value
    is 0, then the "desired lifetime" is 0.  Otherwise, if the request
    contains a LIFETIME attribute, then the server computes the minimum
-
-
-
-Mahy, et al.                 Standards Track                   [Page 31]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    of the client's requested lifetime and the server's maximum allowed
    lifetime.  If this computed value is greater than the default
    lifetime, then the "desired lifetime" is the computed value.
@@ -1771,16 +1478,7 @@ RFC 5766                          TURN                        April 2010
    permissions.  Each permission consists of an IP address and an
    associated time-to-expiry.  While a permission exists, all peers
    using the IP address in the permission are allowed to send data to
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 32]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    the client.  The time-to-expiry is the number of seconds until the
    permission expires.  Within the context of an allocation, a
    permission is uniquely identified by its associated IP address.
@@ -1828,15 +1526,7 @@ RFC 5766                          TURN                        April 2010
       faster rate.  Applications using ICE should follow the keep-alive
       guidelines of ICE [RFC5245], and applications not using ICE are
       advised to do something similar.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 33]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
 9.  CreatePermission
 
    TURN supports two ways for the client to install or refresh
@@ -1884,15 +1574,7 @@ RFC 5766                          TURN                        April 2010
 
    The server then responds with a CreatePermission success response.
    There are no mandatory attributes in the success response.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 34]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
       NOTE: A server need not do anything special to implement
       idempotency of CreatePermission requests over UDP using the
       "stateless stack approach".  Retransmitted CreatePermission
@@ -1940,15 +1622,7 @@ RFC 5766                          TURN                        April 2010
    one of these attributes is missing or invalid, then the message is
    discarded.  Note that the DATA attribute is allowed to contain zero
    bytes of data.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 35]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    The Send indication may also contain the DONT-FRAGMENT attribute.  If
    the server is unable to set the DF bit on outgoing UDP datagrams when
    this attribute is present, then the server acts as if the DONT-
@@ -1997,14 +1671,7 @@ RFC 5766                          TURN                        April 2010
    If relaying is permitted but no channel is bound to the peer, then
    the server forms and sends a Data indication.  The Data indication
    MUST contain both an XOR-PEER-ADDRESS and a DATA attribute.  The DATA
-
-
-
-Mahy, et al.                 Standards Track                   [Page 36]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    attribute is set to the value of the 'data octets' field from the
    datagram, and the XOR-PEER-ADDRESS attribute is set to the source
    transport address of the received UDP datagram.  The Data indication
@@ -2053,14 +1720,7 @@ RFC 5766                          TURN                        April 2010
 
       0b00: STUN-formatted message (since the first two bits of a STUN-
       formatted message are always zero).
-
-
-
-Mahy, et al.                 Standards Track                   [Page 37]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
       0b01: ChannelData message (since the channel number is the first
       field in the ChannelData message and channel numbers fall in the
       range 0x4000 - 0x7FFF).
@@ -2109,14 +1769,7 @@ RFC 5766                          TURN                        April 2010
    unbound, the channel number can be bound to a different transport
    address, and the transport address can be bound to a different
    channel number.  To prevent race conditions, the client MUST wait 5
-
-
-
-Mahy, et al.                 Standards Track                   [Page 38]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    minutes after the channel binding expires before attempting to bind
    the channel number to a different transport address or the transport
    address to a different channel number.
@@ -2163,16 +1816,7 @@ RFC 5766                          TURN                        April 2010
 
    o  The request contains both a CHANNEL-NUMBER and an XOR-PEER-ADDRESS
       attribute;
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 39]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
    o  The channel number is in the range 0x4000 through 0x7FFE
       (inclusive);
 
@@ -2219,16 +1863,7 @@ RFC 5766                          TURN                        April 2010
    its data structures to record that the channel binding is now active.
    It also updates its data structures to record that the corresponding
    permission has been installed or refreshed.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 40]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    If the client receives a ChannelBind failure response that indicates
    that the channel information is out-of-sync between the client and
    the server (e.g., an unexpected 400 "Bad Request" response), then it
@@ -2275,15 +1910,7 @@ RFC 5766                          TURN                        April 2010
 
    The fields of the ChannelData message are filled in as described in
    Section 11.4.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 41]
- 
-RFC 5766                          TURN                        April 2010
-
+    
 
    Over TCP and TLS-over-TCP, the ChannelData message MUST be padded to
    a multiple of four bytes in order to ensure the alignment of
@@ -2331,16 +1958,7 @@ RFC 5766                          TURN                        April 2010
 
    o  the destination transport address is the transport address to
       which the channel is bound;
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 42]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
    o  the data following the UDP header is the contents of the data
       field of the ChannelData message.
 
@@ -2387,16 +2005,7 @@ RFC 5766                          TURN                        April 2010
       Preferred Behavior: Set the outgoing value to the incoming value,
       unless the server includes a differentiated services classifier
       and marker [RFC2474].
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 43]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
       Alternate Behavior: Set the outgoing value to a fixed value, which
       by default is Best Effort unless configured otherwise.
 
@@ -2443,16 +2052,7 @@ RFC 5766                          TURN                        April 2010
       options.
 
       Alternate Behavior: Same as preferred.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 44]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	   
 13.  New STUN Methods
 
    This section lists the codepoints for the new STUN methods defined in
@@ -2501,14 +2101,7 @@ RFC 5766                          TURN                        April 2010
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      |        Channel Number         |         RFFU = 0              |
      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-
-Mahy, et al.                 Standards Track                   [Page 45]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	  
 14.2.  LIFETIME
 
    The LIFETIME attribute represents the duration for which the server
@@ -2546,25 +2139,7 @@ RFC 5766                          TURN                        April 2010
    relayed transport address be even, and (optionally) that the server
    reserve the next-higher port number.  The value portion of this
    attribute is 1 byte long.  Its format is:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 46]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
       0
       0 1 2 3 4 5 6 7
      +-+-+-+-+-+-+-+-+
@@ -2609,17 +2184,7 @@ RFC 5766                          TURN                        April 2010
    the DF (Don't Fragment) bit in the IP header when relaying the
    application data onward to the peer.  This attribute has no value
    part and thus the attribute length field is 0.
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 47]
- 
-RFC 5766                          TURN                        April 2010
-
+    
 
 14.9.  RESERVATION-TOKEN
 
@@ -2668,15 +2233,7 @@ RFC 5766                          TURN                        April 2010
    the contents of the messages exchanged.  The example uses the network
    diagram shown in the Overview (Figure 1).
 
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 48]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    For each message, the attributes included in the message and their
    values are shown.  For convenience, values are shown in a human-
    readable format rather than showing the actual octets; for example,
@@ -2725,14 +2282,7 @@ RFC 5766                          TURN                        April 2010
     |    XOR-MAPPED-ADDRESS=192.0.2.1:7000             |             |
     |    MESSAGE-INTEGRITY=...           |             |             |
 
-
-
-
-Mahy, et al.                 Standards Track                   [Page 49]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	 
    The client begins by selecting a host transport address to use for
    the TURN session; in this example, the client has selected 10.1.1.2:
    49721 as shown in Figure 1.  The client then sends an Allocate
@@ -2781,14 +2331,7 @@ RFC 5766                          TURN                        April 2010
    attributes, which are just copied from the 401 error response.
    Finally, the client includes a MESSAGE-INTEGRITY attribute as the
    last attribute in the message, whose value is a Hashed Message
-
-
-
-Mahy, et al.                 Standards Track                   [Page 50]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    Authentication Code - Secure Hash Algorithm 1 (HMAC-SHA1) hash over
    the contents of the message (shown as just "..." above); this HMAC-
    SHA1 computation includes a password value.  Thus, an attacker cannot
@@ -2836,15 +2379,7 @@ RFC 5766                          TURN                        April 2010
    username, realm, and nonce values as in the previous request on the
    allocation.  Though it is allowed to do so, the client has chosen not
    to include a SOFTWARE attribute in this request.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 51]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    The server receives the CreatePermission request, creates the
    corresponding permission, and then replies with a CreatePermission
    success response.  Like the client, the server chooses not to include
@@ -2890,17 +2425,7 @@ RFC 5766                          TURN                        April 2010
    client not previously established a permission for Peer A's server-
    reflexive IP address, then the server would have silently discarded
    the Send indication instead.
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 52]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    Peer A then replies with its own UDP datagram containing application
    data.  The datagram is sent to the relayed transport address on the
    server.  When this arrives, the server creates a Data indication
@@ -2949,14 +2474,7 @@ RFC 5766                          TURN                        April 2010
    destined for Peer B.  The ChannelData message is not a STUN message,
    and thus has no transaction id.  Instead, it has only three fields: a
    channel number, data, and data length; here the channel number field
-
-
-
-Mahy, et al.                 Standards Track                   [Page 53]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    is 0x4000 (the channel the client just bound to Peer B).  When the
    server receives the ChannelData message, it checks that the channel
    is currently bound (which it is) and then sends the data onward to
@@ -3005,14 +2523,7 @@ RFC 5766                          TURN                        April 2010
     |    SOFTWARE="Example server, version 1.17"       |             |
     |    LIFETIME=600 (10 minutes)       |             |             |
 
-
-
-
-Mahy, et al.                 Standards Track                   [Page 54]
- 
-RFC 5766                          TURN                        April 2010
-
-
+	 
    Sometime before the 20 minute lifetime is up, the client refreshes
    the allocation.  This is done using a Refresh request.  As before,
    the client includes the latest username, realm, and nonce values in
@@ -3060,15 +2571,7 @@ RFC 5766                          TURN                        April 2010
    server without paying for them.  Since TURN services require
    resources from the provider, it is anticipated that their usage will
    come with a cost.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 55]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    These attacks are prevented using the long-term credential mechanism,
    which allows the TURN server to determine the identity of the
    requestor and whether the requestor is allowed to obtain the
@@ -3117,14 +2620,7 @@ RFC 5766                          TURN                        April 2010
    of the peer (for inclusion in the XOR-PEER-ADDRESS attribute).  To
    send a fake ChannelData message to a client, an attacker needs to
    know the IP address and port of the client, the IP address and port
-
-
-
-Mahy, et al.                 Standards Track                   [Page 56]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    of the TURN server, and the channel number.  This particular
    combination is mildly more guessable than in the non-TURN case.
 
@@ -3169,18 +2665,7 @@ RFC 5766                          TURN                        April 2010
    header prevents this.  Replay attacks are further thwarted through
    frequent changes to the nonce value.
 
-
-
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 57]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
 17.1.6.  Eavesdropping Traffic
 
    TURN concerns itself primarily with authentication and message
@@ -3229,14 +2714,7 @@ RFC 5766                          TURN                        April 2010
    other server) so that the attacker can authenticate the requests and
    learn the relayed transport address.  Without one of these two
    measures, an attacker can guess the contents of the responses without
-
-
-
-Mahy, et al.                 Standards Track                   [Page 58]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    needing to see them, which makes the attack much easier to perform.
    Furthermore, by requiring authenticated requests, the server forces
    the attacker to have credentials acceptable to the server, which
@@ -3285,14 +2763,7 @@ RFC 5766                          TURN                        April 2010
    towards the outside peer.  Thus, a permission cannot, by definition,
    be created by any entity except one inside the firewall or NAT.  With
    TURN, this restriction no longer holds.  Since the TURN server sits
-
-
-
-Mahy, et al.                 Standards Track                   [Page 59]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    outside the firewall, at attacker outside the firewall can now send a
    message to the TURN server and try to create a permission for itself.
 
@@ -3341,14 +2812,7 @@ RFC 5766                          TURN                        April 2010
 
    Since each allocation uses a port number on the IP address of the
    TURN server, the number of allocations on a server is finite.  An
-
-
-
-Mahy, et al.                 Standards Track                   [Page 60]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    attacker might attempt to consume all of them by requesting a large
    number of allocations.  This is prevented by the recommendation that
    the server impose a limit of the number of allocations active at a
@@ -3396,14 +2860,7 @@ RFC 5766                          TURN                        April 2010
 
    The codepoints for the new STUN methods defined in this specification
    are listed in Section 13.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 61]
- 
-RFC 5766                          TURN                        April 2010
-
+    
 
    The codepoints for the new STUN attributes defined in this
    specification are listed in Section 14.
@@ -3452,15 +2909,7 @@ RFC 5766                          TURN                        April 2010
    behind a NAT to obtain and use a public IP address on the relay.  As
    a convenience to the client, TURN also allows the client to determine
    its server-reflexive transport address.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 62]
- 
-RFC 5766                          TURN                        April 2010
-
-
+    
    Consideration 2: Description of an exit strategy/transition plan.
    The better short-term fixes are the ones that will naturally see less
    and less use as the appropriate technology is deployed.
@@ -3509,13 +2958,7 @@ RFC 5766                          TURN                        April 2010
    BEHAVE working group for their many comments on this document.  Marc
    Petit-Huguenin, Remi Denis-Courmont, Jason Fischl, Derek MacDonald,
    Scott Godin, Cullen Jennings, Lars Eggert, Magnus Westerlund, Benny
-
-
-
-Mahy, et al.                 Standards Track                   [Page 63]
- 
-RFC 5766                          TURN                        April 2010
-
+    
 
    Prijono, and Eric Rescorla have been particularly helpful, with Eric
    suggesting the channel allocation mechanism, Cullen suggesting an
@@ -3563,15 +3006,7 @@ RFC 5766                          TURN                        April 2010
                         Groot, G., and E. Lear, "Address Allocation for
                         Private Internets", BCP 5, RFC 1918,
                         February 1996.
-
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 64]
  
-RFC 5766                          TURN                        April 2010
-
 
    [RFC3424]            Daigle, L. and IAB, "IAB Considerations for
                         UNilateral Self-Address Fixing (UNSAF) Across
@@ -3620,15 +3055,7 @@ RFC 5766                          TURN                        April 2010
 
    [RFC4302]            Kent, S., "IP Authentication Header", RFC 4302,
                         December 2005.
-
-
-
-
-Mahy, et al.                 Standards Track                   [Page 65]
  
-RFC 5766                          TURN                        April 2010
-
-
    [RFC4303]            Kent, S., "IP Encapsulating Security Payload
                         (ESP)", RFC 4303, December 2005.
 
