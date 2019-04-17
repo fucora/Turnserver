@@ -890,18 +890,12 @@ Binding method不需要身份验证和其它属性，除非另有说明。
 
                       Figure 7: ERROR-CODE Attribute
  
-   To facilitate processing, the class of the error code (the hundreds
-   digit) is encoded separately from the rest of the code, as shown in
-   Figure 7.
-
-   The Reserved bits SHOULD be 0, and are for alignment on 32-bit
-   boundaries.  Receivers MUST ignore these bits.  The Class represents
-   the hundreds digit of the error code.  The value MUST be between 3
-   and 6.  The Number represents the error code modulo 100, and its
-   value MUST be between 0 and 99.
-
-   The following error codes, along with their recommended reason
-   phrases, are defined:
+   为了便于处理，错误代码的类（百位数）与其余代码分开编码，如图7所示。
+  
+   Reserved应该为0，并用于32位边界的对齐。 接收器必须忽略这些位。
+   Class表示错误代码的百位数，值必须介于3和6之间。Number表示模数为100的错误代码，其值必须介于0和99之间。
+    
+   以下错误代码及其推荐原因短语，定义：
 
    300  Try Alternate: The client should contact an alternate server for
         this request.  This error response MUST only be sent if the
@@ -941,41 +935,29 @@ Binding method不需要身份验证和其它属性，除非另有说明。
 		 
 15.7.  REALM
 
+    
+	REALM属性可能出现在请求和响应中。 它包含符合“realm-value”语法的文本，
+	如RFC 3261 [RFC3261]中所述，但没有双引号及其周围的空格。
+	也就是说，它是一个不带引号的域值（因此是qdtext或引用对的序列）。 
+	它必须是一个小于128个字符的UTF-8 [RFC3629]编码序列（可以长达763个字节），
+	并且必须使用SASLprep [RFC4013]进行处理。 
 
-   The REALM attribute may be present in requests and responses.  It
-   contains text that meets the grammar for "realm-value" as described
-   in RFC 3261 [RFC3261] but without the double quotes and their
-   surrounding whitespace.  That is, it is an unquoted realm-value (and
-   is therefore a sequence of qdtext or quoted-pair).  It MUST be a
-   UTF-8 [RFC3629] encoded sequence of less than 128 characters (which
-   can be as long as 763 bytes), and MUST have been processed using
-   SASLprep [RFC4013].
-
-   Presence of the REALM attribute in a request indicates that long-term
-   credentials are being used for authentication.  Presence in certain
-   error responses indicates that the server wishes the client to use a
-   long-term credential for authentication.
+   请求中存在REALM属性表示正在使用长期凭据进行身份验证。 
+   某些错误响应中的存在表示服务器希望客户端使用长期凭证进行身份验证。
 
 15.8.  NONCE
 
-
-   The NONCE attribute may be present in requests and responses.  It
-   contains a sequence of qdtext or quoted-pair, which are defined in
-   RFC 3261 [RFC3261].  Note that this means that the NONCE attribute
-   will not contain actual quote characters.  See RFC 2617 [RFC2617],
-   Section 4.3, for guidance on selection of nonce values in a server.
-
-   It MUST be less than 128 characters (which can be as long as 763
-   bytes).
+   NONCE属性可以存在于请求和响应中。 
+   它包含一系列qdtext或quoted-pair，
+   它们在RFC 3261 [RFC3261]中定义。 
+   请注意，这意味着NONCE属性不包含实际引用字符。 
+   有关在服务器中选择nonce值的指导，请参阅RFC 2617 [RFC2617]，第4.3节。
+   它必须少于128个字符（可以长达763个字节）。
 
 15.9.  UNKNOWN-ATTRIBUTES
-
-
-   The UNKNOWN-ATTRIBUTES attribute is present only in an error response
-   when the response code in the ERROR-CODE attribute is 420.
-
-   The attribute contains a list of 16-bit values, each of which
-   represents an attribute type that was not understood by the server.
+ 
+      当ERROR-CODE属性中的响应代码为420时，UNKNOWN-ATTRIBUTES属性仅出现在错误响应中。
+	  该属性包含16位值的列表，每个值表示服务器无法理解的属性类型。
 
        0                   1                   2                   3
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -984,52 +966,38 @@ Binding method不需要身份验证和其它属性，除非另有说明。
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
       |      Attribute 3 Type           |     Attribute 4 Type    ...
       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-             Figure 8: Format of UNKNOWN-ATTRIBUTES Attribute
+	   
+                图8：UNKNOWN-ATTRIBUTES属性的格式
  
-      Note: In [RFC3489], this field was padded to 32 by duplicating the
-      last attribute.  In this version of the specification, the normal
-      padding rules for attributes are used instead.
+     注意：在[RFC3489]中，通过复制最后一个属性将此字段填充为32。
+	 在此版本的规范中，使用了属性的常规填充规则。
 
 15.10.  SOFTWARE
-
-
-   The SOFTWARE attribute contains a textual description of the software
-   being used by the agent sending the message.  It is used by clients
-   and servers.  Its value SHOULD include manufacturer and version
-   number.  The attribute has no impact on operation of the protocol,
-   and serves only as a tool for diagnostic and debugging purposes.  The
-   value of SOFTWARE is variable length.  It MUST be a UTF-8 [RFC3629]
-   encoded sequence of less than 128 characters (which can be as long as
-   763 bytes).
+ 
+SOFTWARE属性包含发送消息的代理使用的软件的文本描述。
+它由客户端和服务器使用。
+它的价值应该包括制造商和版本号。
+该属性对协议的操作没有影响，仅用作诊断和调试目的的工具。
+SOFTWARE的值是可变长度。
+它必须是一个小于128个字符的UTF-8 [RFC3629]编码序列（可以长达763个字节）。
 
 15.11.  ALTERNATE-SERVER
-
-
-   The alternate server represents an alternate transport address
-   identifying a different STUN server that the STUN client should try.
-
-   It is encoded in the same way as MAPPED-ADDRESS, and thus refers to a
-   single server by IP address.  The IP address family MUST be identical
-   to that of the source IP address of the request.
+ 
+   备用服务器表示一个备用传输地址，用于标识STUN客户端应尝试的不同STUN服务器。
+   它的编码方式与MAPPED-ADDRESS相同，因此通过IP地址引用单个服务器。
+   IP地址类型(ip4,ip6)必须与请求的IP地址相同。
 
 16.  安全考虑因素
+ 
+16.1.  攻击协议
 
 
-16.1.  Attacks against the Protocol
+16.1.1. 外部攻击
 
 
-16.1.1.  Outside Attacks
-
-
-   An attacker can try to modify STUN messages in transit, in order to
-   cause a failure in STUN operation.  These attacks are detected for
-   both requests and responses through the message-integrity mechanism,
-   using either a short-term or long-term credential.  Of course, once
-   detected, the manipulated packets will be dropped, causing the STUN
-   transaction to effectively fail.  This attack is possible only by an
-   on-path attacker.
+  攻击者可以尝试修改传输中的STUN消息
+  导致STUN操作失败。 检测到这些攻击
+  使用短期或长期凭证通过消息完整性机制进行请求和响应。 当然，一旦检测到，被操纵的数据包将被丢弃，导致STUN事务有效地失败。 只有路径上的攻击者才能进行此攻击。
 
    An attacker that can observe, but not modify, STUN messages in-
    transit (for example, an attacker present on a shared access medium,
@@ -1059,7 +1027,7 @@ Binding method不需要身份验证和其它属性，除非另有说明。
    However, STUN is most often run over UDP and in those cases, strong
    passwords are the only way to protect against these attacks.
 
-16.1.2.  Inside Attacks
+16.1.2.  内部攻击
 
 
    A rogue client may try to launch a DoS attack against a server by
@@ -1082,7 +1050,7 @@ Binding method不需要身份验证和其它属性，除非另有说明。
    Implementers SHOULD make usage of the SOFTWARE attribute a
    configurable option.
 
-16.2.  Attacks Affecting the Usage
+16.2. 影响服务
 
 
    This section lists attacks that might be launched against a usage of
@@ -1209,10 +1177,7 @@ Binding method不需要身份验证和其它属性，除非另有说明。
 18.  IANA注意事项
 
 
-   IANA has created three new registries: a "STUN Methods Registry", a
-   "STUN Attributes Registry", and a "STUN Error Codes Registry".  IANA
-   has also changed the name of the assigned IANA port for STUN from
-   "nat-stun-port" to "stun".
+   IANA创建了三个新的注册表：“STUN方法注册表”，“STUN属性注册表”和“STUN错误代码注册表”。 IANA还将STUN指定的IANA端口名称从“nat-stun-port”更改为“stun”。
 
 18.1.  STUN Methods Registry
 
