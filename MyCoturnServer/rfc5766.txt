@@ -465,53 +465,40 @@ Table of Contents
     |                            dropped |             |             |
     |                                    |             |             |
 
-                                 Figure 3
+                                 图3
 
-   In Figure 3, the client has already created an allocation and now
-   wishes to send data to its peers.  The client first creates a
-   permission by sending the server a CreatePermission request
-   specifying Peer A's (server-reflexive) IP address in the XOR-PEER-
-   ADDRESS attribute; if this was not done, the server would not relay
-   data between the client and the server.  The client then sends data
-   to Peer A using a Send indication; at the server, the application
-   data is extracted and forwarded in a UDP datagram to Peer A, using
-   the relayed transport address as the source transport address.  When
-   a UDP datagram from Peer A is received at the relayed transport
-   address, the contents are placed into a Data indication and forwarded
-   to the client.  Later, the client attempts to exchange data with Peer
-   B; however, no permission has been installed for Peer B, so the Send
-   indication from the client and the UDP datagram from the peer are
-   both dropped by the server.
+   在图3中，客户端已经创建了一个allocation，现在希望将数据发送给它的对等体。
+   客户端首先通过向服务器发送一个CreatePermission请求来创建permission，
+   该请求在XOR-PEER-ADDRESS属性中指定对等端A（服务器自反）IP地址;
+   如果没有这样做，服务器将不会在客户端和服务器之间中继数据。
 
-2.5.  Channels
+   然后客户端使用Send指令将数据发送到对等方A; 
+   在服务器处，使用中继的传输地址作为源传输地址，
+   提取应用数据并在UDP数据报文中转发到对等端A.  
+   当在中继的传输地址处接收到来自对等端A的UDP数据报文时，
+   将内容放入Data指令并转发到客户端。
+  
+   之后，客户端尝试与对等端B交换数据; 
+   但是，没有为对等端B安装任何权限，
+   因此服务器将丢弃来自客户端的发送指令和来自对等端的UDP数据报文。 
 
-   For some applications (e.g., Voice over IP), the 36 bytes of overhead
-   that a Send indication or Data indication adds to the application
-   data can substantially increase the bandwidth required between the
-   client and the server.  To remedy this, TURN offers a second way for
-   the client and server to associate data with a specific peer.
+2.5.  Channels(通道)
 
-   This second way uses an alternate packet format known as the
-   ChannelData message.  The ChannelData message does not use the STUN
-    
-   header used by other TURN messages, but instead has a 4-byte header
-   that includes a number known as a channel number.  Each channel
-   number in use is bound to a specific peer and thus serves as a
-   shorthand for the peer's host transport address.
+   对于一些应用（例如，IP语音），
+   Send指令或Data指令添加到应用数据的36字节开销可以显着增加客户端和服务器之间所需的带宽。
+   为了解决这个问题，TURN为客户端和服务器提供了第二种方法，可以将数据与特定对等端相关联。 
+   第二种方法使用了一种叫ChannelData 消息的数据包格式。
+   ChannelData消息不使用其他TURN消息使用的STUN头，而是使用包含一种叫channel number的4字节头。
+   使用中的每个通道号都绑定到特定对等端，因此可用作对等端外网地址的简写。 
+   为了将信道绑定到对等端，客户端向服务器发送ChannelBind请求，
+   并包括未绑定的channel number和对等端的传输地址。 
+   绑定通道后，客户端可以使用ChannelData消息将数据发送指定对等端。
+   类似地，服务器可以使用ChannelData消息将数据从该对等端中继到客户端。
+ 
+   除非刷新，否则通道绑定持续10分钟 - 选择此生命周期要长于权限生命周期。
 
-   To bind a channel to a peer, the client sends a ChannelBind request
-   to the server, and includes an unbound channel number and the
-   transport address of the peer.  Once the channel is bound, the client
-   can use a ChannelData message to send the server data destined for
-   the peer.  Similarly, the server can relay data from that peer
-   towards the client using a ChannelData message.
-
-   Channel bindings last for 10 minutes unless refreshed -- this
-   lifetime was chosen to be longer than the permission lifetime.
-   Channel bindings are refreshed by sending another ChannelBind request
-   rebinding the channel to the peer.  Like permissions (but unlike
-   allocations), there is no way to explicitly delete a channel binding;
-   the client must simply wait for it to time out.
+   通过发送另一个ChannelBind请求将通道重新绑定到对等放来刷新通道绑定。 
+   与permissions一样（但不像allocation），没有办法明确删除通道绑定; 客户必须等待它超时。 
 
   TURN                                 TURN           Peer          Peer
   client                               server          A             B
@@ -534,161 +521,112 @@ Table of Contents
     |<------------------ [0x4001] data --|             |             |
     |                                    |             |             |
 
-                                 Figure 4
+                                  图4
 
-   Figure 4 shows the channel mechanism in use.  The client has already
-   created an allocation and now wishes to bind a channel to Peer A.  To
-   do this, the client sends a ChannelBind request to the server,
-   specifying the transport address of Peer A and a channel number
-   (0x4001).  After that, the client can send application data
-   encapsulated inside ChannelData messages to Peer A: this is shown as
+   图4显示了正在使用的通道机制。
+   客户端已经创建了一个allocation，现在希望将一个channel绑定到Peer A.
+   为此，客户端向服务器发送ChannelBind请求，指定对等端A的传输地址和通道号（0x4001）。
+   之后，客户端可以将封装在ChannelData消息中的应用程序数据发送给对等方A：
+   这显示为“[0x4001] data”，其中0x4001是通道编号。
+
+   当ChannelData消息到达服务器时，服务器将数据传输到UDP数据报并将其发送到对等端A（绑定到通道号0x4001的对等端）。 
+   在相反的方向上，当对等端A将UDP数据报发送到中继的传输地址时，
+   该UDP数据报文到达在allocation的中继传输地址（服务器中的relayed transport address）。
     
-   "[0x4001] data" where 0x4001 is the channel number.  When the
-   ChannelData message arrives at the server, the server transfers the
-   data to a UDP datagram and sends it to Peer A (which is the peer
-   bound to channel number 0x4001).
+   由于UDP数据报是从对等端A接收的，其具有分配给它的channel number，
+   因此服务器在将数据发送到客户端时将数据封装到ChannelData消息中。
+   一旦绑定了一个通道，客户端就可以自由地混合使用ChannelData消息和Send指令。
+  
+   在图中，客户端稍后决定使用Send指令而不是ChannelData消息来向对等方A发送附加数据。
+     
+   例如，客户端可能决定这样做，因此它可以使用DONT-FRAGMENT属性（请参阅下一节）。
+   但是，一旦绑定了一个通道，服务器将始终使用ChannelData消息，如调用流程中所示。
+   请注意，ChannelData消息只能用于客户端绑定了通道的对等端。
+   在上面的示例中，对等端A已绑定到某个通道，但对等端B未绑定，
+   因此进出对等端B的应用程序数据将使用“Send”机制。 
 
-   In the reverse direction, when Peer A sends a UDP datagram to the
-   relayed transport address, this UDP datagram arrives at the server on
-   the relayed transport address assigned to the allocation.  Since the
-   UDP datagram was received from Peer A, which has a channel number
-   assigned to it, the server encapsulates the data into a ChannelData
-   message when sending the data to the client.
+2.6.  Unprivileged TURN Servers（无特权服务器）
 
-   Once a channel has been bound, the client is free to intermix
-   ChannelData messages and Send indications.  In the figure, the client
-   later decides to use a Send indication rather than a ChannelData
-   message to send additional data to Peer A.  The client might decide
-   to do this, for example, so it can use the DONT-FRAGMENT attribute
-   (see the next section).  However, once a channel is bound, the server
-   will always use a ChannelData message, as shown in the call flow.
-
-   Note that ChannelData messages can only be used for peers to which
-   the client has bound a channel.  In the example above, Peer A has
-   been bound to a channel, but Peer B has not, so application data to
-   and from Peer B would use the Send mechanism.
-
-2.6.  Unprivileged TURN Servers
-
-   This version of TURN is designed so that the server can be
-   implemented as an application that runs in user space under commonly
-   available operating systems without requiring special privileges.
-   This design decision was made to make it easy to deploy a TURN
-   server: for example, to allow a TURN server to be integrated into a
-   peer-to-peer application so that one peer can offer NAT traversal
-   services to another peer.
-
-   This design decision has the following implications for data relayed
-   by a TURN server:
-
-   o  The value of the Diffserv field may not be preserved across the
-      server;
-
-   o  The Time to Live (TTL) field may be reset, rather than
-      decremented, across the server;
-
-   o  The Explicit Congestion Notification (ECN) field may be reset by
-      the server;
-
-   o  ICMP messages are not relayed by the server;
+   此版本的TURN旨在使服务器可以实现为在常用操作系统下的用户空间中运行而无需特殊权限的应用程序。
+   做出此设计决策是为了便于部署TURN服务器：例如，允许将TURN服务器集成到对等应用程序中，
+   以便一个对等方可以向另一个对等方提供NAT穿越服务。
     
-   o  There is no end-to-end fragmentation, since the packet is re-
-      assembled at the server.
+   此设计决策对TURN服务器中继的数据具有以下含义：
 
-   Future work may specify alternate TURN semantics that address these
-   limitations.
+   o  可能无法在服务器上保留区分服务字段的值;
 
-2.7.  Avoiding IP Fragmentation
+   o  生存时间（TTL）字段可以在服务器上重置，而不是递减;
 
-   For reasons described in [Frag-Harmful], applications, especially
-   those sending large volumes of data, should try hard to avoid having
-   their packets fragmented.  Applications using TCP can more or less
-   ignore this issue because fragmentation avoidance is now a standard
-   part of TCP, but applications using UDP (and thus any application
-   using this version of TURN) must handle fragmentation avoidance
-   themselves.
+   o  显式拥塞通知（ECN）字段可以由服务器重置;
 
-   The application running on the client and the peer can take one of
-   two approaches to avoid IP fragmentation.
-
-   The first approach is to avoid sending large amounts of application
-   data in the TURN messages/UDP datagrams exchanged between the client
-   and the peer.  This is the approach taken by most VoIP
-   (Voice-over-IP) applications.  In this approach, the application
-   exploits the fact that the IP specification [RFC0791] specifies that
-   IP packets up to 576 bytes should never need to be fragmented.
-
-   The exact amount of application data that can be included while
-   avoiding fragmentation depends on the details of the TURN session
-   between the client and the server: whether UDP, TCP, or TLS transport
-   is used, whether ChannelData messages or Send/Data indications are
-   used, and whether any additional attributes (such as the DONT-
-   FRAGMENT attribute) are included.  Another factor, which is hard to
-   determine, is whether the MTU is reduced somewhere along the path for
-   other reasons, such as the use of IP-in-IP tunneling.
-
-   As a guideline, sending a maximum of 500 bytes of application data in
-   a single TURN message (by the client on the client-to-server leg) or
-   a UDP datagram (by the peer on the peer-to-server leg) will generally
-   avoid IP fragmentation.  To further reduce the chance of
-   fragmentation, it is recommended that the client use ChannelData
-   messages when transferring significant volumes of data, since the
-   overhead of the ChannelData message is less than Send and Data
-   indications.
-
-   The second approach the client and peer can take to avoid
-   fragmentation is to use a path MTU discovery algorithm to determine
-   the maximum amount of application data that can be sent without
-   fragmentation.
+   o  ICMP消息不由服务器中继;
     
-   Unfortunately, because servers implementing this version of TURN do
-   not relay ICMP messages, the classic path MTU discovery algorithm
-   defined in [RFC1191] is not able to discover the MTU of the
-   transmission path between the client and the peer.  (Even if they did
-   relay ICMP messages, the algorithm would not always work since ICMP
-   messages are often filtered out by combined NAT/firewall devices).
+   o  没有端到端的碎片，因为数据包在服务器上重新组装。
 
-   So the client and server need to use a path MTU discovery algorithm
-   that does not require ICMP messages.  The Packetized Path MTU
-   Discovery algorithm defined in [RFC4821] is one such algorithm.
+  未来的工作可以指定解决这些限制的备用TURN语义。
 
-   The details of how to use the algorithm of [RFC4821] with TURN are
-   still under investigation.  However, as a step towards this goal,
-   this version of TURN supports a DONT-FRAGMENT attribute.  When the
-   client includes this attribute in a Send indication, this tells the
-   server to set the DF bit in the resulting UDP datagram that it sends
-   to the peer.  Since some servers may be unable to set the DF bit, the
-   client should also include this attribute in the Allocate request --
-   any server that does not support the DONT-FRAGMENT attribute will
-   indicate this by rejecting the Allocate request.
+2.7.  Avoiding IP Fragmentation(避免IP分段)
 
-2.8.  RTP Support
+   由于[Frag-Harmful]中描述的原因，应用程序（尤其是那些发送大量数据的应用程序）
+   应该尽量避免将其数据包分段。
+   
+   使用TCP的应用程序或多或少可以忽略此问题，因为碎片避免现在是TCP的标准部分，
+   但使用UDP的应用程序（以及使用此版本的TURN的任何应用程序）必须自己处理碎片避免。
 
-   One of the envisioned uses of TURN is as a relay for clients and
-   peers wishing to exchange real-time data (e.g., voice or video) using
-   RTP.  To facilitate the use of TURN for this purpose, TURN includes
-   some special support for older versions of RTP.
+   在客户端和对等端上运行的应用程序可以采用两种方法之一来避免IP碎片。
 
-   Old versions of RTP [RFC3550] required that the RTP stream be on an
-   even port number and the associated RTP Control Protocol (RTCP)
-   stream, if present, be on the next highest port.  To allow clients to
-   work with peers that still require this, TURN allows the client to
-   request that the server allocate a relayed transport address with an
-   even port number, and to optionally request the server reserve the
-   next-highest port number for a subsequent allocation.
-
-2.9.  Anycast Discovery of Servers
-
-   This version of TURN has been designed to permit the future
-   specification of a method of doing anycast discovery of a TURN server
-   over UDP.
-
-   Specifically, a TURN server can reject an Allocate request with the
-   suggestion that the client try an alternate server.  To avoid certain
-   types of attacks, the client must use the same credentials with the
-   alternate server as it would have with the initial server.
+   第一种方法是避免在客户端和对等端之间交换的TURN消息/ UDP数据报中发送大量应用程序数据。  
+   这是大多数VoIP（Voice-over-IP）应用程序采用的方法。
+   在这种方法中，应用程序利用IP规范[RFC0791]规定最多576字节的IP数据包永远不需要分段的事实。
     
-3.  Terminology
+   在避免碎片的同时可以包含的应用程序数据的确切数量取决于客户端和服务器之间的TURN会话的详细信息：
+   是否使用UDP，TCP或TLS传输，是否使用ChannelData消息或发送/数据指示，以及是否包括任何其他属性（例如DONT-FRAGMENT属性）。  
+   另一个难以确定的因素是MTU是否因为其他原因在路径的某处减少了， 例如使用IP-in-IP隧道。
+   作为指导原则，通常在单个TURN消息中（由客户端到服务器）或UDP数据报文中（由对等端到服务器端的对等端）
+   发送最多500字节的应用数据，为了避免IP碎片。 
+   
+   为了进一步降低碎片的可能性，建议客户端在传输大量数据时使用ChannelData消息，
+   因为ChannelData消息的开销小于Send和Data指令。 
+
+   客户端和对等端可以采取的避免分段的第二种方法是使用路径MTU发现
+   算法来确定可以在没有分段的情况下发送的最大应用程序数据量。
+    
+	遗憾的是，由于实现此版本TURN的服务器不会中继ICMP消息，
+	因此[RFC1191]中定义的经典路径MTU发现算法无法发现客户端与对等端之间的传输路径的MTU。
+ 
+   （即使它们确实中继了ICMP消息，该算法也不会始终有效，因为ICMP消息经常被组合的NAT /防火墙设备过滤掉）。
+
+   因此，客户端和服务器需要使用不需要ICMP消息的路径MTU发现算法。 
+   [RFC4821]中定义的分组化路径MTU发现算法就是这样一种算法。
+
+   有关如何将[RFC4821]算法与TURN一起使用的详细信息仍在研究中。
+   但是，作为实现此目标的一步，此版本的TURN支持DONT-FRAGMENT属性。
+   当客户端在发送指令中包含此属性时，
+   这将告知服务器在它发送给对等方的结果UDP数据报中设置DF位。
+ 
+   由于某些服务器可能无法设置DF位，因此客户端还应在Allocate请求中包含此属性 - 
+   任何不支持DONT-FRAGMENT属性的服务器都将通过拒绝Allocate请求来指示此情况。
+
+2.8.  RTP Support(RTP支持)
+
+   TURN的设想用途之一是作为希望使用RTP交换客户端和对等端的实时数据（例如，语音或视频）。 
+   为了便于将TURN用于此目的，TURN包括对旧版RTP的一些特殊支持。
+
+   旧版本的RTP [RFC3550]要求RTP流位于偶数端口号上，
+   并且相关联的RTP控制协议（RTCP）流（如果存在）位于下一个最高端口上。
+   为了允许客户端与仍需要它的对等端一起工作，
+   TURN允许客户端请求服务器allocation具有偶数端口号的中继传输地址，
+   并且可选地请求服务器为后续分配保留下一个最高端口号。
+  
+
+2.9.  Anycast Discovery of Servers（任播发现服务器）
+
+   此版本的TURN旨在允许将来规范通过UDP进行TURN服务器的任播发现的方法。 
+   具体来说，TURN服务器可以拒绝分配请求，并建议客户端尝试备用服务器。
+   为了避免某些类型的攻击，客户端必须使用与备用服务器相同的凭据，
+   就像使用初始服务器一样。
+    
+3.  Terminology(术语)
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
@@ -767,137 +705,103 @@ Table of Contents
       message-digest.  To prevent reply attacks, the server should
       change the nonce regularly.
 
-4.  General Behavior
+4.  General Behavior(一般行为)
 
-   This section contains general TURN processing rules that apply to all
-   TURN messages.
+   本节包含适用于所有TURN消息的常规TURN处理规则。 
+   TURN是STUN的扩展。 除ChannelData消息外，所有TURN消息都是STUN格式的消息。 
+   [RFC5389]中描述的所有基本处理规则适用于STUN格式的消息。
+   这意味着本文档中的所有消息形成和消息处理描述都隐含地以[RFC5389]的规则为前缀。
 
-   TURN is an extension to STUN.  All TURN messages, with the exception
-   of the ChannelData message, are STUN-formatted messages.  All the
-   base processing rules described in [RFC5389] apply to STUN-formatted
-   messages.  This means that all the message-forming and message-
-   processing descriptions in this document are implicitly prefixed with
-   the rules of [RFC5389].
-
-   [RFC5389] specifies an authentication mechanism called the long-term
-   credential mechanism.  TURN servers and clients MUST implement this
-   mechanism.  The server MUST demand that all requests from the client
-   be authenticated using this mechanism, or that a equally strong or
-   stronger mechanism for client authentication is used.
+   [RFC5389]指定了一种称为长期凭证机制的认证机制。 
+   TURN服务器和客户端必须实现这种机制。 
+   服务器必须要求使用此机制对来自客户端的所有请求进行身份验证，
+   或者使用同样强大或更强的客户端身份验证机制。
     
-   Note that the long-term credential mechanism applies only to requests
-   and cannot be used to authenticate indications; thus, indications in
-   TURN are never authenticated.  If the server requires requests to be
-   authenticated, then the server's administrator MUST choose a realm
-   value that will uniquely identify the username and password
-   combination that the client must use, even if the client uses
-   multiple servers under different administrations.  The server's
-   administrator MAY choose to allocate a unique username to each
-   client, or MAY choose to allocate the same username to more than one
-   client (for example, to all clients from the same department or
-   company).  For each allocation, the server SHOULD generate a new
-   random nonce when the allocation is first attempted following the
-   randomness recommendations in [RFC4086] and SHOULD expire the nonce
-   at least once every hour during the lifetime of the allocation.
+   请注意，长期凭证机制仅适用于请求，不能用于验证指令;
+   因此，TURN中的指令从未被认证。
+   
+   如果服务器要求进行身份验证请求，
+   则服务器的管理员必须选择一个realm值，
+   该值将唯一标识客户端必须使用的用户名和密码组合，
+   即使客户端在不同的管理下使用多个服务器也是如此。
+   
+   服务器的管理员可以选择为每个客户端分配唯一的用户名，
+   或者可以选择将同一用户名分配给多个客户端（例如，分配给同一部门或公司的所有客户端）。
+   
+   对于每个分配，服务器应该在[RFC4086]中的随机性建议之后首次尝试
+   分配时生成新的随机nonce，并且应该在allocation的生命周期内
+   每小时至少使一次nonce到期。 
 
-   All requests after the initial Allocate must use the same username as
-   that used to create the allocation, to prevent attackers from
-   hijacking the client's allocation.  Specifically, if the server
-   requires the use of the long-term credential mechanism, and if a non-
-   Allocate request passes authentication under this mechanism, and if
-   the 5-tuple identifies an existing allocation, but the request does
-   not use the same username as used to create the allocation, then the
-   request MUST be rejected with a 441 (Wrong Credentials) error.
+   初始分配后的所有请求必须使用与用于创建分配的
+   用户名相同的用户名，以防止攻击者劫持客户端的allocation。 
+   
+   具体来说，如果服务器需要使用长期凭证机制，
+   并且非Allocate请求在此机制下通过身份验证，
+   并且5-tuple标识现有分配，但请求不使用相同的用户名 
+   用于创建分配，然后客户端会收到拒绝请求441（错误的凭据）错误。
 
-   When a TURN message arrives at the server from the client, the server
-   uses the 5-tuple in the message to identify the associated
-   allocation.  For all TURN messages (including ChannelData) EXCEPT an
-   Allocate request, if the 5-tuple does not identify an existing
-   allocation, then the message MUST either be rejected with a 437
-   Allocation Mismatch error (if it is a request) or silently ignored
-   (if it is an indication or a ChannelData message).  A client
-   receiving a 437 error response to a request other than Allocate MUST
-   assume the allocation no longer exists.
+   当TURN消息从客户端到达服务器时，服务器使用消息中的5元组来标识关联的分配。
+   对于所有TURN消息（包括ChannelData）除了分配请求之外，如果5元组没有识别现有allocation，
+   则必须拒绝该消息并发出437allocation不匹配错误（如果是请求）
+   或者忽略（如果 它是一个指令或ChannelData消息）。 
 
-   [RFC5389] defines a number of attributes, including the SOFTWARE and
-   FINGERPRINT attributes.  The client SHOULD include the SOFTWARE
-   attribute in all Allocate and Refresh requests and MAY include it in
-   any other requests or indications.  The server SHOULD include the
-   SOFTWARE attribute in all Allocate and Refresh responses (either
-   success or failure) and MAY include it in other responses or
-   indications.  The client and the server MAY include the FINGERPRINT
-   attribute in any STUN-formatted messages defined in this document.
+   收到除Allocate以外的请求的437错误响应的客户端必须假定分配不再存在。
 
-   TURN does not use the backwards-compatibility mechanism described in
-   [RFC5389].
+   [RFC5389]定义了许多属性，包括SOFTWARE和FINGERPRINT属性。
+   客户端应该在所有Allocate和Refresh请求中包含SOFTWARE属性，
+   并且可以将其包含在任何其他请求或指示中。 
+ 
+   客户端和服务器可以在本文档中定义的任何STUN格式的消息中包含FINGERPRINT属性。
+   TURN不使用[RFC5389]中描述的向后兼容机制。
     
-   TURN, as defined in this specification, only supports IPv4.  The
-   client's IP address, the server's IP address, and all IP addresses
-   appearing in a relayed transport address MUST be IPv4 addresses.
+   如本说明书中所定义的，TURN仅支持IPv4。 客户端的IP地址，
+   服务器的IP地址以及出现在中继传输地址中的所有IP地址必须是IPv4地址。
 
-   By default, TURN runs on the same ports as STUN: 3478 for TURN over
-   UDP and TCP, and 5349 for TURN over TLS.  However, TURN has its own
-   set of Service Record (SRV) names: "turn" for UDP and TCP, and
-   "turns" for TLS.  Either the SRV procedures or the ALTERNATE-SERVER
-   procedures, both described in Section 6, can be used to run TURN on a
-   different port.
+   默认情况下，TURN在与STUN相同的端口上运行：
+   3478用于通过UDP和TCP进行TURN，以及5349用于TURN over TLS。
+   但是，TURN有自己的一组服务记录（SRV）名称：UDP转换TCP， TLS转换。
+   可以使用第6节中描述的SRV过程或ALTERNATE-SERVER过程在不同的端口上运行TURN。
 
-   To ensure interoperability, a TURN server MUST support the use of UDP
-   transport between the client and the server, and SHOULD support the
-   use of TCP and TLS transport.
+   为了确保互操作性，TURN服务器必须支持在客户端和服务器之间使用UDP传输，
+   并且应该支持使用TCP和TLS传输。
 
-   When UDP transport is used between the client and the server, the
-   client will retransmit a request if it does not receive a response
-   within a certain timeout period.  Because of this, the server may
-   receive two (or more) requests with the same 5-tuple and same
-   transaction id.  STUN requires that the server recognize this case
-   and treat the request as idempotent (see [RFC5389]).  Some
-   implementations may choose to meet this requirement by remembering
-   all received requests and the corresponding responses for 40 seconds.
-   Other implementations may choose to reprocess the request and arrange
-   that such reprocessing returns essentially the same response.  To aid
-   implementors who choose the latter approach (the so-called "stateless
-   stack approach"), this specification includes some implementation
-   notes on how this might be done.  Implementations are free to choose
-   either approach or choose some other approach that gives the same
-   results.
+   在客户端和服务器之间使用UDP传输时，如果请求在某个超时时间内没有收到响应，则客户端将重新发送请求。
+   因此，服务器可以接收具有相同5元组和相同事务id的两个（或更多）请求。  
+   STUN要求服务器识别这种情况并将请求视为幂等（请参阅[RFC5389]）。
+   一些实现可以通过记住所有接收的请求和相应的响应40秒来选择满足该要求。
 
-   When TCP transport is used between the client and the server, it is
-   possible that a bit error will cause a length field in a TURN packet
-   to become corrupted, causing the receiver to lose synchronization
-   with the incoming stream of TURN messages.  A client or server that
-   detects a long sequence of invalid TURN messages over TCP transport
-   SHOULD close the corresponding TCP connection to help the other end
-   detect this situation more rapidly.
+   其他实现可以选择重新处理请求并安排这样的重新处理返回基本相同的响应。  
+   为了帮助选择后一种方法的实现者（所谓的“无状态堆栈方法”），
+   本规范包括一些关于如何完成此操作的实现说明。 
+   实现可以自由选择任一种方法，也可以选择其他方法来提供相同的结果。
 
-   To mitigate either intentional or unintentional denial-of-service
-   attacks against the server by clients with valid usernames and
-   passwords, it is RECOMMENDED that the server impose limits on both
-   the number of allocations active at one time for a given username and
-   on the amount of bandwidth those allocations can use.  The server
-   should reject new allocations that would exceed the limit on the
-   allowed number of allocations active at one time with a 486
-   (Allocation Quota Exceeded) (see Section 6.2), and should discard
-   application data traffic that exceeds the bandwidth quota.
+   当在客户端和服务器之间使用TCP传输时，位错误可能会导致TURN数据包中的长度字段损坏，
+   从而导致接收器与传入的TURN消息流失去同步。
+   通过TCP传输检测长序列无效TURN消息的客户端或服务器应该关闭相应的TCP连接，
+   以帮助另一端更快地检测到这种情况。
+
+   为了减轻具有有效用户名和密码的客户端对服务器的有意或无意的拒绝服务攻击，
+   建议服务器对给定用户名一次激活的分配数量以及这些分配可以使用的带宽量施加限制。 
+   服务器应拒绝超过允许的分配数限制的新分配，
+   并回复486错误（超出分配配额）（参见第6.2节），
+   并且应丢弃超出带宽配额的应用程序数据流量。
     
 5.  Allocations
 
-   All TURN operations revolve around allocations, and all TURN messages
-   are associated with an allocation.  An allocation conceptually
-   consists of the following state data:
+   所有TURN操作都围绕Allocation，所有TURN消息都与Allocation相关联。 
+   Allocation在概念上由以下状态数据组成：
 
-   o  the relayed transport address;
+   o  服务端 relayed transport address;
 
-   o  the 5-tuple: (client's IP address, client's port, server IP
-      address, server port, transport protocol);
+   o  5元组:(客户端的IP地址，客户端的端口，服务器IP地址，服务器端口，传输协议）;
 
-   o  the authentication information;
+   o 认证信息;
 
-   o  the time-to-expiry;
+   o  到期时间;
 
-   o  a list of permissions;
+   o 权限列表;
 
-   o  a list of channel to peer bindings.
+   o  通道到对等端绑定的列表。
 
    The relayed transport address is the transport address allocated by
    the server for communicating with peers, while the 5-tuple describes
