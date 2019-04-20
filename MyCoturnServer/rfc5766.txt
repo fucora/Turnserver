@@ -801,342 +801,263 @@ Table of Contents
 
    o 权限列表;
 
-   o  通道到对等端绑定的列表。
+   o 通道到对等端绑定的列表。
 
-   The relayed transport address is the transport address allocated by
-   the server for communicating with peers, while the 5-tuple describes
-   the communication path between the client and the server.  On the
-   client, the 5-tuple uses the client's host transport address; on the
-   server, the 5-tuple uses the client's server-reflexive transport
-   address.
+   中继的传输地址是服务器为与对等体通信而分配的传输地址，而5元组则描述了客户端与服务器之间的通信路径。
+   
+   在客户端上，5元组使用客户端的主机传输地址; 在服务器上，5元组使用客户端的外网地址。
 
-   Both the relayed transport address and the 5-tuple MUST be unique
-   across all allocations, so either one can be used to uniquely
-   identify the allocation.
+   中继的传输地址和5元组在所有分配中必须是唯一的，因此任何一个都可以用于唯一地标识allocation。
 
-   The authentication information (e.g., username, password, realm, and
-   nonce) is used to both verify subsequent requests and to compute the
-   message integrity of responses.  The username, realm, and nonce
-   values are initially those used in the authenticated Allocate request
-   that creates the allocation, though the server can change the nonce
-   value during the lifetime of the allocation using a 438 (Stale Nonce)
-   reply.  Note that, rather than storing the password explicitly, for
-   security reasons, it may be desirable for the server to store the key
-   value, which is an MD5 hash over the username, realm, and password
-   (see [RFC5389]).
+   认证信息（例如，用户名，密码，领域和现时）用于验证后续请求和计算响应的消息完整性。
+   
+   username，realm和nonce是最初在创建Allocation时经过身份验证的Allocate请求中使用的值，
+   尽管服务器可以使用438（Stale Nonce）回复在分配的生命周期内更改nonce值。
 
-   The time-to-expiry is the time in seconds left until the allocation
-   expires.  Each Allocate or Refresh transaction sets this timer, which
-   then ticks down towards 0.  By default, each Allocate or Refresh
-   transaction resets this timer to the default lifetime value of 600
-   seconds (10 minutes), but the client can request a different value in
-   the Allocate and Refresh request.  Allocations can only be refreshed
-   using the Refresh request; sending data to a peer does not refresh an
-    
-   allocation.  When an allocation expires, the state data associated
-   with the allocation can be freed.
+   请注意，处于安全原因。它可能是一个值，
+   是根据username，realm，password算出来的MD5值。（参见[RFC5389]） 
 
-   The list of permissions is described in Section 8 and the list of
-   channels is described in Section 11.
+   到期时间是allocation到期之前的剩余时间。 
+   每个Allocate或Refresh事务都设置此计时器，然后向下计数到0。
+   默认情况下，每个Allocate或Refresh事务会将此计时器重置为600秒
+   （10分钟）的默认生存期值，
+   但客户端可以在Allocate和Refresh请求中请求不同的值。
+   只能使用Refresh请求刷新分配; 向对等端发送数据不会刷新分配。   
+   当分配到期时，可以释放与分配相关联的状态数据。
+   权限列表在第8节中描述，通道列表在第11节中描述。 
 
 6.  Creating an Allocation
 
-   An allocation on the server is created using an Allocate transaction.
+   使用Allocate事务创建服务器上的Allocation。
 
 6.1.  Sending an Allocate Request
 
-   The client forms an Allocate request as follows.
+   客户端按如下方式形成分配请求。
+   客户端首先选择一个内网地址。
+   建议客户端选择当前未使用的传输地址，
+   通常是允许底层操作系统为新套接字选择当前未使用的端口。
+   然后，客户端选择要在客户端和服务器之间使用的传输协议。 
+   传输协议必须是UDP，TCP或TLS-over-TCP之一。
+   由于此规范仅允许服务器和对等体之间的UDP，因此建议客户端选择UDP，
+   除非它有理由使用不同的传输。
+   选择不同运输的一个原因是客户认为，
+   无论是通过配置还是通过实验，它都无法使用UDP联系任何TURN服务器。
+   有关更多讨论，请参见第2.1节。
 
-   The client first picks a host transport address.  It is RECOMMENDED
-   that the client pick a currently unused transport address, typically
-   by allowing the underlying OS to pick a currently unused port for a
-   new socket.
+   客户端还会选择一个服务器地址，该地址应该按如下方式完成。
+   客户端（可能通过配置）接收TURN服务器的域名。
+   然后，客户端使用[RFC5389]中描述的DNS过程，但使用SRV服务名称“turn”
+   （或“TURN over TLS”）而不是“stun”（或“stuns”）。
+   例如，要在example.com域中查找服务器，
+   客户端将执行“_turn._udp.example.com”，
+   “_ turn._tcp.example.com”和“_turns._tcp.example.com”的查找。 
+   客户端希望分别使用UDP，TCP或TLS-over-TCP与服务器通信。
 
-   The client then picks a transport protocol to use between the client
-   and the server.  The transport protocol MUST be one of UDP, TCP, or
-   TLS-over-TCP.  Since this specification only allows UDP between the
-   server and the peers, it is RECOMMENDED that the client pick UDP
-   unless it has a reason to use a different transport.  One reason to
-   pick a different transport would be that the client believes, either
-   through configuration or by experiment, that it is unable to contact
-   any TURN server using UDP.  See Section 2.1 for more discussion.
+   客户端必须在请求中包含REQUESTED-TRANSPORT属性。 
+   此属性指定服务器和对等方之间的传输协议
+   （请注意，这不是出现在5元组中的传输协议）。
+   在本说明书中，REQUESTED- TRANSPORT类型始终为UDP。 
+   包含此属性以允许将来的扩展指定其他协议。
 
-   The client also picks a server transport address, which SHOULD be
-   done as follows.  The client receives (perhaps through configuration)
-   a domain name for a TURN server.  The client then uses the DNS
-   procedures described in [RFC5389], but using an SRV service name of
-   "turn" (or "turns" for TURN over TLS) instead of "stun" (or "stuns").
-   For example, to find servers in the example.com domain, the client
-   performs a lookup for '_turn._udp.example.com',
-   '_turn._tcp.example.com', and '_turns._tcp.example.com' if the client
-   wants to communicate with the server using UDP, TCP, or TLS-over-TCP,
-   respectively.
+   如果客户端希望服务器将分配的到期时间字段初始化为除默认生存期之外的某个值，
+   则它可以包括指定其期望值的LIFETIME属性。
+   这只是一个请求，服务器可能会选择使用不同的值。 
+   请注意，服务器将忽略将字段初始化为小于默认值的请求。
 
-   The client MUST include a REQUESTED-TRANSPORT attribute in the
-   request.  This attribute specifies the transport protocol between the
-   server and the peers (note that this is NOT the transport protocol
-   that appears in the 5-tuple).  In this specification, the REQUESTED-
-   TRANSPORT type is always UDP.  This attribute is included to allow
-   future extensions to specify other protocols.
+   如果客户端希望稍后在此分配的一个或多个发送指示中使用DONT-FRAGMENT属性，
+   则客户端应该在Allocate请求中包含DONT-FRAGMENT属性。
+   这允许客户端测试服务器是否支持此属性。
 
-   If the client wishes the server to initialize the time-to-expiry
-   field of the allocation to some value other than the default
-    
-   lifetime, then it MAY include a LIFETIME attribute specifying its
-   desired value.  This is just a request, and the server may elect to
-   use a different value.  Note that the server will ignore requests to
-   initialize the field to less than the default value.
+   如果客户端要求中继传输地址的端口号为偶数，则客户端包括EVEN-PORT属性。
+   如果未包含此属性，则端口可以是偶数或奇数。
+   通过将EVEN-PORT属性中的R位设置为1，
+   客户端可以请求服务器为后续分配保留下一个最高端口号（在同一IP地址上）。 
+   如果R位为0，则不会发出此类请求。
 
-   If the client wishes to later use the DONT-FRAGMENT attribute in one
-   or more Send indications on this allocation, then the client SHOULD
-   include the DONT-FRAGMENT attribute in the Allocate request.  This
-   allows the client to test whether this attribute is supported by the
-   server.
-
-   If the client requires the port number of the relayed transport
-   address be even, the client includes the EVEN-PORT attribute.  If
-   this attribute is not included, then the port can be even or odd.  By
-   setting the R bit in the EVEN-PORT attribute to 1, the client can
-   request that the server reserve the next highest port number (on the
-   same IP address) for a subsequent allocation.  If the R bit is 0, no
-   such request is made.
-
-   The client MAY also include a RESERVATION-TOKEN attribute in the
-   request to ask the server to use a previously reserved port for the
-   allocation.  If the RESERVATION-TOKEN attribute is included, then the
-   client MUST omit the EVEN-PORT attribute.
-
-   Once constructed, the client sends the Allocate request on the
-   5-tuple.
+   客户端还可以在请求中包含RESERVATION-TOKEN属性，
+   以要求服务器使用先前保留的端口进行分配。
+   如果包含RESERVATION-TOKEN属性，则客户端必须省略EVEN-PORT属性。 
+   构建完成后，客户端会在5元组上发送Allocate请求。
 
 6.2.  Receiving an Allocate Request
 
-   When the server receives an Allocate request, it performs the
-   following checks:
+   当服务器收到Allocate请求时，它会执行以下检查：
 
-   1.  The server MUST require that the request be authenticated.  This
-       authentication MUST be done using the long-term credential
-       mechanism of [RFC5389] unless the client and server agree to use
-       another mechanism through some procedure outside the scope of
-       this document.
+   1. 服务器必须要求对请求进行身份验证。 
+      此身份验证必须使用[RFC5389]的长期凭据机制来完成，
+      除非客户端和服务器同意通过本文档范围之外的某些过程使用其他机制。
 
-   2.  The server checks if the 5-tuple is currently in use by an
-       existing allocation.  If yes, the server rejects the request with
-       a 437 (Allocation Mismatch) error.
+   2. 服务器检查现有分配当前是否正在使用5元组。 
+      如果是，则服务器拒绝具有437（分配不匹配）错误的请求。
 
-   3.  The server checks if the request contains a REQUESTED-TRANSPORT
-       attribute.  If the REQUESTED-TRANSPORT attribute is not included
-       or is malformed, the server rejects the request with a 400 (Bad
-       Request) error.  Otherwise, if the attribute is included but
-       specifies a protocol other that UDP, the server rejects the
-       request with a 442 (Unsupported Transport Protocol) error.
+   3. 服务器检查请求是否包含REQUESTED-TRANSPORT属性。
+	  如果未包含REQUESTED-TRANSPORT属性或格式错误，
+	  则服务器会拒绝400（错误请求）错误的请求。 
+	  否则，如果包含该属性但指定了UDP之外的协议，
+	  则服务器会拒绝具有442（不支持的传输协议）错误的请求。
 	    
-   4.  The request may contain a DONT-FRAGMENT attribute.  If it does,
-       but the server does not support sending UDP datagrams with the DF
-       bit set to 1 (see Section 12), then the server treats the DONT-
-       FRAGMENT attribute in the Allocate request as an unknown
-       comprehension-required attribute.
+   4. 该请求可能包含DONT-FRAGMENT属性。 
+      如果是，但服务器不支持发送DF位设置为1的UDP数据报（参见第12节），
+      则服务器将Allocate请求中的DONT-FRAGMENT属性视为未知的理解所需属性。
 
-   5.  The server checks if the request contains a RESERVATION-TOKEN
-       attribute.  If yes, and the request also contains an EVEN-PORT
-       attribute, then the server rejects the request with a 400 (Bad
-       Request) error.  Otherwise, it checks to see if the token is
-       valid (i.e., the token is in range and has not expired and the
-       corresponding relayed transport address is still available).  If
-       the token is not valid for some reason, the server rejects the
-       request with a 508 (Insufficient Capacity) error.
+   5. 服务器检查请求是否包含RESERVATION-TOKEN属性。
+      如果是，并且请求还包含EVEN-PORT属性，
+	  则服务器拒绝具有400（错误请求）错误的请求。
+	  否则，它检查token是否有效
+	  （即，token在范围内并且尚未到期并且相应的中继传输地址仍然可用）。 
+	   如果token因某种原因无效，则服务器会拒绝508（容量不足）错误的请求。
 
-   6.  The server checks if the request contains an EVEN-PORT attribute.
-       If yes, then the server checks that it can satisfy the request
-       (i.e., can allocate a relayed transport address as described
-       below).  If the server cannot satisfy the request, then the
-       server rejects the request with a 508 (Insufficient Capacity)
-       error.
+   6. 服务器检查请求是否包含EVEN-PORT属性。 
+      如果是，则服务器检查它是否可以满足请求
+     （即，可以分配如下所述的中继传输地址）。
+	  如果服务器无法满足请求，则服务器会拒绝具有508（容量不足）错误的请求。
 
-   7.  At any point, the server MAY choose to reject the request with a
-       486 (Allocation Quota Reached) error if it feels the client is
-       trying to exceed some locally defined allocation quota.  The
-       server is free to define this allocation quota any way it wishes,
-       but SHOULD define it based on the username used to authenticate
-       the request, and not on the client's transport address.
+   7.  在任何时候，如果服务器感觉客户端试图超过某些本地定义的分配配额，
+       则可以选择拒绝具有486（已达到分配的配额）错误的请求。
+	  
+	  服务器可以任意方式自由定义此allocation配额，
+      但是应该根据用于验证请求的用户名来定义它，  
+      而不是客户的运输地址。 
 
-   8.  Also at any point, the server MAY choose to reject the request
-       with a 300 (Try Alternate) error if it wishes to redirect the
-       client to a different server.  The use of this error code and
-       attribute follow the specification in [RFC5389].
+   8.  此外，如果希望将客户端重定向到其他服务器，
+       服务器可以选择拒绝300（尝试替换）错误的请求。
+	   此错误代码和属性的使用遵循[RFC5389]中的规范。
 
-   If all the checks pass, the server creates the allocation.  The
-   5-tuple is set to the 5-tuple from the Allocate request, while the
-   list of permissions and the list of channels are initially empty.
+  如果所有检查都通过，则服务器创建allocation。 
+  5元组设置为Allocate请求的5元组，
+  而权限列表和通道列表最初为空。
 
-   The server chooses a relayed transport address for the allocation as
-   follows:
+   服务器为allocation选择中继传输地址，如下所示： 
 
-   o  If the request contains a RESERVATION-TOKEN, the server uses the
-      previously reserved transport address corresponding to the
-      included token (if it is still available).  Note that the
-      reservation is a server-wide reservation and is not specific to a
-      particular allocation, since the Allocate request containing the
-      RESERVATION-TOKEN uses a different 5-tuple than the Allocate
-      request that made the reservation.  The 5-tuple for the Allocate
+   o  如果请求包含RESERVATION-TOKEN，
+      则服务器使用先前保留的与包含的令牌相对应的传输地址（如果它仍然可用）。
+
+	  请注意，预留是服务器范围的预留，并不特定于特定的allocation，
+	  因为包含RESERVATION-TOKEN的Allocate请求使用与
+	  进行预留的Allocate请求不同的5元组。 
+	  包含RESERVATION-TOKEN属性的Allocate请求的5元组可以是任何允许的5元组;
+	  它可以使用不同的客户端IP地址和端口，不同的传输协议，
+	  甚至不同的服务器IP地址和端口（当然，
+	  提供服务器IP地址和端口是服务器正在侦听TURN请求的服务器IP地址和端口）。
+
+   o  如果请求包含R位设置为0的EVEN-PORT属性，
+      则服务器将分配带有偶数端口号的中继传输地址。
+
+   o  如果请求包含R位设置为1的EVEN-PORT属性，
+      则服务器在同一IP地址上查找一对端口号N和N + 1，其中N为偶数。
+	  端口N用于当前分配，而具有端口N + 1的中继传输
+	  地址被分配一个令牌并保留用于将来的分配。 
+      服务器必须保持此预留至少30秒，并且可以选
+	  择保持更长时间（例如，直到具有端口N的分配到期）。
+	  然后，服务器将令牌包含在成功响应中的RESERVATION-TOKEN属性中。
+
+   o  否则，服务器分配任何可用的中继传输地址。
+
+   在所有情况下，服务器应该只分配范围49152-65535
+  （动态和/或专用端口范围[端口号]）的端口，
+   除非TURN服务器应用程序知道，
+   通过这里未指定的某种方式，
+   在同一台主机的TURN服务器应用程序上运行的其他
+   应用程序不会受到此范围外的端口分配会受到影响。
+
+   通常可以通过在专用机器上运行TURN服务器应用程序和/或通
+   过安排机器上的任何其他应用程序在TURN服务器应用程序
+   启动之前分配端口来满足此条件。 
+  
+
+   注意：IETF目前正在研究随机端口分配的主题，
+   以避免某些类型的攻击（参见[TSVWG-PORT]）。
+   强烈建议TURN实现者及时了解该主题，
+   并在适当的情况下实现随机端口分配算法。
+	
+   这尤其适用于选择从底层操作系统预分配多个端口然后
+   将它们分配给分配的服务器; 例如，
+   服务器可以选择此技术来实现EVEN-PORT属性。
+ 
 	   
+   服务器确定到期时间字段的初始值，如下所示。
+   如果请求包含LIFETIME属性，则服务器计算客户端建
+   议生存期的最小值和服务器的最大允许生存期。 
+   如果此计算值大于默认生存期，则服务器使用
+   计算的生存期作为到期时间字段的初始值。
+   否则，服务器使用默认生存期。
+   建议服务器使用不超过3600秒（1小时）
+   的最大允许生命周期值。
+   服务端分配配合或向客户端所要一个小小的最大lifetime，
+   可以让快的删除无用的allocation。
+   另请注意，每次成功刷新请求都会重新计算到期时间，
+   因此此处计算的值仅适用于第一次刷新。 
+   
+   创建分配后，服务器将回复成功响应。 成功响应包含：
 
-      request containing the RESERVATION-TOKEN attribute can be any
-      allowed 5-tuple; it can use a different client IP address and
-      port, a different transport protocol, and even different server IP
-      address and port (provided, of course, that the server IP address
-      and port are ones on which the server is listening for TURN
-      requests).
+   o  包含中继传输地址的XOR-RELAYED-ADDRESS属性。
 
-   o  If the request contains an EVEN-PORT attribute with the R bit set
-      to 0, then the server allocates a relayed transport address with
-      an even port number.
+   o  LIFETIME属性，包含到期时间计时器的当前值。
 
-   o  If the request contains an EVEN-PORT attribute with the R bit set
-      to 1, then the server looks for a pair of port numbers N and N+1
-      on the same IP address, where N is even.  Port N is used in the
-      current allocation, while the relayed transport address with port
-      N+1 is assigned a token and reserved for a future allocation.  The
-      server MUST hold this reservation for at least 30 seconds, and MAY
-      choose to hold longer (e.g., until the allocation with port N
-      expires).  The server then includes the token in a RESERVATION-
-      TOKEN attribute in the success response.
+   o  RESERVATION-TOKEN属性（如果保留了第二个中继传输地址）。
 
-   o  Otherwise, the server allocates any available relayed transport
-      address.
+   o  包含客户端IP地址和端口的XOR-MAPPED-ADDRESS属性（来自5元组）。
 
-   In all cases, the server SHOULD only allocate ports from the range
-   49152 - 65535 (the Dynamic and/or Private Port range [Port-Numbers]),
-   unless the TURN server application knows, through some means not
-   specified here, that other applications running on the same host as
-   the TURN server application will not be impacted by allocating ports
-   outside this range.  This condition can often be satisfied by running
-   the TURN server application on a dedicated machine and/or by
-   arranging that any other applications on the machine allocate ports
-   before the TURN server application starts.  In any case, the TURN
-   server SHOULD NOT allocate ports in the range 0 - 1023 (the Well-
-   Known Port range) to discourage clients from using TURN to run
-   standard services.
+      注意：响应中包含XOR-MAPPED-ADDRESS属性，以方便客户端。
+	  TURN本身不使用此值，但运行ICE的客户端通常需要此值，
+	  因此可以避免与某些STUN服务器进行额外的Binding事务来知道它。 
 
-      NOTE: The IETF is currently investigating the topic of randomized
-      port assignments to avoid certain types of attacks (see
-      [TSVWG-PORT]).  It is strongly recommended that a TURN implementor
-      keep abreast of this topic and, if appropriate, implement a
-      randomized port assignment algorithm.  This is especially
-      applicable to servers that choose to pre-allocate a number of
-      ports from the underlying OS and then later assign them to
-      allocations; for example, a server may choose this technique to
-      implement the EVEN-PORT attribute.
-	   
-   The server determines the initial value of the time-to-expiry field
-   as follows.  If the request contains a LIFETIME attribute, then the
-   server computes the minimum of the client's proposed lifetime and the
-   server's maximum allowed lifetime.  If this computed value is greater
-   than the default lifetime, then the server uses the computed lifetime
-   as the initial value of the time-to-expiry field.  Otherwise, the
-   server uses the default lifetime.  It is RECOMMENDED that the server
-   use a maximum allowed lifetime value of no more than 3600 seconds (1
-   hour).  Servers that implement allocation quotas or charge users for
-   allocations in some way may wish to use a smaller maximum allowed
-   lifetime (perhaps as small as the default lifetime) to more quickly
-   remove orphaned allocations (that is, allocations where the
-   corresponding client has crashed or terminated or the client
-   connection has been lost for some reason).  Also, note that the time-
-   to-expiry is recomputed with each successful Refresh request, and
-   thus the value computed here applies only until the first refresh.
+  响应（成功或错误）将在5元组上发送回客户端。
 
-   Once the allocation is created, the server replies with a success
-   response.  The success response contains:
-
-   o  An XOR-RELAYED-ADDRESS attribute containing the relayed transport
-      address.
-
-   o  A LIFETIME attribute containing the current value of the time-to-
-      expiry timer.
-
-   o  A RESERVATION-TOKEN attribute (if a second relayed transport
-      address was reserved).
-
-   o  An XOR-MAPPED-ADDRESS attribute containing the client's IP address
-      and port (from the 5-tuple).
-
-      NOTE: The XOR-MAPPED-ADDRESS attribute is included in the response
-      as a convenience to the client.  TURN itself does not make use of
-      this value, but clients running ICE can often need this value and
-      can thus avoid having to do an extra Binding transaction with some
-      STUN server to learn it.
-
-   The response (either success or error) is sent back to the client on
-   the 5-tuple.
-
-      NOTE: When the Allocate request is sent over UDP, section 7.3.1 of
-      [RFC5389] requires that the server handle the possible
-      retransmissions of the request so that retransmissions do not
-      cause multiple allocations to be created.  Implementations may
-      achieve this using the so-called "stateless stack approach" as
-      follows.  To detect retransmissions when the original request was
-      successful in creating an allocation, the server can store the
-	   
+      注意：当通过UDP发送分配请求时，
+	  [RFC5389]的第7.3.1节要求服务器处理请求的可能重传，
+	  以便重新传输不会导致创建多个分配。 
+	  实现可以使用如下所谓的“无状态堆栈方法”来实现这一点。
+  
+	  To detect retransmissions when the original request was
+      successful in creating an allocation, the server can store the 
       transaction id that created the request with the allocation data
       and compare it with incoming Allocate requests on the same
-      5-tuple.  Once such a request is detected, the server can stop
-      parsing the request and immediately generate a success response.
-      When building this response, the value of the LIFETIME attribute
-      can be taken from the time-to-expiry field in the allocate state
-      data, even though this value may differ slightly from the LIFETIME
-      value originally returned.  In addition, the server may need to
-      store an indication of any reservation token returned in the
-      original response, so that this may be returned in any
-      retransmitted responses.
+      5-tuple. 
+	  
+	  一旦检测到这样的请求，服务器就可以停止解析请求并立即生成成功响应。
+	  
+      构建此响应时，可以从分配状态数据中的time-to-expiry字段获取LIFETIME属性的值，
+	  即使此值可能与最初返回的LIFETIME值略有不同。
 
-      For the case where the original request was unsuccessful in
-      creating an allocation, the server may choose to do nothing
-      special.  Note, however, that there is a rare case where the
-      server rejects the original request but accepts the retransmitted
-      request (because conditions have changed in the brief intervening
-      time period).  If the client receives the first failure response,
-      it will ignore the second (success) response and believe that an
-      allocation was not created.  An allocation created in this matter
-      will eventually timeout, since the client will not refresh it.
-      Furthermore, if the client later retries with the same 5-tuple but
-      different transaction id, it will receive a 437 (Allocation
-      Mismatch), which will cause it to retry with a different 5-tuple.
-      The server may use a smaller maximum lifetime value to minimize
-      the lifetime of allocations "orphaned" in this manner.
+	  此外，服务器可能需要存储原始响应中返回的任何预留令牌的指令，
+	  以便可以在任何重新传输的响应中返回。
 
-6.3.  Receiving an Allocate Success Response
+      对于原始请求在创建分配时不成功的情况，服务器可以选择不做任何特殊操作。
+	  但请注意，在极少数情况下服务器拒绝原始请求但接受重新传输的请求
+	  （因为条件在短暂的中间时间段内已发生变化）。 
+	  
+	  如果客户端收到第一个失败响应，它将忽略第二个（成功）响应并认为未创建分配。
+	  在此问题中创建的分配最终会超时，因为客户端不会刷新它。
+      此外，如果客户端稍后使用相同的5元组但不同的事务ID重试，它将收到437
+	  （分配不匹配），这将导致它使用不同的5元组重试。
 
-   If the client receives an Allocate success response, then it MUST
-   check that the mapped address and the relayed transport address are
-   in an address family that the client understands and is prepared to
-   handle.  This specification only covers the case where these two
-   addresses are IPv4 addresses.  If these two addresses are not in an
-   address family which the client is prepared to handle, then the
-   client MUST delete the allocation (Section 7) and MUST NOT attempt to
-   create another allocation on that server until it believes the
-   mismatch has been fixed.
+      服务器可以使用较小的最大寿命值来以这种方式最小化“孤立”分配的寿命。
 
-      The IETF is currently considering mechanisms for transitioning
-      between IPv4 and IPv6 that could result in a client originating an
-      Allocate request over IPv6, but the request would arrive at the
-      server over IPv4, or vice versa.
+6.3.  Receiving an Allocate Success Response（接收分配成功响应）
 
-   Otherwise, the client creates its own copy of the allocation data
-   structure to track what is happening on the server.  In particular,
-   the client needs to remember the actual lifetime received back from
-   the server, rather than the value sent to the server in the request.
+   如果客户端收到分配成功响应，则它必须检查映射地址和中继传
+   输地址是否在客户端理解并准备处理的地址族中。 
+   该规范仅涵盖这两个地址是IPv4地址的情况。
+   如果这两个地址不在客户端准备处理的地址族中，那么客户端必须删除分配（第7节），
+   并且不得尝试在该服务器上创建另一个分配，直到它认为不匹配已被修复。
+
+     IETF目前正在考虑在IPv4和IPv6之间转换的机制，
+	 这可能导致客户端通过IPv6发起分配请求，
+	 但请求将通过IPv4到达服务器，反之亦然。
+
+   否则，客户端会创建自己的分配数据结构副本，以跟踪服务器上发生的情况。 
+   特别是，客户端需要记住从服务器收到的实际生命周期，
+   而不是请求中发送给服务器的值。
     
-   The client must also remember the 5-tuple used for the request and
-   the username and password it used to authenticate the request to
-   ensure that it reuses them for subsequent messages.  The client also
-   needs to track the channels and permissions it establishes on the
-   server.
+   客户端还必须记住用于请求的5元组以及用于验证请求的用户名和密码，
+   以确保它将它们重用于后续消息。
+   客户端还需要跟踪它在服务器上建立的通道和权限。
 
-   The client will probably wish to send the relayed transport address
-   to peers (using some method not specified here) so the peers can
-   communicate with it.  The client may also wish to use the server-
-   reflexive address it receives in the XOR-MAPPED-ADDRESS attribute in
-   its ICE processing.
+   客户端可能希望将中继的传输地址发送给对等体（使用此处未指定的某种方法），
+   以便对等体可以与之通信。 
+   客户端还可能希望在其ICE处理中使用它在XOR-MAPPED-ADDRESS
+   属性中接收的外网地址。
 
 6.4.  Receiving an Allocate Error Response
 
@@ -1247,470 +1168,361 @@ Table of Contents
 
 7.1.  Sending a Refresh Request
 
-   If the client wishes to immediately delete an existing allocation, it
-   includes a LIFETIME attribute with a value of 0.  All other forms of
-   the request refresh the allocation.
+   如果客户端希望立即删除现有分配，则它包含值为0的LIFETIME属性。
+   所有其他形式的请求都会刷新分配。
 
-   The Refresh transaction updates the time-to-expiry timer of an
-   allocation.  If the client wishes the server to set the time-to-
-   expiry timer to something other than the default lifetime, it
-   includes a LIFETIME attribute with the requested value.  The server
-   then computes a new time-to-expiry value in the same way as it does
-   for an Allocate transaction, with the exception that a requested
-   lifetime of 0 causes the server to immediately delete the allocation.
+   刷新事务更新allocation的到期时间。
+   如果客户端希望服务器将到期时间设置为默认生存期以外的其他时间，
+   则它包含具有所请求值的LIFETIME属性。
+   然后，服务器以与分配事务相同的方式计算新的到期时间值，
+   但请求的生存期为0会导致服务器立即删除分配。
 
 7.2.  Receiving a Refresh Request
 
-   When the server receives a Refresh request, it processes as per
-   Section 4 plus the specific rules mentioned here.
+   当服务器收到刷新请求时，它将按照第4节以及此处提到的特定规则进行处理。
 
-   The server computes a value called the "desired lifetime" as follows:
-   if the request contains a LIFETIME attribute and the attribute value
-   is 0, then the "desired lifetime" is 0.  Otherwise, if the request
-   contains a LIFETIME attribute, then the server computes the minimum
-    
-   of the client's requested lifetime and the server's maximum allowed
-   lifetime.  If this computed value is greater than the default
-   lifetime, then the "desired lifetime" is the computed value.
-   Otherwise, the "desired lifetime" is the default lifetime.
+   服务器计算称为“期望生命周期”的值，如下所示：
+   如果请求包含LIFETIME属性且属性值为0，则“期望生命周期”为0。 
+   否则，如果请求包含LIFETIME属性，则服务器计算客户端请求生
+   存期的最小值和服务器的最大允许生存期。
+   如果此计算值比默认生存期更好，则“期望生命周期”是计算值。
+   否则，“期望的生命周期”是默认生命周期。
 
-   Subsequent processing depends on the "desired lifetime" value:
+   后续处理取决于“期望的生命周期”值：
 
-   o  If the "desired lifetime" is 0, then the request succeeds and the
-      allocation is deleted.
+   o  如果“期望的生命周期”为0，则请求成功并删除allocation。
 
-   o  If the "desired lifetime" is non-zero, then the request succeeds
-      and the allocation's time-to-expiry is set to the "desired
-      lifetime".
+   o  如果“期望的寿命”不为零，则请求成功，
+      并且分配的到期时间设置为“期望的寿命”。
 
-   If the request succeeds, then the server sends a success response
-   containing:
+   如果请求成功，则服务器发送成功响应 包含：
 
-   o  A LIFETIME attribute containing the current value of the time-to-
-      expiry timer.
+   o  LIFETIME属性，包含到期时间计时器的当前值。
 
-      NOTE: A server need not do anything special to implement
-      idempotency of Refresh requests over UDP using the "stateless
-      stack approach".  Retransmitted Refresh requests with a non-zero
-      "desired lifetime" will simply refresh the allocation.  A
-      retransmitted Refresh request with a zero "desired lifetime" will
-      cause a 437 (Allocation Mismatch) response if the allocation has
-      already been deleted, but the client will treat this as equivalent
-      to a success response (see below).
+      注意：服务器不需要做任何特殊的事情来使用“无状态堆栈方法”
+	  通过UDP实现刷新请求的幂等性。
+	  具有非零“desired lifetime”的重新传输刷新请求将简单地刷新分配。
+ 
+	  如果已经删除了分配，则具有零“期望生存期”的重新传输的刷新请求将导致437
+	  （分配不匹配）响应，但客户端将其视为等同于成功响应（参见下文）。
 
 7.3.  Receiving a Refresh Response
 
-   If the client receives a success response to its Refresh request with
-   a non-zero lifetime, it updates its copy of the allocation data
-   structure with the time-to-expiry value contained in the response.
+   如果客户端收到对其刷新请求的成功响应且生命周期为非零，
+   则它会更新其分配数据结构的副本，其中包含响应中包含的到期时间值。
 
-   If the client receives a 437 (Allocation Mismatch) error response to
-   a request to delete the allocation, then the allocation no longer
-   exists and it should consider its request as having effectively
-   succeeded.
+   如果客户端收到对删除分配的请求的437（Allocation Mismatch）错误响应，
+   则分配不再存在，并且应该认为其请求已经有效成功。
 
 8.  Permissions
 
-   For each allocation, the server keeps a list of zero or more
-   permissions.  Each permission consists of an IP address and an
-   associated time-to-expiry.  While a permission exists, all peers
-   using the IP address in the permission are allowed to send data to
-    
-   the client.  The time-to-expiry is the number of seconds until the
-   permission expires.  Within the context of an allocation, a
-   permission is uniquely identified by its associated IP address.
+   对于每个分配，服务器保留零个或多个权限的列表。
+   每个权限都包含一个IP地址和一个相关的到期时间。 存在权限时，
+   允许在权限中使用IP地址的所有对等方将数据发送到客户端。
+   
+   到期时间是许可到期之前的秒数。
+   在分配的上下文中，权限由其关联的IP地址唯一标识。
 
-   By sending either CreatePermission requests or ChannelBind requests,
-   the client can cause the server to install or refresh a permission
-   for a given IP address.  This causes one of two things to happen:
+   通过发送CreatePermission请求或ChannelBind请求，客户端可以使服务器安装或
+   刷新给定IP地址的权限。 这导致两件事之一发生：
 
-   o  If no permission for that IP address exists, then a permission is
-      created with the given IP address and a time-to-expiry equal to
-      Permission Lifetime.
+   o  如果不存在该IP地址的权限，
+      然后使用给定的IP地址创建一个权限，并且到期时间等于Permission Lifetime。
+   
+   o  如果已存在该IP地址的权限，则该权限的到期时间将重置为Permission Lifetime。
 
-   o  If a permission for that IP address already exists, then the time-
-      to-expiry for that permission is reset to Permission Lifetime.
+   权限生命周期必须为300秒（= 5分钟）。
 
-   The Permission Lifetime MUST be 300 seconds (= 5 minutes).
+   每个权限的到期时间每秒减少一次，直到达到0; 此时，权限到期并被删除。
 
-   Each permission's time-to-expiry decreases down once per second until
-   it reaches 0; at which point, the permission expires and is deleted.
+   CreatePermission和ChannelBind请求可以在权限上自由混合。
+   最初可以使用CreatePermission请求安装和/或刷新给定的权限，
+   然后使用ChannelBind请求刷新，反之亦然。
 
-   CreatePermission and ChannelBind requests may be freely intermixed on
-   a permission.  A given permission may be initially installed and/or
-   refreshed with a CreatePermission request, and then later refreshed
-   with a ChannelBind request, or vice versa.
+   当UDP数据报文到达用于分配的中继传输地址时，服务器从IP报头中提取源IP地址。
+   然后，服务器将此地址与分配权限列表中与每个权限关联的IP地址进行比较。
+   如果未找到匹配项，则不允许中继，服务器将以静默方式丢弃UDP数据报。
+   如果找到完全匹配，则认为权限检查已成功，
+   服务器继续处理其他地方指定的UDP数据报文（第10.3节）。
+   请注意，仅比较地址并且不考虑端口号。
 
-   When a UDP datagram arrives at the relayed transport address for the
-   allocation, the server extracts the source IP address from the IP
-   header.  The server then compares this address with the IP address
-   associated with each permission in the list of permissions for the
-   allocation.  If no match is found, relaying is not permitted, and the
-   server silently discards the UDP datagram.  If an exact match is
-   found, then the permission check is considered to have succeeded and
-   the server continues to process the UDP datagram as specified
-   elsewhere (Section 10.3).  Note that only addresses are compared and
-   port numbers are not considered.
+   一个分配的权限与不同分配的权限完全无关。 
+   如果分配到期，则其所有权限都将随之失效。
 
-   The permissions for one allocation are totally unrelated to the
-   permissions for a different allocation.  If an allocation expires,
-   all its permissions expire with it.
-
-      NOTE: Though TURN permissions expire after 5 minutes, many NATs
-      deployed at the time of publication expire their UDP bindings
-      considerably faster.  Thus, an application using TURN will
-      probably wish to send some sort of keep-alive traffic at a much
-      faster rate.  Applications using ICE should follow the keep-alive
-      guidelines of ICE [RFC5245], and applications not using ICE are
-      advised to do something similar.
+      注意：虽然TURN权限在5分钟后过期，
+	  但在发布时部署的许多NAT会以相当快的速度使其UDP绑定到期。
+	  因此，使用TURN的应用程序可能希望以更快的速率发送某种保活消息。 
+	  使用ICE的应用程序应遵循ICE [RFC5245]的保持活动指南，
+	  建议不使用ICE的应用程序执行类似的操作。
 	   
 9.  CreatePermission
 
-   TURN supports two ways for the client to install or refresh
-   permissions on the server.  This section describes one way: the
-   CreatePermission request.
+   TURN支持客户端在服务器上安装或刷新权限的两种方式。 
+   本节介绍一种方法：CreatePermission请求。
 
-   A CreatePermission request may be used in conjunction with either the
-   Send mechanism in Section 10 or the Channel mechanism in Section 11.
+   CreatePermission请求可以与第10节中的Send机制或第11节中的Channel机制一起使用。
 
 9.1.  Forming a CreatePermission Request
 
-   The client who wishes to install or refresh one or more permissions
-   can send a CreatePermission request to the server.
+   希望安装或刷新一个或多个权限的客户端可以向服务器发送CreatePermission请求。
 
-   When forming a CreatePermission request, the client MUST include at
-   least one XOR-PEER-ADDRESS attribute, and MAY include more than one
-   such attribute.  The IP address portion of each XOR-PEER-ADDRESS
-   attribute contains the IP address for which a permission should be
-   installed or refreshed.  The port portion of each XOR-PEER-ADDRESS
-   attribute will be ignored and can be any arbitrary value.  The
-   various XOR-PEER-ADDRESS attributes can appear in any order.
+   在形成CreatePermission请求时，客户端必须至少包含一个XOR-PEER-ADDRESS属性，
+   并且可以包含多个这样的属性。 
+   每个XOR-PEER-ADDRESS属性的IP地址部分包含应为其安装或刷新权限的IP地址。
+   每个XOR-PEER-ADDRESS属性的端口部分将被忽略，可以是任意值。
+   各种XOR-PEER-ADDRESS属性可以按任何顺序出现。
 
 9.2.  Receiving a CreatePermission Request
 
-   When the server receives the CreatePermission request, it processes
-   as per Section 4 plus the specific rules mentioned here.
+   当服务器收到CreatePermission请求时，它将按照第4节以及此处提到的特定规则进行处理。
 
-   The message is checked for validity.  The CreatePermission request
-   MUST contain at least one XOR-PEER-ADDRESS attribute and MAY contain
-   multiple such attributes.  If no such attribute exists, or if any of
-   these attributes are invalid, then a 400 (Bad Request) error is
-   returned.  If the request is valid, but the server is unable to
-   satisfy the request due to some capacity limit or similar, then a 508
-   (Insufficient Capacity) error is returned.
+   检查消息的有效性。 CreatePermission请求必须至少包含一个XOR-PEER-ADDRESS属性，并且可以包含多个这样的属性。
+   如果不存在此类属性，则返回400（错误请求）错误。 
+   如果请求有效，但由于某些容量限制或类似服务器无法满足请求，则返回508（容量不足）错误。
 
-   The server MAY impose restrictions on the IP address allowed in the
-   XOR-PEER-ADDRESS attribute -- if a value is not allowed, the server
-   rejects the request with a 403 (Forbidden) error.
+   服务器可以对XOR-PEER-ADDRESS属性中允许的IP地址施加限制 - 如果不允许值，
+   则服务器拒绝具有403（禁止）错误的请求。
 
-   If the message is valid and the server is capable of carrying out the
-   request, then the server installs or refreshes a permission for the
-   IP address contained in each XOR-PEER-ADDRESS attribute as described
-   in Section 8.  The port portion of each attribute is ignored and may
-   be any arbitrary value.
+   如果消息有效且服务器能够执行请求，则服务器将安装或刷新每个
+   XOR-PEER-ADDRESS属性中包含的IP地址的权限，如第8节所述。
+   每个属性的端口部分都被忽略，可以是任意值。
 
-   The server then responds with a CreatePermission success response.
-   There are no mandatory attributes in the success response.
+   然后，服务器以CreatePermission成功响应进行响应。 成功响应中没有强制属性。
     
-      NOTE: A server need not do anything special to implement
-      idempotency of CreatePermission requests over UDP using the
-      "stateless stack approach".  Retransmitted CreatePermission
-      requests will simply refresh the permissions.
+      注意：服务器不需要做任何特殊的事情来使用“无状态堆栈方法”
+	  通过UDP实现CreatePermission请求的幂等性。
+	  重新传输的CreatePermission请求将只刷新权限。
 
 9.3.  Receiving a CreatePermission Response
 
-   If the client receives a valid CreatePermission success response,
-   then the client updates its data structures to indicate that the
-   permissions have been installed or refreshed.
+   如果客户端收到有效的CreatePermission成功响应，
+   则客户端将更新其数据结构以指示已安装或刷新权限。
 
 10.  Send and Data Methods
 
-   TURN supports two mechanisms for sending and receiving data from
-   peers.  This section describes the use of the Send and Data
-   mechanisms, while Section 11 describes the use of the Channel
-   mechanism.
+   TURN支持两种从对等方发送和接收数据的机制。 
+   本节描述了Send和Data机制的使用，而第11节描述了Channel机制的使用。
 
 10.1.  Forming a Send Indication
 
-   The client can use a Send indication to pass data to the server for
-   relaying to a peer.  A client may use a Send indication even if a
-   channel is bound to that peer.  However, the client MUST ensure that
-   there is a permission installed for the IP address of the peer to
-   which the Send indication is being sent; this prevents a third party
-   from using a TURN server to send data to arbitrary destinations.
+   客户端可以使用发送指令将数据传递到服务器以便中继到对等方。 
+   即使已经信道绑定到该对等端，客户端也可以使用Send指令给它。
+   但是，客户端必须确保为发送Send指令的对等体的IP地址安装了权限; 
+   这可以防止第三方使用TURN服务器将数据发送到任意目的地。
 
-   When forming a Send indication, the client MUST include an XOR-PEER-
-   ADDRESS attribute and a DATA attribute.  The XOR-PEER-ADDRESS
-   attribute contains the transport address of the peer to which the
-   data is to be sent, and the DATA attribute contains the actual
-   application data to be sent to the peer.
+   当形成Send令示时，客户端必须包括XOR-PEER-ADDRESS属性和DATA属性。  
+   XOR-PEER-ADDRESS属性包含要将数据发送到的对等方的传输地址，
+   DATA属性包含要发送给对等方的实际应用程序数据。
 
-   The client MAY include a DONT-FRAGMENT attribute in the Send
-   indication if it wishes the server to set the DF bit on the UDP
-   datagram sent to the peer.
+   如果客户端希望服务器在发送给对等方的UDP数据报上设置DF位，
+   则客户端可以在发送指示中包含DONT-FRAGMENT属性。
 
 10.2.  Receiving a Send Indication
 
-   When the server receives a Send indication, it processes as per
-   Section 4 plus the specific rules mentioned here.
-
-   The message is first checked for validity.  The Send indication MUST
-   contain both an XOR-PEER-ADDRESS attribute and a DATA attribute.  If
-   one of these attributes is missing or invalid, then the message is
-   discarded.  Note that the DATA attribute is allowed to contain zero
-   bytes of data.
+   当服务器收到发送指令时，它按照第4节以及此处提到的特定规则进行处理。 
+   首先检查消息的有效性。 发送指令必须包含XOR-PEER-ADDRESS属性和DATA属性。
+   如果其中一个属性丢失或无效，则丢弃该消息。 
+   请注意，允许DATA属性包含零字节数据。
     
-   The Send indication may also contain the DONT-FRAGMENT attribute.  If
-   the server is unable to set the DF bit on outgoing UDP datagrams when
-   this attribute is present, then the server acts as if the DONT-
-   FRAGMENT attribute is an unknown comprehension-required attribute
-   (and thus the Send indication is discarded).
+   发送指令还可以包含DONT-FRAGMENT属性。 
+   如果服务器在此属性存在时无法在传出UDP数据报上设置DF位，
+   则服务器就像DONT-FRAGMENT属性是未知的理解所需属性（因此丢弃发送指示）。
 
-   The server also checks that there is a permission installed for the
-   IP address contained in the XOR-PEER-ADDRESS attribute.  If no such
-   permission exists, the message is discarded.  Note that a Send
-   indication never causes the server to refresh the permission.
+   服务器还检查是否为XOR-PEER-ADDRESS属性中包含的IP地址安装了权限。 
+   如果不存在此类权限，则会丢弃该消息。 
+   请注意，发送指令永远不会导致服务器刷新权限。
 
-   The server MAY impose restrictions on the IP address and port values
-   allowed in the XOR-PEER-ADDRESS attribute -- if a value is not
-   allowed, the server silently discards the Send indication.
+   服务器可以对XOR-PEER-ADDRESS属性中允许的IP地址和端口值施加限制 - 如果不允许值，
+   服务器将静默地丢弃发送指示。
 
-   If everything is OK, then the server forms a UDP datagram as follows:
+   如果一切正常，则服务器形成UDP数据报，如下所示：
 
-   o  the source transport address is the relayed transport address of
-      the allocation, where the allocation is determined by the 5-tuple
-      on which the Send indication arrived;
+   o  源传输地址是allocation的中继传输地址，其中allocation由发送指示到达的5元组确定;
+    
+   o  目标传输地址取自XOR-PEER-ADDRESS属性;
 
-   o  the destination transport address is taken from the XOR-PEER-
-      ADDRESS attribute;
+   o  UDP标头后面的数据是DATA属性的值字段的内容。
 
-   o  the data following the UDP header is the contents of the value
-      field of the DATA attribute.
-
-   The handling of the DONT-FRAGMENT attribute (if present), is
-   described in Section 12.
-
-   The resulting UDP datagram is then sent to the peer.
+   第12节描述了DONT-FRAGMENT属性（如果存在）的处理。 
+   然后将生成的UDP数据报发送给对等体。
 
 10.3.  Receiving a UDP Datagram
 
-   When the server receives a UDP datagram at a currently allocated
-   relayed transport address, the server looks up the allocation
-   associated with the relayed transport address.  The server then
-   checks to see whether the set of permissions for the allocation allow
-   the relaying of the UDP datagram as described in Section 8.
+   当服务器在当前分配的中继传输地址处接收UDP数据报时，
+   服务器查找与中继传输地址相关联的allocation。 
 
-   If relaying is permitted, then the server checks if there is a
-   channel bound to the peer that sent the UDP datagram (see
-   Section 11).  If a channel is bound, then processing proceeds as
-   described in Section 11.7.
+   如果允许中继，则服务器检查是否存在绑定到发送UDP数据报
+   的对等体的信道（参见第11节）。
+   如果绑定了一个通道，则处理按第11.7节所述进行。
 
-   If relaying is permitted but no channel is bound to the peer, then
-   the server forms and sends a Data indication.  The Data indication
-   MUST contain both an XOR-PEER-ADDRESS and a DATA attribute.  The DATA
-    
-   attribute is set to the value of the 'data octets' field from the
-   datagram, and the XOR-PEER-ADDRESS attribute is set to the source
-   transport address of the received UDP datagram.  The Data indication
-   is then sent on the 5-tuple associated with the allocation.
+   如果允许中继但没有信道绑定到对等端，
+   则服务器形成并发送数据指令。 
+   数据指令必须包含XOR-PEER-ADDRESS和DATA属性。
+
+   DATA属性设置为数据报中“data octets”字段的值，
+   XOR-PEER-ADDRESS属性设置为接收到的UDP数据报的源传输地址。 
+   然后，在与allocation相关联的5元组上发送数据指示。 
 
 10.4.  Receiving a Data Indication
 
-   When the client receives a Data indication, it checks that the Data
-   indication contains both an XOR-PEER-ADDRESS and a DATA attribute,
-   and discards the indication if it does not.  The client SHOULD also
-   check that the XOR-PEER-ADDRESS attribute value contains an IP
-   address with which the client believes there is an active permission,
-   and discard the Data indication otherwise.  Note that the DATA
-   attribute is allowed to contain zero bytes of data.
+   当客户端收到Data指令时，
+   它会检查Data指示是否同时包含XOR-PEER-ADDRESS和DATA属性，
+   如果没有，则丢弃该指令。
+   
+   客户端还应该检查XOR-PEER-ADDRESS属性值是否包含客户
+   端认为存在活动权限的IP地址，否则丢弃数据指示。
+   请注意，允许DATA属性包含零字节数据。
 
-      NOTE: The latter check protects the client against an attacker who
-      somehow manages to trick the server into installing permissions
-      not desired by the client.
+      注意：后一项检查可以保护客户端免受攻击者的攻击，
+	  该攻击者以某种方式欺骗服务器以安装客户端不需要的权限。
 
-   If the Data indication passes the above checks, the client delivers
-   the data octets inside the DATA attribute to the application, along
-   with an indication that they were received from the peer whose
-   transport address is given by the XOR-PEER-ADDRESS attribute.
+   如果数据指示通过上述检查，则客户端将DATA属性内的
+   数据八位字节传递给应用程序，并指示它们是从对等方接收的，
+   其对等方的传输地址由XOR-PEER-ADDRESS属性给出。
 
 11.  Channels
 
-   Channels provide a way for the client and server to send application
-   data using ChannelData messages, which have less overhead than Send
-   and Data indications.
+   通道为客户端和服务器提供了一种使用ChannelData消息发送应用程序数据的方法，
+   ChannelData消息的开销小于发送和数据指示。
 
-   The ChannelData message (see Section 11.4) starts with a two-byte
-   field that carries the channel number.  The values of this field are
-   allocated as follows:
+   ChannelData消息（参见11.4节）以一个带有通道号的双字节字段开头。 
+   该字段的值分配如下：
 
-      0x0000 through 0x3FFF: These values can never be used for channel
-      numbers.
+      0x0000到0x3FFF：这些值永远不能用于通道编号。
 
-      0x4000 through 0x7FFF: These values are the allowed channel
-      numbers (16,383 possible values).
+      0x4000到0x7FFF：这些值是允许的通道编号（16,383个可能的值）。
 
-      0x8000 through 0xFFFF: These values are reserved for future use.
+      0x8000到0xFFFF：这些值保留供将来使用。
 
-   Because of this division, ChannelData messages can be distinguished
-   from STUN-formatted messages (e.g., Allocate request, Send
-   indication, etc.) by examining the first two bits of the message:
+   由于这种划分，可以通过检查消息的前两位来区分ChannelData消息与STUN格式的消息
+   （例如，分配请求，发送指示等）：
 
-      0b00: STUN-formatted message (since the first two bits of a STUN-
-      formatted message are always zero).
+      0b00：STUN格式的消息（因为STUN格式的消息的前两位始终为零）。
 	   
-      0b01: ChannelData message (since the channel number is the first
-      field in the ChannelData message and channel numbers fall in the
-      range 0x4000 - 0x7FFF).
+      0b01：ChannelData消息（因为通道号是ChannelData消息中的第一个字段，
+	  通道号落在0x4000  -  0x7FFF范围内）。
 
-      0b10: Reserved
+      0b10: 保留
 
-      0b11: Reserved
+      0b11: 保留
 
-   The reserved values may be used in the future to extend the range of
-   channel numbers.  Thus, an implementation MUST NOT assume that a TURN
-   message always starts with a 0 bit.
+   可以在将来使用保留值来扩展信道号的范围。
+   因此，实现绝不能假设TURN消息始终以0位开始。
 
-   Channel bindings are always initiated by the client.  The client can
-   bind a channel to a peer at any time during the lifetime of the
-   allocation.  The client may bind a channel to a peer before
-   exchanging data with it, or after exchanging data with it (using Send
-   and Data indications) for some time, or may choose never to bind a
-   channel to it.  The client can also bind channels to some peers while
-   not binding channels to other peers.
+   通道绑定始终由客户端启动。 客户端可以在分配的生命周期内的任何时间将信道绑定到对等方。
 
-   Channel bindings are specific to an allocation, so that the use of a
-   channel number or peer transport address in a channel binding in one
-   allocation has no impact on their use in a different allocation.  If
-   an allocation expires, all its channel bindings expire with it.
+   客户端可以在与其交换数据之前，或者在与其交换数据
+   （使用发送和数据指示）一段时间之后将信道绑定到对等体，
+   或者可以选择永远不要将频道绑定到它。
+   
+   客户端还可以将信道绑定到某些对等体，而不将信道绑定到其他对等体。
 
-   A channel binding consists of:
+   通道绑定特定于allocation，因此在一个allocation的通道绑定中使用
+   的通道号和对等端地址也可以在其他的allocation中的使用。
+   如果分配到期，则其所有通道绑定都将随之失效。 
 
-   o  a channel number;
+    channel binding 包括:
 
-   o  a transport address (of the peer); and
+   o  频道号码;
 
-   o  A time-to-expiry timer.
+   o  对等端传输地址
 
-   Within the context of an allocation, a channel binding is uniquely
-   identified either by the channel number or by the peer's transport
-   address.  Thus, the same channel cannot be bound to two different
-   transport addresses, nor can the same transport address be bound to
-   two different channels.
+   o  到期时间计时器。
 
-   A channel binding lasts for 10 minutes unless refreshed.  Refreshing
-   the binding (by the server receiving a ChannelBind request rebinding
-   the channel to the same peer) resets the time-to-expiry timer back to
-   10 minutes.
+   在allocation的上下文中，通道绑定由通道号或对等方的传输地址唯一标识。 
+   因此，相同的信道不能绑定到两个不同的传输地址，
+   也不能将相同的传输地址绑定到两个不同的信道。
 
-   When the channel binding expires, the channel becomes unbound.  Once
-   unbound, the channel number can be bound to a different transport
-   address, and the transport address can be bound to a different
-   channel number.  To prevent race conditions, the client MUST wait 5
-    
-   minutes after the channel binding expires before attempting to bind
-   the channel number to a different transport address or the transport
-   address to a different channel number.
+   除非刷新，否则通道绑定将持续10分钟。 刷新绑定
+   （通过服务器接收将频道重新绑定到同一对等体的ChannelBind请求）
+   将到期时间计时器重置为10分钟。
 
-   When binding a channel to a peer, the client SHOULD be prepared to
-   receive ChannelData messages on the channel from the server as soon
-   as it has sent the ChannelBind request.  Over UDP, it is possible for
-   the client to receive ChannelData messages from the server before it
-   receives a ChannelBind success response.
+   当通道绑定到期时，通道将变为未绑定。
+   一旦未绑定，可以将信道号绑定到不同的传输地址，
+   并且可以将传输地址绑定到不同的信道号。
 
-   In the other direction, the client MAY elect to send ChannelData
-   messages before receiving the ChannelBind success response.  Doing
-   so, however, runs the risk of having the ChannelData messages dropped
-   by the server if the ChannelBind request does not succeed for some
-   reason (e.g., packet lost if the request is sent over UDP, or the
-   server being unable to fulfill the request).  A client that wishes to
-   be safe should either queue the data or use Send indications until
-   the channel binding is confirmed.
+   为了防止竞争条件，客户端必须在通道绑定到。
+   期后等待5分钟才能尝试将通道号绑定到不同的
+   传输地址或将传输地址绑定到不同的通道号。
+
+   将通道绑定到对等方时，客户端应该准备好在它发送
+   ChannelBind请求后立即从服务器接收通道上的ChannelData消息。 
+
+   通过UDP，客户端可能在收到ChannelBind成功
+   响应之前从服务器接收ChannelData消息。
+
+   在另一个方向，客户端可能选择在接收ChannelBind
+   成功响应之前发送ChannelData消息。
+
+   但是，如果由于某种原因ChannelBind请求未成功
+   （例如，如果请求是通过UDP发送的，或者服务器无法满足请求，
+    则丢失数据包），这样做会冒着服务器丢弃ChannelData消息的风险。
+   
+   希望安全的客户端应排队数据或使用发送指示直到确认通道绑定。
 
 11.1.  Sending a ChannelBind Request
 
-   A channel binding is created or refreshed using a ChannelBind
-   transaction.  A ChannelBind transaction also creates or refreshes a
-   permission towards the peer (see Section 8).
+   使用ChannelBind事务创建或刷新通道绑定。
+   ChannelBind事务还会创建或刷新对等体的权限（参见第8节）。
 
-   To initiate the ChannelBind transaction, the client forms a
-   ChannelBind request.  The channel to be bound is specified in a
-   CHANNEL-NUMBER attribute, and the peer's transport address is
-   specified in an XOR-PEER-ADDRESS attribute.  Section 11.2 describes
-   the restrictions on these attributes.
-
-   Rebinding a channel to the same transport address that it is already
-   bound to provides a way to refresh a channel binding and the
-   corresponding permission without sending data to the peer.  Note
-   however, that permissions need to be refreshed more frequently than
-   channels.
+   要启动ChannelBind事务，客户端会形成ChannelBind请求。
+   要绑定的通道在CHANNEL-NUMBER属性中指定，
+   并且对等方的传输地址在XOR-PEER-ADDRESS属性中指定。
+ 
+   第11.2节描述了对这些属性的限制。
+   将通道重新绑定到已绑定的相同传输地址，
+   提供了一种刷新通道绑定和相应权限的方法，而无需将数据发送到对等方。
+   但请注意，权限需要比频道更频繁地刷新。
 
 11.2.  Receiving a ChannelBind Request
 
-   When the server receives a ChannelBind request, it processes as per
-   Section 4 plus the specific rules mentioned here.
+   当服务器收到ChannelBind请求时，它将按照第4节以及此处提到的特定规则进行处理。
 
-   The server checks the following:
+   服务器检查以下内容：
 
-   o  The request contains both a CHANNEL-NUMBER and an XOR-PEER-ADDRESS
-      attribute;
+   o  该请求包含CHANNEL-NUMBER和XOR-PEER-ADDRESS属性;
 	   
-   o  The channel number is in the range 0x4000 through 0x7FFE
-      (inclusive);
+   o  通道号在0x4000到0x7FFE（含）范围内;
 
-   o  The channel number is not currently bound to a different transport
-      address (same transport address is OK);
+   o  信道号当前没有绑定到不同的传输地址（相同的传输地址是可以的）;
 
-   o  The transport address is not currently bound to a different
-      channel number.
+   o  传输地址当前未绑定到不同的通道编号。
 
-   If any of these tests fail, the server replies with a 400 (Bad
-   Request) error.
+   如果这些测试中的任何一个失败，服务器将回复400（错误请求）错误。
 
-   The server MAY impose restrictions on the IP address and port values
-   allowed in the XOR-PEER-ADDRESS attribute -- if a value is not
-   allowed, the server rejects the request with a 403 (Forbidden) error.
+   服务器可以对XOR-PEER-ADDRESS属性中允许的IP地址和端口值施加限制 - 
+   如果不允许值，则服务器拒绝403（禁止）错误的请求。
 
-   If the request is valid, but the server is unable to fulfill the
-   request due to some capacity limit or similar, the server replies
-   with a 508 (Insufficient Capacity) error.
+   如果请求有效，但服务器由于某些容量限制或类似情况而无法满足请求，
+   则服务器将回复508（容量不足）错误。
 
-   Otherwise, the server replies with a ChannelBind success response.
-   There are no required attributes in a successful ChannelBind
-   response.
+   否则，服务器将回复ChannelBind成功响应。 成功的ChannelBind响应中没有必需的属性。
 
-   If the server can satisfy the request, then the server creates or
-   refreshes the channel binding using the channel number in the
-   CHANNEL-NUMBER attribute and the transport address in the XOR-PEER-
-   ADDRESS attribute.  The server also installs or refreshes a
-   permission for the IP address in the XOR-PEER-ADDRESS attribute as
-   described in Section 8.
+   如果服务器可以满足请求，则服务器使用CHANNEL-NUMBER属性中的通道编号
+   和XOR-PEER-ADDRESS属性中的传输地址创建或刷新通道绑定。
+   
+   服务器还会在XOR-PEER-ADDRESS属性中安装或刷新IP地址的权限，如第8节所述。
 
-      NOTE: A server need not do anything special to implement
-      idempotency of ChannelBind requests over UDP using the "stateless
-      stack approach".  Retransmitted ChannelBind requests will simply
-      refresh the channel binding and the corresponding permission.
-      Furthermore, the client must wait 5 minutes before binding a
-      previously bound channel number or peer address to a different
-      channel, eliminating the possibility that the transaction would
-      initially fail but succeed on a retransmission.
+   注意：服务器不需要做任何特殊的事情来使用“无状态堆栈方法”
+   通过UDP实现ChannelBind请求的幂等性。
+   重新发送的ChannelBind请求将简单地刷新通道绑定和相应的权限。
+
+   此外，客户端必须等待5分钟才能将先前绑定的通道号或对等地址绑定到不同的通道，
+   从而消除了事务最初失败但重传成功的可能性。
 
 11.3.  Receiving a ChannelBind Response
 
-   When the client receives a ChannelBind success response, it updates
-   its data structures to record that the channel binding is now active.
-   It also updates its data structures to record that the corresponding
-   permission has been installed or refreshed.
+   当客户端收到ChannelBind成功响应时，
+   它会更新其数据结构以记录通道绑定现在处于活动状态。
+   它还会更新其数据结构，以记录已安装或刷新相应的权限。
     
-   If the client receives a ChannelBind failure response that indicates
-   that the channel information is out-of-sync between the client and
-   the server (e.g., an unexpected 400 "Bad Request" response), then it
-   is RECOMMENDED that the client immediately delete the allocation and
-   start afresh with a new allocation.
+   如果客户端收到ChannelBind失败响应，
+   指示客户端和服务器之间的信道信息不同步（例如，意外的400“错误请求”响应），
+   则建议客户端立即删除allocation 并重新开始新的allocation。
 
 11.4.  The ChannelData Message
 
-   The ChannelData message is used to carry application data between the
-   client and the server.  It has the following format:
+   ChannelData消息用于在客户端和服务器之间传送应用程序数据。 它具有以下格式：
 
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -1725,93 +1537,74 @@ Table of Contents
    |                               |
    +-------------------------------+
 
-   The Channel Number field specifies the number of the channel on which
-   the data is traveling, and thus the address of the peer that is
-   sending or is to receive the data.
+   “通道编号”字段指定数据正在其上传输的通道的编号，
+   从而指定正在发送或将要接收数据的对等方的地址。
 
-   The Length field specifies the length in bytes of the application
-   data field (i.e., it does not include the size of the ChannelData
-   header).  Note that 0 is a valid length.
+   Length字段指定应用程序数据字段的字节长度（即，
+   它不包括ChannelData标头的大小）。 请注意，0是有效长度。
 
-   The Application Data field carries the data the client is trying to
-   send to the peer, or that the peer is sending to the client.
+   “Application Data ”字段携带客户端尝试发送给对等方的数据，或对等方发送给客户端的数据。
 
 11.5.  Sending a ChannelData Message
 
-   Once a client has bound a channel to a peer, then when the client has
-   data to send to that peer it may use either a ChannelData message or
-   a Send indication; that is, the client is not obligated to use the
-   channel when it exists and may freely intermix the two message types
-   when sending data to the peer.  The server, on the other hand, MUST
-   use the ChannelData message if a channel has been bound to the peer.
+   一旦客户端将信道绑定到对等体，则当客户端具有要发送给该对等体的数据时，
+   它可以使用ChannelData消息或发送指令;
+   也就是说，客户端没有义务在信道存在时使用该信道，
+   并且可以在向对等体发送数据时自由地混合这两种消息类型。
 
-   The fields of the ChannelData message are filled in as described in
-   Section 11.4.
-    
+   另一方面，如果某个通道已绑定到对等端，则必须使用ChannelData消息。
 
-   Over TCP and TLS-over-TCP, the ChannelData message MUST be padded to
-   a multiple of four bytes in order to ensure the alignment of
-   subsequent messages.  The padding is not reflected in the length
-   field of the ChannelData message, so the actual size of a ChannelData
-   message (including padding) is (4 + Length) rounded up to the nearest
-   multiple of 4.  Over UDP, the padding is not required but MAY be
-   included.
+   ChannelData消息的字段按第11.4节中的描述填写。
+   通过TCP和TLS-over-TCP，ChannelData消息必须填充到四个字节的倍数，
+   以确保后续消息的对齐。 填充不会反映在ChannelData消息的长度字段中，
+   因此ChannelData消息的实际大小（包括填充）是（4 +长度）
+   向上舍入到最接近的4的倍数。
+   在UDP上，填充不是必需的但是 可能包括在内。
 
-   The ChannelData message is then sent on the 5-tuple associated with
-   the allocation.
+   然后在与Allocation相关联的5元组上发送ChannelData消息。
 
 11.6.  Receiving a ChannelData Message
 
-   The receiver of the ChannelData message uses the first two bits to
-   distinguish it from STUN-formatted messages, as described above.  If
-   the message uses a value in the reserved range (0x8000 through
-   0xFFFF), then the message is silently discarded.
+  ChannelData消息的接收者使用前两位将其与STUN格式
+  的消息区分开，如上所述。 如果消息使用保留范围（0x8000到0xFFFF）中的值，
+  则会以静默方式丢弃该消息。
 
-   If the ChannelData message is received in a UDP datagram, and if the
-   UDP datagram is too short to contain the claimed length of the
-   ChannelData message (i.e., the UDP header length field value is less
-   than the ChannelData header length field value + 4 + 8), then the
-   message is silently discarded.
+  如果在UDP数据报中接收到ChannelData消息，
+  并且UDP数据报太短而不包含声明的ChannelData消息的长度
+  （即，UDP报头长度字段值小于ChannelData报头长度字段值+ 4 + 8 ），
+  然后默默地丢弃该消息。
 
-   If the ChannelData message is received over TCP or over TLS-over-TCP,
-   then the actual length of the ChannelData message is as described in
-   Section 11.5.
+  如果通过TCP或TLS-over-TCP接收ChannelData消息，
+  则ChannelData消息的实际长度如第11.5节中所述。
 
-   If the ChannelData message is received on a channel that is not bound
-   to any peer, then the message is silently discarded.
+   如果在未绑定到任何对等方的通道上收到ChannelData消息，
+   则会以静默方式丢弃该消息。
 
-   On the client, it is RECOMMENDED that the client discard the
-   ChannelData message if the client believes there is no active
-   permission towards the peer.  On the server, the receipt of a
-   ChannelData message MUST NOT refresh either the channel binding or
-   the permission towards the peer.
+   在客户端，如果客户端认为没有对对等方的活动权限，
+   则建议客户端丢弃ChannelData消息。  
+   在服务器上，收到的ChannelData消息绝不能刷新通道绑定或对等方的权限。
 
-   On the server, if no errors are detected, the server relays the
-   application data to the peer by forming a UDP datagram as follows:
+   在服务器上，如果未检测到错误，则服务器通过形成UDP数据报将应用程序数据中继到对等方，
+   如下所示：
 
-   o  the source transport address is the relayed transport address of
-      the allocation, where the allocation is determined by the 5-tuple
-      on which the ChannelData message arrived;
-
-   o  the destination transport address is the transport address to
-      which the channel is bound;
+   o  源传输地址是allocation的中继传输地址，其中allocation由ChannelData消息到达的5元组决定;
+     
+   o  目的地传输地址是信道绑定的传输地址;
 	   
-   o  the data following the UDP header is the contents of the data
-      field of the ChannelData message.
+   o  UDP头之后的数据是ChannelData消息的数据字段的内容。
 
-   The resulting UDP datagram is then sent to the peer.  Note that if
-   the Length field in the ChannelData message is 0, then there will be
-   no data in the UDP datagram, but the UDP datagram is still formed and
-   sent.
+   然后将生成的UDP数据报发送给对等体。
+   请注意，如果ChannelData消息中的Length字段为0，
+   则UDP数据报中将没有数据，但仍会形成并发送UDP数据报。
 
 11.7.  Relaying Data from the Peer
 
-   When the server receives a UDP datagram on the relayed transport
-   address associated with an allocation, the server processes it as
-   described in Section 10.3.  If that section indicates that a
-   ChannelData message should be sent (because there is a channel bound
-   to the peer that sent to the UDP datagram), then the server forms and
-   sends a ChannelData message as described in Section 11.5.
+   当服务器在与Allocation相关联的中继传输地址上接收UDP数据报时，
+   服务器将按照第10.3节中的描述对其进行处理。 
+
+   如果该部分指令应发送ChannelData消息
+   （因为存在绑定到发送到UDP数据报的对等体的信道），
+   则服务器形成并发送ChannelData消息，如第11.5节中所述。
 
 12.  IP Header Fields
 
@@ -1956,12 +1749,10 @@ Table of Contents
 
 14.4.  DATA
 
-   The DATA attribute is present in all Send and Data indications.  The
-   value portion of this attribute is variable length and consists of
-   the application data (that is, the data that would immediately follow
-   the UDP header if the data was been sent directly between the client
-   and the peer).  If the length of this attribute is not a multiple of
-   4, then padding must be added after this attribute.
+   DATA属性出现在所有发送和数据指示中。
+  此属性的值部分是可变长度，由应用程序数据组成
+  （即，如果数据是在客户端和对等端之间直接发送的，则紧跟UDP头的数据）。
+  如果此属性的长度不是4的倍数，则必须在此属性后添加填充。
 
 14.5.  XOR-RELAYED-ADDRESS
 
