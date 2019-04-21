@@ -1608,80 +1608,62 @@ Table of Contents
 
 12.  IP Header Fields
 
-   This section describes how the server sets various fields in the IP
-   header when relaying between the client and the peer or vice versa.
-   The descriptions in this section apply: (a) when the server sends a
-   UDP datagram to the peer, or (b) when the server sends a Data
-   indication or ChannelData message to the client over UDP transport.
-   The descriptions in this section do not apply to TURN messages sent
-   over TCP or TLS transport from the server to the client.
+   本节描述了服务器在客户端和对等端之间进行中继时如何设置IP头中的各个字段，
+    反之亦然。 本节中的描述适用于： 
+   （a）当服务器向对等体发送UDP数据报时，或（b）当服务
+   器通过UDP传输向客户端发送数据指示或ChannelData消息时。
+   本节中的描述不适用于通过TCP或TLS传输从服务器发送到客户端的TURN消息。
 
-   The descriptions below have two parts: a preferred behavior and an
-   alternate behavior.  The server SHOULD implement the preferred
-   behavior, but if that is not possible for a particular field, then it
-   SHOULD implement the alternative behavior.
+   以下描述包含两部分：首选行为和备用行为。
+   服务器应该实现首选行为，但如果某个特定字段不可能，
+   那么它应该实现替代行为。
 
-   Time to Live (TTL) field
+    生存时间（TTL）字段
 
-      Preferred Behavior: If the incoming value is 0, then the drop the
-      incoming packet.  Otherwise, set the outgoing Time to Live/Hop
-      Count to one less than the incoming value.
+      首选行为：如果传入值为0，则丢弃传入数据包。
+	  除此以外，将传出的生存时间/跳数设置为小于传入值的一个。
 
-      Alternate Behavior: Set the outgoing value to the default for
-      outgoing packets.
+      备用行为：将传出值设置为传出数据包的默认值。 
+      差分服务代码点（DSCP）字段[RFC2474]
 
-   Differentiated Services Code Point (DSCP) field [RFC2474]
-
-      Preferred Behavior: Set the outgoing value to the incoming value,
-      unless the server includes a differentiated services classifier
-      and marker [RFC2474].
+      首选行为：将传出值设置为传入值，
+	  除非服务器包含差异化服务分类器和标记[RFC2474]。
 	   
-      Alternate Behavior: Set the outgoing value to a fixed value, which
-      by default is Best Effort unless configured otherwise.
+      备用行为：将传出值设置为固定值，默认情况下为Best Effort，除非另有配置。
 
-      In both cases, if the server is immediately adjacent to a
-      differentiated services classifier and marker, then DSCP MAY be
-      set to any arbitrary value in the direction towards the
-      classifier.
+      在这两种情况下，如果服务器紧邻差异化服务分类器和标记，
+	  则DSCP可以设置为朝向分类器的方向上的任意值。
 
-   Explicit Congestion Notification (ECN) field [RFC3168]
+   显式拥塞通知（ECN）字段[RFC3168]
 
-      Preferred Behavior: Set the outgoing value to the incoming value,
-      UNLESS the server is doing Active Queue Management, the incoming
-      ECN field is ECT(1) (=0b01) or ECT(0) (=0b10), and the server
-      wishes to indicate that congestion has been experienced, in which
-      case set the outgoing value to CE (=0b11).
+      首选行为：将传出值设置为传入值，除非服务器正在进行主动队列管理，
+	  传入的ECN字段为ECT（1）（= 0b01）或ECT（0）（= 0b10），
+	  服务器希望指示 已经经历了拥塞，
+	  在这种情况下将输出值设置为CE（= 0b11）。
 
-      Alternate Behavior: Set the outgoing value to Not-ECT (=0b00).
+      备用行为：将传出值设置为Not-ECT（= 0b00）。
 
-   IPv4 Fragmentation fields
+   IPv4 Fragmentation fields(IPv4碎片字段)
 
-      Preferred Behavior: When the server sends a packet to a peer in
-      response to a Send indication containing the DONT-FRAGMENT
-      attribute, then set the DF bit in the outgoing IP header to 1.  In
-      all other cases when sending an outgoing packet containing
-      application data (e.g., Data indication, ChannelData message, or
-      DONT-FRAGMENT attribute not included in the Send indication), copy
-      the DF bit from the DF bit of the incoming packet that contained
-      the application data.
+      首选行为：当服务器响应包含DONT-FRAGMENT属性的Send
+	  指令向对等方发送数据包时，
+	  请将传出IP标头中的DF位设置为1。
 
-      Set the other fragmentation fields (Identification, More
-      Fragments, Fragment Offset) as appropriate for a packet
-      originating from the server.
-
-      Alternate Behavior: As described in the Preferred Behavior, except
-      always assume the incoming DF bit is 0.
+	  在所有其他情况下，当发送包含应用程序数据的传出数据包
+	  （例如，Data指令，ChannelData消息或DONT-FRAGMENT属性未包含在发送指令中）时，
+	  从包含该应用程序的传入数据包的DF位复制DF位 数据。
+	    
+      根据源自服务器的数据包，设置其他碎片字段（标识，更多片段，片段偏移）。
+      备用行为：如首选行为中所述，除了始终假设传入DF位为0。
 
       In both the Preferred and Alternate Behaviors, the resulting
       packet may be too large for the outgoing link.  If this is the
       case, then the normal fragmentation rules apply [RFC1122].
 
-   IPv4 Options
+   IPv4 Options（IPv4选项）
 
-      Preferred Behavior: The outgoing packet is sent without any IPv4
-      options.
-
-      Alternate Behavior: Same as preferred.
+      首选行为：在没有任何IPv4选项的情况下发送传出数据包。
+      替代行为：与首选相同。
 	   
 13.  New STUN Methods
 
