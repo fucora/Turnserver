@@ -3414,7 +3414,7 @@ static void resume_processing_after_username_check(int success, int oauth, int m
 		}
 	}
 }
-
+//身份验证
 static int check_stun_auth(turn_turnserver *server,
 	ts_ur_super_session *ss, stun_tid *tid, int *resp_constructed,
 	int *err_code, const u08bits **reason,
@@ -3703,17 +3703,13 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
 
 	u16bits unknown_attrs[MAX_NUMBER_OF_UNKNOWN_ATTRS];
 	u16bits ua_num = 0;
-	u16bits method = stun_get_method_str(ioa_network_buffer_data(in_buffer->nbh),
-		ioa_network_buffer_get_size(in_buffer->nbh));
+	u16bits method = stun_get_method_str(ioa_network_buffer_data(in_buffer->nbh),ioa_network_buffer_get_size(in_buffer->nbh));
 
 	*resp_constructed = 0;
 
-	stun_tid_from_message_str(ioa_network_buffer_data(in_buffer->nbh),
-		ioa_network_buffer_get_size(in_buffer->nbh),
-		&tid);
+	stun_tid_from_message_str(ioa_network_buffer_data(in_buffer->nbh),ioa_network_buffer_get_size(in_buffer->nbh),&tid);
 
-	if (stun_is_request_str(ioa_network_buffer_data(in_buffer->nbh),
-		ioa_network_buffer_get_size(in_buffer->nbh))) {
+	if (stun_is_request_str(ioa_network_buffer_data(in_buffer->nbh),ioa_network_buffer_get_size(in_buffer->nbh))) {
 
 		if ((method == STUN_METHOD_BINDING) && (*(server->no_stun))) {
 
@@ -3992,8 +3988,7 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
 		}
 
 	}
-	else if (stun_is_indication_str(ioa_network_buffer_data(in_buffer->nbh),
-		ioa_network_buffer_get_size(in_buffer->nbh))) {
+	else if (stun_is_indication_str(ioa_network_buffer_data(in_buffer->nbh),ioa_network_buffer_get_size(in_buffer->nbh))) {
 
 		no_response = 1;
 		int postpone = 0;
@@ -4034,15 +4029,12 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
 		};
 
 	}
-	else {
-
-		no_response = 1;
-
+	else { 
+		no_response = 1; 
 		if (server->verbose) {
 			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "Wrong STUN message received\n");
 		}
-	}
-
+	} 
 	if (ss->to_be_closed || !(ss->client_socket) || ioa_socket_tobeclosed(ss->client_socket))
 		return 0;
 
@@ -4865,7 +4857,7 @@ int open_client_connection_session(turn_turnserver* server,struct socket_message
 }
 
 /////////////// io handlers ///////////////////
-
+//客户端和对等端通过channel通信
 static void peer_input_handler(ioa_socket_handle s, int event_type,ioa_net_data *in_buffer, void *arg, int can_resume) {
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************peer_input_handler \n", __FUNCTION__, 1);
 	if (!(event_type & IOA_EV_READ) || !arg) return;
@@ -4976,7 +4968,7 @@ static void peer_input_handler(ioa_socket_handle s, int event_type,ioa_net_data 
 		}
 	}
 }
-
+//客户端发送指令或者消息
 static void client_input_handler(ioa_socket_handle s, int event_type,ioa_net_data *data, void *arg, int can_resume) {
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "--------------------------------------------------------------------------------------------------------------\n", __FUNCTION__, 1);
 	TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************client_input_handler \n", __FUNCTION__, 1);

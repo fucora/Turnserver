@@ -2,6 +2,7 @@
 #ifndef STUNPRPTOCAL_H
 #define STUNPRPTOCAL_H
 
+
 #include "SHAmethod.h"
 #include "commonTypes.h"
 #include "turn.h"
@@ -149,8 +150,8 @@ public:
 
 	int turn_attr_unknown_attributes_create(const uint16_t * unknown_attributes, size_t attr_size);
 
-	int turn_attr_software_create(const char * software);
-
+	int turn_attr_software_create(const char * software, size_t len);
+	 
 	int turn_nonce_is_stale(const char * noncekey);
 
 	int turn_add_message_integrity(const unsigned char * key, size_t key_len, int add_fingerprint);

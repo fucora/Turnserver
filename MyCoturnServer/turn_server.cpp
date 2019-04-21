@@ -80,7 +80,7 @@ void turn_server::onTcpMessage(buffer_type* buf, int lenth, tcp_socket* tcpsocke
 	//address_type remoteaddr = address_type(tcpsocket->remote_endpoint().address());
 	//address_type localaddr = address_type(tcpsocket->local_endpoint().address());
 	//int remoteAddrSize = tcpsocket->local_endpoint().size();
-	MessageHandle(*buf, lenth, IPPROTO_TCP, tcpsocket);
+	MessageHandle_new(*buf, lenth, IPPROTO_TCP, tcpsocket);
 	/*int method = turn_agreement::stun_get_method_str(buf, lenth);*/
 	printf("收到tcp消息");
 }
@@ -89,8 +89,27 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 	//address_type remoteaddr = address_type(udpsocket->remote_endpoint().address());
 	//address_type localaddr = address_type(udpsocket->local_endpoint().address());
 	//int remoteAddrSize = udpsocket->local_endpoint().size();
-	MessageHandle(*buf, lenth, IPPROTO_UDP, udpsocket);
+	MessageHandle_new(*buf, lenth, IPPROTO_UDP, udpsocket);
 	printf("收到udp消息");
+}
+
+ 
+int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_protocol, socket_base* sock)
+{
+
+}
+ 
+
+int turn_server::check_stun_auth(buffer_type buf, int lenth)
+{
+	u08bits usname[STUN_MAX_USERNAME_SIZE + 1];
+	u08bits nonce[STUN_MAX_NONCE_SIZE + 1];
+	u08bits realm[STUN_MAX_REALM_SIZE + 1];
+	size_t alen = 0;
+	int new_nonce = 0;
+	{
+		int generate_new_nonce = 0;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +154,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			{
 				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 			}
-			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 
 			errorMessage.turn_attr_fingerprint_create(0);
 
@@ -166,7 +185,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 			{
 				turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 			}
-			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 			turn_send_message(transport_protocol, sock, &errorMessage);
 
 			return 0;
@@ -203,7 +222,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 				{
 					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 				}
-				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 				/* software (not fatal if it cannot be allocated) */
 		/*		if ((attr = turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1, &iov[idx])))
 				{
@@ -244,7 +263,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 					turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 				}
 				/* software (not fatal if it cannot be allocated) */
-				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+				errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 				errorMessage.turn_attr_fingerprint_create(0);
 				turn_send_message(transport_protocol, sock, &errorMessage);
 				return 0;
@@ -271,7 +290,7 @@ int turn_server::MessageHandle(buffer_type buf, int lenth, int transport_protoco
 		{
 			turnserver_send_error(transport_protocol, sock, requestMethod, protocol.reuqestHeader->turn_msg_id, 500, NULL);
 		}
-		errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+		errorMessage.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 
 		turn_send_message(transport_protocol, sock, &errorMessage);
 
@@ -891,7 +910,7 @@ int turn_server::turnserver_process_channelbind_request(int transport_protocol,
 	try
 	{
 		errormsg.turn_msg_channelbind_response_create(protocol->reuqestHeader->turn_msg_id);
-		errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+		errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 		errormsg.turn_add_message_integrity(desc->key, sizeof(desc->key), 1);
 	}
 	catch (const std::exception&)
@@ -1382,7 +1401,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		try
 		{
 			errormsg.turn_attr_xor_mapped_address_create(sock, transport_protocol, STUN_MAGIC_COOKIE, protocol->reuqestHeader->turn_msg_id);
-			errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 			errormsg.turn_attr_fingerprint_create(0);
 		}
 		catch (const std::exception&)
@@ -1477,7 +1496,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			responseMsg.turn_msg_connectionbind_response_create(protocol->reuqestHeader->turn_msg_id);
 			responseMsg.turn_attr_connection_id_create(protocol->connection_id->turn_attr_id);
-			responseMsg.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			responseMsg.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 			responseMsg.turn_add_message_integrity(desc->key, sizeof(desc->key), 1);
 		}
 		catch (const std::exception&)
@@ -1657,7 +1676,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			try
 			{
 				errormsg.turn_error_response_420(requestMethod, protocol->reuqestHeader->turn_msg_id, unknown, sizeof(unknown));
-				errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+				errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 				errormsg.turn_add_message_integrity(desc->key, sizeof(desc->key), 1);
 			}
 			catch (const std::exception&)
@@ -1984,7 +2003,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 					debug(DBG_ATTR, "Send a reservation-token attribute\n");
 					errormsg.turn_attr_reservation_token_create(reservation_token);
 				}
-				errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+				errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 				errormsg.turn_add_message_integrity(desc->key, sizeof(desc->key), 1);
 				debug(DBG_ATTR, "Allocation successful, send success allocate response\n");
 			}
@@ -2177,7 +2196,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		try
 		{
 			errormsg.turn_msg_createpermission_response_create(protocol->reuqestHeader->turn_msg_id);
-			errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			errormsg.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 			errormsg.turn_add_message_integrity(desc->key, sizeof(desc->key), 1);
 
 		}
@@ -2330,7 +2349,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			errmessage.turn_msg_refresh_response_create(protocol->reuqestHeader->turn_msg_id);
 			errmessage.turn_attr_lifetime_create(lifetime);
-			errmessage.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+			errmessage.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 			errmessage.turn_add_message_integrity(key, sizeof(key), 1);
 		}
 		catch (const std::exception&)
@@ -2469,16 +2488,9 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 
 	int turn_server::turn_udp_send(socket_base * sock, StunProtocol * protocol)
 	{
-		ostringstream osstring;
-		boost::archive::binary_oarchive streamReader(osstring);
-		auto data = protocol->getMessageData();
-
-		uint16_t requestDataLength = protocol->getRequestLength();
-		streamReader << boost::serialization::make_binary_object(data, protocol->getRequestLength());
-
-		char kxkx[requestDataLength];
-		streamReader.save_binary(kxkx, requestDataLength);
-		ssize_t len = manager.udp_send(kxkx, requestDataLength, (udp_socket*)sock);
+		size_t databuflength = protocol->getRequestLength();
+		auto senddata = protocol->getMessageData();
+		ssize_t len = manager.udp_send(senddata, databuflength, (udp_socket*)sock);
 		return len;
 	}
 
@@ -2586,7 +2598,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		{
 			return -1;
 		}
-		protocol.turn_attr_software_create(SOFTWARE_DESCRIPTION);
+		protocol.turn_attr_software_create(SOFTWARE_DESCRIPTION, sizeof(SOFTWARE_DESCRIPTION) - 1);
 
 		if (key)
 		{

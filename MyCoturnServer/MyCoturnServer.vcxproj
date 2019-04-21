@@ -101,6 +101,8 @@
     <ClInclude Include="dbg.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="myDeletegate.h" />
+    <ClInclude Include="ns_turn_defs.h" />
+    <ClInclude Include="ns_turn_msg_defs.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="SHAmethod.h" />
     <ClInclude Include="socketListener.h" />

@@ -22,6 +22,10 @@ public:
 
 	void onUdpMessage(buffer_type * buf, int lenth, udp_socket * udpsocket);
 
+	int MessageHandle_new(buffer_type buf, int lenth, int transport_protocol, socket_base * sock);
+
+	int check_stun_auth(buffer_type buf, int lenth);
+
 	int MessageHandle(buffer_type buf, int lenth, int transport_protocol, socket_base * sock);
 	  
 	int turnserver_process_turn(int transport_protocol, socket_base * sock, StunProtocol * protocol, account_desc * account);

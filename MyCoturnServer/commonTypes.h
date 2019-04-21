@@ -21,6 +21,9 @@
 #include "myDeletegate.h"
 #include "dbg.h"
 #include "list.h"
+///////////////////
+#include "ns_turn_msg_defs.h"
+#include "ns_turn_defs.h"
 /////////////
 #include <openssl/rand.h>
 #include <openssl/sha.h>

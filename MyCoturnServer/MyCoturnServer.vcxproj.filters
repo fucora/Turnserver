@@ -75,6 +75,12 @@
     <ClInclude Include="SHAmethod.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="ns_turn_msg_defs.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="ns_turn_defs.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

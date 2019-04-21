@@ -380,16 +380,16 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock
 	uint16_t port = 0;
 	uint8_t family = 0;
 	uint8_t* ptr = NULL; /* pointer on the address (IPv4 or IPv6) */
-	
-	  
+
+
 	if (transport_protocol == IPPROTO_TCP)
 	{
 		auto tcpsocket = (tcp_socket*)sock;
 		port = tcpsocket->remote_endpoint().port();
 
 		sockaddr_in* addr_in = (sockaddr_in*)malloc(sizeof(sockaddr_in));
-		addr_in->sin_addr.s_addr = inet_addr(tcpsocket->remote_endpoint().address().to_string().data());	  
-	    ptr = (uint8_t*)(&addr_in->sin_addr); 
+		addr_in->sin_addr.s_addr = inet_addr(tcpsocket->remote_endpoint().address().to_string().data());
+		ptr = (uint8_t*)(&addr_in->sin_addr);
 
 		if (tcpsocket->remote_endpoint().address().is_v4()) {
 			family = STUN_ATTR_FAMILY_IPV4;
@@ -404,8 +404,8 @@ void  StunProtocol::turn_attr_xor_mapped_address_create(const socket_base * sock
 		auto udpsocket = (udp_socket*)sock;
 		port = udpsocket->remote_endpoint().port();
 
-		sockaddr_in6* addr_in = (sockaddr_in6*)malloc(sizeof(sockaddr_in6)); 
-		inet_pton(AF_INET6, udpsocket->remote_endpoint().address().to_string().data(), &addr_in->sin6_addr);		 
+		sockaddr_in6* addr_in = (sockaddr_in6*)malloc(sizeof(sockaddr_in6));
+		inet_pton(AF_INET6, udpsocket->remote_endpoint().address().to_string().data(), &addr_in->sin6_addr);
 		ptr = (uint8_t*)(&addr_in->sin6_addr);
 
 		if (udpsocket->remote_endpoint().address().is_v4()) {
@@ -488,6 +488,7 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 	}
 
 	struct turn_attr_xor_mapped_address* ret = (struct turn_attr_xor_mapped_address*)malloc(sizeof(struct turn_attr_xor_mapped_address) + len);
+
 	if (ret == NULL) {
 		return;
 	}
@@ -508,13 +509,18 @@ void  StunProtocol::turn_attr_xor_address_create(uint16_t type, uint8_t* pOfAddr
 	{
 		pOfAddr[i] ^= id[i - 4];
 	}
+
+
 	ret->turn_attr_type = htons(type);
 	/* reserved (1)  + family (1) + port (2) + address (variable) */
 	ret->turn_attr_len = htons(4 + len);
-	ret->turn_attr_reserved = 0;
+	ret->turn_attr_reserved = (uint8_t)0;
 	ret->turn_attr_family = family;
 	ret->turn_attr_port = htons(port);
+
+	memset(ret->turn_attr_address, 0x00, len);
 	memcpy(ret->turn_attr_address, pOfAddr, len);
+
 	if (type == TURN_ATTR_XOR_RELAYED_ADDRESS)
 	{
 		this->relayed_addr = (struct turn_attr_xor_relayed_address*)ret;
@@ -572,13 +578,12 @@ int  StunProtocol::turn_attr_unknown_attributes_create(const uint16_t * unknown_
 	this->unknown_attribute_totalLength_nothsVal = sizeof(struct turn_attr_unknown_attribute) + (len * 2);
 	this->addHeaderMsgLength(this->unknown_attribute_totalLength_nothsVal);
 }
-int  StunProtocol::turn_attr_software_create(const char* software)
-{
-	uint16_t softwareSize = sizeof(software);
-	size_t real_len = softwareSize;
+int  StunProtocol::turn_attr_software_create(const char* software,size_t len)
+{ 
+	size_t real_len = len;
 
 	/* reason can be as long as 763 bytes */
-	if (softwareSize > 763)
+	if (len > 763)
 	{
 		return -1;
 	}
@@ -595,9 +600,9 @@ int  StunProtocol::turn_attr_software_create(const char* software)
 	}
 
 	this->software->turn_attr_type = htons(STUN_ATTR_SOFTWARE);
-	this->software->turn_attr_len = htons(softwareSize);
+	this->software->turn_attr_len = htons(len);
 	memset(this->software->turn_attr_software, 0x00, real_len);
-	memcpy(this->software->turn_attr_software, software, softwareSize);
+	memcpy(this->software->turn_attr_software, software, len);
 
 	this->software_totalLength_nothsVal = sizeof(struct turn_attr_software) + real_len;
 	this->addHeaderMsgLength(this->software_totalLength_nothsVal);
@@ -1179,6 +1184,10 @@ char* StunProtocol::getMessageData()
 
 	if (this->xor_mapped_addr) {
 		memcpy(resultBuffer, this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
+
+		char* _buhh = (char*)malloc(this->xor_mapped_addr_totalLength_nothsVal);
+		memcpy(_buhh, this->xor_mapped_addr, this->xor_mapped_addr_totalLength_nothsVal);
+
 		resultBuffer += this->xor_mapped_addr_totalLength_nothsVal;
 		totallength += this->xor_mapped_addr_totalLength_nothsVal;
 	}
