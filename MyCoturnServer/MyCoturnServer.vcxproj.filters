@@ -40,6 +40,18 @@
     <Filter Include="turnserver">
       <UniqueIdentifier>{8ab2e19a-6291-43a1-8396-3eccb1b01239}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Coturn">
+      <UniqueIdentifier>{6a356038-e557-4325-a3aa-37c0a58d79c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Coturn\common">
+      <UniqueIdentifier>{2fa5f398-cf26-40d5-89c2-f99a0dd3e13b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Coturn\server">
+      <UniqueIdentifier>{fcf2b4e3-6d9b-4a2b-8f7b-b7df2db58faa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Coturn\dbdriver">
+      <UniqueIdentifier>{b0de9881-51eb-4df0-8d1d-2b878e292f2c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="socketListener.h">
@@ -75,11 +87,11 @@
     <ClInclude Include="SHAmethod.h">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="ns_turn_msg_defs.h">
-      <Filter>common</Filter>
+    <ClInclude Include="Coturn\ns_turn_defs.h">
+      <Filter>Coturn</Filter>
     </ClInclude>
-    <ClInclude Include="ns_turn_defs.h">
-      <Filter>common</Filter>
+    <ClInclude Include="Coturn\common\ns_turn_msg_defs.h">
+      <Filter>Coturn\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

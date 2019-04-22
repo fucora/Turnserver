@@ -75,12 +75,12 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Coturn\dbdriver;$(ProjectDir)Coturn\server;$(ProjectDir)Coturn\common;$(ProjectDir)Coturn;$(IncludePath)</IncludePath>
     <RemoteCCompileToolExe> gcc</RemoteCCompileToolExe>
     <RemoteCppCompileToolExe> g++</RemoteCppCompileToolExe>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)Coturn\dbdriver;$(ProjectDir)Coturn\server;$(ProjectDir)Coturn\common;$(ProjectDir)Coturn;$(IncludePath)</IncludePath>
     <RemoteCCompileToolExe> gcc</RemoteCCompileToolExe>
     <RemoteCppCompileToolExe> g++</RemoteCppCompileToolExe>
   </PropertyGroup>
@@ -98,11 +98,11 @@
   <ItemGroup>
     <ClInclude Include="allocation.h" />
     <ClInclude Include="commonTypes.h" />
+    <ClInclude Include="Coturn\common\ns_turn_msg_defs.h" />
+    <ClInclude Include="Coturn\ns_turn_defs.h" />
     <ClInclude Include="dbg.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="myDeletegate.h" />
-    <ClInclude Include="ns_turn_defs.h" />
-    <ClInclude Include="ns_turn_msg_defs.h" />
     <ClInclude Include="protocol.h" />
     <ClInclude Include="SHAmethod.h" />
     <ClInclude Include="socketListener.h" />
@@ -117,7 +117,7 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_serialization.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_serialization.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;%(AdditionalDependencies)</AdditionalDependencies>
       <VerboseOutput>true</VerboseOutput>
       <Trace>true</Trace>
     </Link>
@@ -128,7 +128,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <Link>
-      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_serialization.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>/usr/lib/i386-linux-gnu/libboost_date_time.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_filesystem.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_program_options.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_system.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_thread.so.1.54.0;/usr/lib/i386-linux-gnu/libboost_serialization.so.1.54.0;/usr/lib/i386-linux-gnu/libcrypto.so;/usr/lib/i386-linux-gnu/librt.so;/usr/lib/i386-linux-gnu/libsqlite3.so;/usr/lib/libpq.so;%(AdditionalDependencies)</AdditionalDependencies>
       <VerboseOutput>true</VerboseOutput>
       <Trace>true</Trace>
     </Link>
