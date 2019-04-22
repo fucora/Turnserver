@@ -44,7 +44,7 @@ static const uint8_t g_supported_even_port_flags = 0x80;
 socketListener manager(8888);
 
 turn_server::turn_server()
-{ 
+{
 	INIT_LIST(_allocation_list);
 	INIT_LIST(g_denied_address_list);
 	INIT_LIST(g_tcp_socket_list);
@@ -53,7 +53,7 @@ turn_server::turn_server()
 
 turn_server::~turn_server()
 {
-	
+
 
 }
 
@@ -93,12 +93,16 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 	printf("收到udp消息");
 }
 
- 
+
 int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_protocol, socket_base* sock)
 {
+	size_t blen = lenth;
+	u16bits chnum = 0;
+	if (stun_is_channel_message_str((const u08bits*)buf, &blen, &chnum, 1)) {
 
+	}
 }
- 
+
 
 int turn_server::check_stun_auth(buffer_type buf, int lenth)
 {
@@ -611,7 +615,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-		}
+}
 #else
 		/* avoid compilation warning */
 		optval = 0;
@@ -1080,7 +1084,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				 * sending message in case getsockopt failed
 				 */
 				optlen = 0;
-			}
+	}
 #else
 	  /* avoid compilation warning */
 			optval = 0;
@@ -1093,7 +1097,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				return -1;
 			}
 #endif
-		}
+}
 
 		debug(DBG_ATTR, "Send data to peer\n");
 		nb = sendto(desc->relayed_sock, msg, msg_len, 0, (struct sockaddr*) & storage, sockaddr_get_size(&desc->relayed_addr));
@@ -1378,7 +1382,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 		}
 
 		return -1;
-		}
+	}
 
 
 	/**

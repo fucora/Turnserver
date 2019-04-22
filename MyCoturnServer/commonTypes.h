@@ -24,7 +24,7 @@
 ///////////////////
 #include "Coturn/ns_turn_defs.h"
 #include "Coturn/common/ns_turn_msg_defs.h"
-
+#include "Coturn/common/ns_turn_msg.h"
 
 /////////////
 #include <openssl/rand.h>

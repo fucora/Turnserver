@@ -87,6 +87,9 @@
   <ItemGroup>
     <ClCompile Include="allocation.cpp" />
     <ClCompile Include="commonTypes.cpp" />
+    <ClCompile Include="Coturn\common\ns_turn_ioaddr.cpp" />
+    <ClCompile Include="Coturn\common\ns_turn_msg.cpp" />
+    <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp" />
     <ClCompile Include="dbg.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="protocol.cpp" />
@@ -98,7 +101,11 @@
   <ItemGroup>
     <ClInclude Include="allocation.h" />
     <ClInclude Include="commonTypes.h" />
+    <ClInclude Include="Coturn\common\ns_turn_ioaddr.h" />
+    <ClInclude Include="Coturn\common\ns_turn_msg.h" />
+    <ClInclude Include="Coturn\common\ns_turn_msg_addr.h" />
     <ClInclude Include="Coturn\common\ns_turn_msg_defs.h" />
+    <ClInclude Include="Coturn\common\ns_turn_openssl.h" />
     <ClInclude Include="Coturn\ns_turn_defs.h" />
     <ClInclude Include="dbg.h" />
     <ClInclude Include="list.h" />

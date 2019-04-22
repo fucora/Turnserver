@@ -26,6 +26,15 @@
     <ClCompile Include="SHAmethod.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="Coturn\common\ns_turn_msg.cpp">
+      <Filter>Coturn\common</Filter>
+    </ClCompile>
+    <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp">
+      <Filter>Coturn\common</Filter>
+    </ClCompile>
+    <ClCompile Include="Coturn\common\ns_turn_ioaddr.cpp">
+      <Filter>Coturn\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="mycommon">
@@ -91,6 +100,18 @@
       <Filter>Coturn</Filter>
     </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_msg_defs.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_openssl.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_msg.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_msg_addr.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_ioaddr.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
   </ItemGroup>
