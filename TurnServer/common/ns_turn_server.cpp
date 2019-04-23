@@ -4800,8 +4800,7 @@ static int attach_socket_to_session(turn_turnserver* server, ioa_socket_handle s
 
 			ss->client_socket = s;
 
-			if (register_callback_on_ioa_socket(server->e, s, IOA_EV_READ,
-				client_input_handler, ss, 0) < 0) {
+			if (register_callback_on_ioa_socket(server->e, s, IOA_EV_READ,client_input_handler, ss, 0) < 0) {
 				return -1;
 			}
 

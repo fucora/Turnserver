@@ -35,6 +35,15 @@
     <ClCompile Include="Coturn\common\ns_turn_ioaddr.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
+    <ClCompile Include="Coturn\server\ns_ioalib_engine_impl.cpp">
+      <Filter>Coturn\server</Filter>
+    </ClCompile>
+    <ClCompile Include="Coturn\server\turn_ports.cpp">
+      <Filter>Coturn\server</Filter>
+    </ClCompile>
+    <ClCompile Include="Coturn\common\hiredis_libevent2.cpp">
+      <Filter>Coturn\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="mycommon">
@@ -112,6 +121,15 @@
       <Filter>Coturn\common</Filter>
     </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_ioaddr.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_ioalib_impl.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\server\turn_ports.h">
+      <Filter>Coturn\server</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\hiredis_libevent2.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
   </ItemGroup>

@@ -97,10 +97,58 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_protocol, socket_base* sock)
 {
 	size_t blen = lenth;
+	size_t orig_blen = lenth;
 	u16bits chnum = 0;
 	if (stun_is_channel_message_str((const u08bits*)buf, &blen, &chnum, 1)) {
+		int rc = 0;
 
+		if (blen <= orig_blen) {
+			ioa_network_buffer_set_size(buf, blen);
+			//rc = write_to_peerchannel(ss, chnum, in_buffer);
+		} 
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: wrote to peer %d bytes\n", __FUNCTION__, (int)rc); 
+		return 0;
 	}
+	else if (stun_is_command_message_full_check_str((const u08bits*)buf, ioa_network_buffer_get_size(in_buffer->nbh), 0, &(ss->enforce_fingerprints))) {
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================stun_is_command_message_full_check_str \n", __FUNCTION__, 1);
+		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
+		int resp_constructed = 0;
+
+		u16bits method = stun_get_method_str(ioa_network_buffer_data(in_buffer->nbh),
+			ioa_network_buffer_get_size(in_buffer->nbh));
+
+		handle_turn_command(server, ss, in_buffer, nbh, &resp_constructed, can_resume);
+
+		if ((method != STUN_METHOD_BINDING) && (method != STUN_METHOD_SEND))
+			report_turn_session_info(server, ss, 0);
+
+		if (ss->to_be_closed || ioa_socket_tobeclosed(ss->client_socket)) {
+			FUNCEND;
+			ioa_network_buffer_delete(server->e, nbh);
+			return 0;
+		}
+
+		if (resp_constructed) {
+			if ((server->fingerprint) || ss->enforce_fingerprints) {
+				size_t len = ioa_network_buffer_get_size(nbh);
+				if (stun_attr_add_fingerprint_str(ioa_network_buffer_data(nbh), &len) < 0) {
+					FUNCEND;
+					ioa_network_buffer_delete(server->e, nbh);
+					return -1;
+				}
+				ioa_network_buffer_set_size(nbh, len);
+			}
+			int ret = write_client_connection(server, ss, nbh, TTL_IGNORE, TOS_IGNORE);
+
+			FUNCEND;
+			return ret;
+		}
+		else {
+			ioa_network_buffer_delete(server->e, nbh);
+			return 0;
+		}
+	}
+
 }
 
 
@@ -615,7 +663,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 			 * sending message in case getsockopt failed
 			 */
 			optlen = 0;
-}
+		}
 #else
 		/* avoid compilation warning */
 		optval = 0;
@@ -641,7 +689,7 @@ int turn_server::turnserver_process_channeldata(int transport_protocol,
 		debug(DBG_ATTR, "turn_send_message failed\n");
 	}
 	return 0;
-	}
+}
 
 /**
  * \brief Check bandwidth limitation on uplink OR downlink.
@@ -1084,7 +1132,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				 * sending message in case getsockopt failed
 				 */
 				optlen = 0;
-	}
+			}
 #else
 	  /* avoid compilation warning */
 			optval = 0;
@@ -1097,7 +1145,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				return -1;
 			}
 #endif
-}
+			}
 
 		debug(DBG_ATTR, "Send data to peer\n");
 		nb = sendto(desc->relayed_sock, msg, msg_len, 0, (struct sockaddr*) & storage, sockaddr_get_size(&desc->relayed_addr));
