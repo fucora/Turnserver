@@ -32,8 +32,7 @@
 #define __TURN_PORTS__
 
 #include "../common/ns_turn_ioaddr.h"
-
-#include "ns_sm.h"
+ 
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,8 +49,7 @@ struct _turnipports;
 typedef struct _turnipports turnipports;
 
 //////////////////////////////////////////////////
-
-turnipports* turnipports_create(super_memory_t *sm, u16bits start, u16bits end);
+ 
 
 void turnipports_add_ip(u08bits transport, const ioa_addr *backend_addr);
 

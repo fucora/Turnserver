@@ -34,13 +34,7 @@
 
 #ifndef __IOA_LIBIMPL__
 #define __IOA_LIBIMPL__
-
-#include <event2/event.h>
-#include <event2/bufferevent.h>
-#include <event2/buffer.h>
-
-#include <event2/thread.h>
-
+  
 #include "ns_turn_openssl.h"
 
 #include "ns_turn_ioalib.h"
@@ -48,8 +42,7 @@
 #include "ns_turn_maps_rtcp.h"
 #include "ns_turn_maps.h"
 #include "ns_turn_server.h"
-
-#include "apputils.h"
+ 
 #include "stun_buffer.h"  
 
 #include <pthread.h>
@@ -96,8 +89,7 @@ struct cancelled_session_message {
 };
 
 struct relay_server {
-	turnserver_id id;
-	super_memory_t* sm;
+	turnserver_id id; 
 	struct event_base* event_base;
 	struct bufferevent *in_buf;
 	struct bufferevent *out_buf;
@@ -177,8 +169,7 @@ struct traffic_bytes {
 };
 
 struct _ioa_socket
-{
-	evutil_socket_t fd;
+{ 
 	struct _ioa_socket *parent_s;
 	u32bits magic;
 	ur_addr_map *sockets_container; /* relay container for UDP sockets */

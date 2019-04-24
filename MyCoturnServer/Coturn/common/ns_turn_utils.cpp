@@ -32,8 +32,7 @@
 #include "ns_turn_ioalib.h"
 #include "ns_turn_msg_defs.h"
 
-#include <event2/http.h>
-
+ 
 #include <time.h>
 
 #include <pthread.h>
@@ -603,68 +602,7 @@ int get_default_protocol_port(const char* scheme, size_t slen)
 	}
 	return 0;
 }
-
-int get_canonic_origin(const char* o, char *co, int sz)
-{
-	int ret = -1;
-
-	if(o && o[0] && co) {
-		co[0]=0;
-		struct evhttp_uri *uri = evhttp_uri_parse(o);
-		if(uri) {
-			const char *scheme = evhttp_uri_get_scheme(uri);
-			if(scheme && scheme[0]) {
-				size_t schlen = strlen(scheme);
-				if((schlen<(size_t)sz) && (schlen<STUN_MAX_ORIGIN_SIZE)) {
-					const char *host = evhttp_uri_get_host(uri);
-					if(host && host[0]) {
-						char otmp[STUN_MAX_ORIGIN_SIZE+STUN_MAX_ORIGIN_SIZE];
-						ns_bcopy(scheme,otmp,schlen);
-						otmp[schlen]=0;
-
-						{
-							unsigned char *s = (unsigned char*)otmp;
-							while(*s) {
-								*s = (unsigned char)tolower((int)*s);
-								++s;
-							}
-						}
-
-						int port = evhttp_uri_get_port(uri);
-						if(port<1) {
-							port = get_default_protocol_port(otmp, schlen);
-						}
-						if(port>0)
-							snprintf(otmp+schlen,sizeof(otmp)-schlen-1,"://%s:%d",host,port);
-						else
-							snprintf(otmp+schlen,sizeof(otmp)-schlen-1,"://%s",host);
-
-						{
-							unsigned char *s = (unsigned char*)otmp + schlen + 3;
-							while(*s) {
-								*s = (unsigned char)tolower((int)*s);
-								++s;
-							}
-						}
-
-						strncpy(co,otmp,sz);
-						co[sz]=0;
-						ret = 0;
-					}
-				}
-			}
-			evhttp_uri_free(uri);
-		}
-
-		if(ret<0) {
-			strncpy(co,o,sz);
-			co[sz]=0;
-		}
-	}
-
-	return ret;
-}
-
+ 
 //////////////////////////////////////////////////////////////////
 
 #ifdef __cplusplus

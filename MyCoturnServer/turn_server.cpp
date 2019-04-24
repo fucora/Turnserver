@@ -98,7 +98,9 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 {
 	size_t blen = lenth;
 	size_t orig_blen = lenth;
+	int enforce_fingerprints;
 	u16bits chnum = 0;
+
 	if (stun_is_channel_message_str((const u08bits*)buf, &blen, &chnum, 1)) {
 		int rc = 0;
 
@@ -109,7 +111,7 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: wrote to peer %d bytes\n", __FUNCTION__, (int)rc); 
 		return 0;
 	}
-	else if (stun_is_command_message_full_check_str((const u08bits*)buf, ioa_network_buffer_get_size(in_buffer->nbh), 0, &(ss->enforce_fingerprints))) {
+	else if (stun_is_command_message_full_check_str((const u08bits*)buf, ioa_network_buffer_get_size(buf), 0, &enforce_fingerprints)) {
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================stun_is_command_message_full_check_str \n", __FUNCTION__, 1);
 		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
 		int resp_constructed = 0;

@@ -176,73 +176,7 @@ struct _turn_turnserver {
 	/* Keep Address Family */
 	int keep_address_family;
 };
-
-const char * get_version(turn_turnserver *server);
-
-///////////////////////////////////////////
-
-void init_turn_server(turn_turnserver* server,
-					turnserver_id id, int verbose,
-				    ioa_engine_handle e,
-				    turn_credential_type ct,
-				    int stun_port,
-				    int fingerprint,
-				    dont_fragment_option_t dont_fragment,
-				    get_user_key_cb userkeycb,
-				    check_new_allocation_quota_cb chquotacb,
-				    release_allocation_quota_cb raqcb,
-				    ioa_addr *external_addr,
-				    vintp check_origin,
-				    vintp no_tcp_relay,
-				    vintp no_udp_relay,
-				    vintp stale_nonce,
-                                    vintp max_allocate_lifetime,
-                                    vintp channel_lifetime,
-                                    vintp permission_lifetime,
-				    vintp stun_only,
-				    vintp no_stun,
-				    vintp prod,
-				    turn_server_addrs_list_t *alternate_servers_list,
-				    turn_server_addrs_list_t *tls_alternate_servers_list,
-				    turn_server_addrs_list_t *aux_servers_list,
-				    int self_udp_balance,
-				    vintp no_multicast_peers,
-				    vintp no_loopback_peers,
-				    ip_range_list_t* ip_whitelist,
-				    ip_range_list_t* ip_blacklist,
-				    send_socket_to_relay_cb send_socket_to_relay,
-				    vintp secure_stun,
-				    vintp mobility,
-				    int server_relay,
-				    send_turn_session_info_cb send_turn_session_info,
-				    send_https_socket_cb send_https_socket,
-				    allocate_bps_cb allocate_bps_func,
-				    int oauth,
-				    const char* oauth_server_name,
-				    int use_http,
-					int keep_address_family);
-
-ioa_engine_handle turn_server_get_engine(turn_turnserver *s);
-
-////////// RFC 5780 ///////////////////////
-
-void set_rfc5780(turn_turnserver *server, get_alt_addr_cb cb, send_message_cb smcb);
-
-///////////////////////////////////////////
-
-int open_client_connection_session(turn_turnserver* server, struct socket_message *sm);
-int shutdown_client_connection(turn_turnserver *server, ts_ur_super_session *ss, int force, const char* reason);
-void set_disconnect_cb(turn_turnserver* server, int (*disconnect)(ts_ur_super_session*));
-
-int turnserver_accept_tcp_client_data_connection(turn_turnserver *server, tcp_connection_id tcid, stun_tid *tid, ioa_socket_handle s, int message_integrity, ioa_net_data *nd, int can_resume);
-
-int report_turn_session_info(turn_turnserver *server, ts_ur_super_session *ss, int force_invalid);
-
-turn_time_t get_turn_server_time(turn_turnserver *server);
-
-void turn_cancel_session(turn_turnserver *server, turnsession_id sid);
-
-///////////////////////////////////////////
+  
 
 #ifdef __cplusplus
 }

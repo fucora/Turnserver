@@ -139,7 +139,8 @@ turnports* turnports_create(super_memory_t *sm, u16bits start, u16bits end) {
 
 	if (start > end) return NULL;
 
-	turnports* ret = (turnports*)allocate_super_memory_region(sm, sizeof(turnports));
+	//turnports* ret = (turnports*)allocate_super_memory_region(sm, sizeof(turnports));
+	turnports* ret = NULL;
 	turnports_init(ret, start, end);
 
 	return ret;
@@ -311,7 +312,8 @@ static turnipports* turnipports_singleton = NULL;
 turnipports* turnipports_create(super_memory_t *sm, u16bits start, u16bits end)
 {
 	//--TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "*********************************turnipports_create \n", __FUNCTION__, 1);
-	turnipports *ret = (turnipports*)allocate_super_memory_region(sm, sizeof(turnipports));
+	//turnipports *ret = (turnipports*)allocate_super_memory_region(sm, sizeof(turnipports));
+	turnipports *ret = NULL;
 	ret->sm = sm;
 	ur_addr_map_init(&(ret->ip_to_turnports_udp));
 	ur_addr_map_init(&(ret->ip_to_turnports_tcp));
