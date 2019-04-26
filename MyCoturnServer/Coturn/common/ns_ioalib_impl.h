@@ -231,7 +231,15 @@ typedef struct _timer_event
 } timer_event;
 
 ///////////////////////////////////
-  
+
+ioa_engine_handle create_ioa_engine(turnipports* tp,
+	const s08bits* relay_if,
+	size_t relays_number, s08bits **relay_addrs, int default_relays,
+	int verbose
+#if !defined(TURN_NO_HIREDIS)
+	, const char* redis_report_connection_string
+#endif
+);
 ///////////////////////// SUPER MEMORY ////////
 
 #define allocate_super_memory_engine(e,size) allocate_super_memory_engine_func(e, size, __FILE__, __FUNCTION__, __LINE__)

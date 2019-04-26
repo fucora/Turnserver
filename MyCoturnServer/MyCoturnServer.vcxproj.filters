@@ -180,6 +180,9 @@
     <ClInclude Include="Coturn\common\stun_buffer.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
+    <ClInclude Include="Coturn\mainheader.h">
+      <Filter>Coturn</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

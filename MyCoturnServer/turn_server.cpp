@@ -41,14 +41,21 @@ static const uint8_t g_supported_even_port_flags = 0x80;
 
 #define SOFTWARE_DESCRIPTION "TurnServer 1"  
 
-socketListener manager(8888);
 
+//*******************Coturn**********************************************
+struct relay_server* udp_rs = NULL;
+//********************************************************************
+socketListener manager(8888);
 turn_server::turn_server()
 {
 	INIT_LIST(_allocation_list);
 	INIT_LIST(g_denied_address_list);
 	INIT_LIST(g_tcp_socket_list);
 	INIT_LIST(g_token_list);
+
+	udp_rs = (struct relay_server*) malloc(sizeof(struct relay_server));
+	udp_rs->id = (turnserver_id)1 + TURNSERVER_ID_BOUNDARY_BETWEEN_TCP_AND_UDP; 
+	udp_rs->ioa_eng = create_ioa_engine(turn_params.listener.tp, turn_params.relay_ifname,turn_params.relays_number, turn_params.relay_addrs, turn_params.default_relays, turn_params.verbose, 0);
 }
 
 turn_server::~turn_server()
@@ -107,19 +114,16 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 		if (blen <= orig_blen) {
 			ioa_network_buffer_set_size(buf, blen);
 			//rc = write_to_peerchannel(ss, chnum, in_buffer);
-		} 
-		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: wrote to peer %d bytes\n", __FUNCTION__, (int)rc); 
+		}
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "%s: wrote to peer %d bytes\n", __FUNCTION__, (int)rc);
 		return 0;
 	}
 	else if (stun_is_command_message_full_check_str((const u08bits*)buf, ioa_network_buffer_get_size(buf), 0, &enforce_fingerprints)) {
 		TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "===================================stun_is_command_message_full_check_str \n", __FUNCTION__, 1);
 		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
 		int resp_constructed = 0;
-
 		u16bits method = stun_get_method_str((const u08bits*)buf, lenth);
-
 		handle_turn_command(server, ss, in_buffer, nbh, &resp_constructed, can_resume);
-
 		if ((method != STUN_METHOD_BINDING) && (method != STUN_METHOD_SEND))
 			report_turn_session_info(server, ss, 0);
 
@@ -523,7 +527,7 @@ static int handle_turn_command(turn_turnserver *server, ts_ur_super_session *ss,
 		size_t len = ioa_network_buffer_get_size(nbh);
 		stun_init_error_response_str(method, ioa_network_buffer_data(nbh), &len, err_code, NULL, &tid);
 
-		stun_attr_add_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_UNKNOWN_ATTRIBUTES, (const u08bits*)unknown_attrs, (ua_num* 2));
+		stun_attr_add_str(ioa_network_buffer_data(nbh), &len, STUN_ATTRIBUTE_UNKNOWN_ATTRIBUTES, (const u08bits*)unknown_attrs, (ua_num * 2));
 
 		ioa_network_buffer_set_size(nbh, len);
 
@@ -1552,7 +1556,7 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 				return -1;
 			}
 #endif
-			}
+		}
 
 		debug(DBG_ATTR, "Send data to peer\n");
 		nb = sendto(desc->relayed_sock, msg, msg_len, 0, (struct sockaddr*) & storage, sockaddr_get_size(&desc->relayed_addr));
@@ -1568,10 +1572,10 @@ int turn_server::turnserver_process_send_indication(StunProtocol * protocol, str
 			{
 				debug(DBG_ATTR, "turn_send_message failed\n");
 			}
-		}
+	}
 
 		return 0;
-		}
+}
 
 
 	/**
