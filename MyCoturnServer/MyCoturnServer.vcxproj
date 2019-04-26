@@ -127,6 +127,7 @@
     <ClInclude Include="Coturn\common\ns_turn_session.h" />
     <ClInclude Include="Coturn\common\ns_turn_utils.h" />
     <ClInclude Include="Coturn\common\stun_buffer.h" />
+    <ClInclude Include="Coturn\mainheader.h" />
     <ClInclude Include="Coturn\ns_turn_defs.h" />
     <ClInclude Include="Coturn\server\turn_ports.h" />
     <ClInclude Include="dbg.h" />

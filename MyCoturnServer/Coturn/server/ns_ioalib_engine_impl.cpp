@@ -71,6 +71,98 @@ const int predef_timer_intervals[PREDEF_TIMERS_NUM] = { 30,60,90,120,240,300,360
 
 /************** Forward function declarations ******/
 
+ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname,
+	size_t relays_number, s08bits **relay_addrs, int default_relays,
+	int verbose
+#if !defined(TURN_NO_HIREDIS)
+	, const char* redis_report_connection_string
+#endif
+)
+{
+	static int capabilities_checked = 0;
+
+	if (!capabilities_checked) {
+		capabilities_checked = 1;
+#if !defined(CMSG_SPACE)
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_WARNING, "On this platform, I am using alternative behavior of TTL/TOS according to RFC 5766.\n");
+#endif
+#if !defined(IP_RECVTTL) || !defined(IP_TTL)
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_WARNING, "IPv4: On this platform, I am using alternative behavior of TTL according to RFC 5766.\n");
+#endif
+#if !defined(IPV6_RECVHOPLIMIT) || !defined(IPV6_HOPLIMIT)
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_WARNING, "IPv6: On this platform, I am using alternative behavior of TTL (HOPLIMIT) according to RFC 6156.\n");
+#endif
+#if !defined(IP_RECVTOS) || !defined(IP_TOS)
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_WARNING, "IPv4: On this platform, I am using alternative behavior of TOS according to RFC 5766.\n");
+#endif
+#if !defined(IPV6_RECVTCLASS) || !defined(IPV6_TCLASS)
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_WARNING, "IPv6: On this platform, I am using alternative behavior of TRAFFIC CLASS according to RFC 6156.\n");
+#endif
+	}
+
+	if (!relays_number || !relay_addrs || !tp) {
+		TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "%s: Cannot create TURN engine\n", __FUNCTION__);
+		return NULL;
+	}
+	else {
+		ioa_engine_handle e = (ioa_engine_handle)malloc(sizeof(ioa_engine));
+
+		e->sm = sm;
+		e->default_relays = default_relays;
+		e->verbose = verbose;
+		e->tp = tp;
+		if (eb) {
+			e->event_base = eb;
+			e->deallocate_eb = 0;
+		}
+		else {
+			//e->event_base = turn_event_base_new();
+			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "IO method (engine own thread): %s\n", event_base_get_method(e->event_base));
+			e->deallocate_eb = 1;
+		}
+
+ 
+
+		/*{
+			int t;
+			for (t = 0; t < PREDEF_TIMERS_NUM; ++t) {
+				struct timeval duration;
+				duration.tv_sec = predef_timer_intervals[t];
+				duration.tv_usec = 0;
+				const struct timeval *ptv = event_base_init_common_timeout(e->event_base, &duration);
+				if (!ptv) {
+					TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "FATAL: cannot create preferable timeval for %d secs (%d number)\n", predef_timer_intervals[t], t);
+					exit(-1);
+				}
+				else {
+					ns_bcopy(ptv, &(e->predef_timers[t]), sizeof(struct timeval));
+					e->predef_timer_intervals[t] = predef_timer_intervals[t];
+				}
+			}
+		}*/
+
+
+		if (relay_ifname) {
+			STRCPY(e->relay_ifname, relay_ifname);
+		}
+			
+
+		{
+			size_t i = 0;
+			/*e->relay_addrs = (ioa_addr*)allocate_super_memory_region(sm, relays_number * sizeof(ioa_addr) + 8);*/
+			for (i = 0; i < relays_number; i++) {
+				if (make_ioa_addr((u08bits*)relay_addrs[i], 0, &(e->relay_addrs[i])) < 0) {
+					TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "Cannot add a relay address: %s\n", relay_addrs[i]);
+				}
+			}
+			e->relays_number = relays_number;
+		}
+		e->relay_addr_counter = (unsigned short)turn_random();
+		//timer_handler(e, e);
+		//e->timer_ev = set_ioa_timer(e, 1, 0, timer_handler, e, 1, "timer_handler");
+		return e;
+	}
+}
  
 /************** Utils **************************/
 
