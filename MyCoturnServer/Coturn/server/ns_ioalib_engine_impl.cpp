@@ -71,9 +71,7 @@ const int predef_timer_intervals[PREDEF_TIMERS_NUM] = { 30,60,90,120,240,300,360
 
 /************** Forward function declarations ******/
 
-ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname,
-	size_t relays_number, s08bits **relay_addrs, int default_relays,
-	int verbose
+ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname,size_t relays_number, s08bits **relay_addrs, int default_relays,int verbose
 #if !defined(TURN_NO_HIREDIS)
 	, const char* redis_report_connection_string
 #endif
@@ -120,33 +118,11 @@ ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname
 			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "IO method (engine own thread): %s\n", event_base_get_method(e->event_base));
 			e->deallocate_eb = 1;
 		}
-
- 
-
-		/*{
-			int t;
-			for (t = 0; t < PREDEF_TIMERS_NUM; ++t) {
-				struct timeval duration;
-				duration.tv_sec = predef_timer_intervals[t];
-				duration.tv_usec = 0;
-				const struct timeval *ptv = event_base_init_common_timeout(e->event_base, &duration);
-				if (!ptv) {
-					TURN_LOG_FUNC(TURN_LOG_LEVEL_ERROR, "FATAL: cannot create preferable timeval for %d secs (%d number)\n", predef_timer_intervals[t], t);
-					exit(-1);
-				}
-				else {
-					ns_bcopy(ptv, &(e->predef_timers[t]), sizeof(struct timeval));
-					e->predef_timer_intervals[t] = predef_timer_intervals[t];
-				}
-			}
-		}*/
-
-
+		 
 		if (relay_ifname) {
 			STRCPY(e->relay_ifname, relay_ifname);
 		}
-			
-
+			 
 		{
 			size_t i = 0;
 			/*e->relay_addrs = (ioa_addr*)allocate_super_memory_region(sm, relays_number * sizeof(ioa_addr) + 8);*/
