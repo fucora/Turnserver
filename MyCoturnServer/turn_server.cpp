@@ -116,8 +116,7 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
 		int resp_constructed = 0;
 
-		u16bits method = stun_get_method_str(ioa_network_buffer_data(in_buffer->nbh),
-			ioa_network_buffer_get_size(in_buffer->nbh));
+		u16bits method = stun_get_method_str(ioa_network_buffer_data(buf), lenth);
 
 		handle_turn_command(server, ss, in_buffer, nbh, &resp_constructed, can_resume);
 

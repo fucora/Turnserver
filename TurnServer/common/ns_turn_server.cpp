@@ -4692,8 +4692,7 @@ static int read_client_connection(turn_turnserver *server,ts_ur_super_session *s
 		ioa_network_buffer_handle nbh = ioa_network_buffer_allocate(server->e);
 		int resp_constructed = 0;
 
-		u16bits method = stun_get_method_str(ioa_network_buffer_data(in_buffer->nbh),
-			ioa_network_buffer_get_size(in_buffer->nbh));
+		u16bits method = stun_get_method_str(ioa_network_buffer_data(in_buffer->nbh),ioa_network_buffer_get_size(in_buffer->nbh));
 
 		handle_turn_command(server, ss, in_buffer, nbh, &resp_constructed, can_resume);
 
@@ -4827,8 +4826,7 @@ int open_client_connection_session(turn_turnserver* server,struct socket_message
 
 	ss->client_socket = sm->s;
 
-	if (register_callback_on_ioa_socket(server->e, ss->client_socket, IOA_EV_READ,
-		client_input_handler, ss, 0) < 0) {
+	if (register_callback_on_ioa_socket(server->e, ss->client_socket, IOA_EV_READ,client_input_handler, ss, 0) < 0) {
 		return -1;
 	}
 
