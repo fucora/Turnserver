@@ -29,37 +29,10 @@
     <ClCompile Include="Coturn\common\ns_turn_msg.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
-    <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
     <ClCompile Include="Coturn\common\ns_turn_ioaddr.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
-    <ClCompile Include="Coturn\server\ns_ioalib_engine_impl.cpp">
-      <Filter>Coturn\server</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\server\turn_ports.cpp">
-      <Filter>Coturn\server</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\hiredis_libevent2.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\ns_turn_maps.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\ns_turn_maps_rtcp.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\ns_turn_server.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\ns_turn_utils.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\ns_turn_allocation.cpp">
-      <Filter>Coturn\common</Filter>
-    </ClCompile>
-    <ClCompile Include="Coturn\common\stun_buffer.cpp">
+    <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
   </ItemGroup>
@@ -126,62 +99,29 @@
     <ClInclude Include="Coturn\ns_turn_defs.h">
       <Filter>Coturn</Filter>
     </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_msg_defs.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_openssl.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_msg.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_msg_addr.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_ioaddr.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_ioalib_impl.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\server\turn_ports.h">
-      <Filter>Coturn\server</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\hiredis_libevent2.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_maps.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_msg_defs_experimental.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_ioalib.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_maps_rtcp.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_server.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_utils.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_khash.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_session.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_allocation.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="Coturn\common\stun_buffer.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
     <ClInclude Include="Coturn\mainheader.h">
       <Filter>Coturn</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_ioaddr.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_msg_addr.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_msg_defs.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_msg_defs_experimental.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_openssl.h">
+      <Filter>Coturn\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

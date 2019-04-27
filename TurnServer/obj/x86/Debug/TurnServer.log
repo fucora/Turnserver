@@ -1,3 +1,1 @@
-﻿  Validating sources
-  Copying sources remotely to '192.168.99.100'
-G:\vs2017\Common7\IDE\VC\VCTargets\Application Type\Linux\1.0\Linux.targets(162,5): error : Could not connect to the remote system. Please verify your connection settings, and that your machine is on the network and reachable.
+﻿  Cleaning remote project directory

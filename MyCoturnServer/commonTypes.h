@@ -21,13 +21,10 @@
 #include "myDeletegate.h"
 #include "dbg.h"
 #include "list.h"
-///////////////////
-#include "Coturn/mainheader.h"
-#include "Coturn/ns_turn_defs.h"
-#include "Coturn/common/ns_turn_msg_defs.h"
-#include "Coturn/common/ns_turn_msg.h"
-#include "Coturn/common/ns_ioalib_impl.h"
-#include "Coturn/common/ns_ioalib_impl.h"
+/////////////////// 
+#include "Coturn/ns_turn_defs.h" 
+#include "Coturn/common/ns_turn_msg.h" 
+#include "Coturn/common/ns_turn_khash.h"
 /////////////
 #include <openssl/rand.h>
 #include <openssl/sha.h>
@@ -39,8 +36,7 @@
 #include <boost/asio/placeholders.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/bind/bind.hpp> 
-
-
+ 
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/signals2.hpp>  
 #include <boost/utility/result_of.hpp>

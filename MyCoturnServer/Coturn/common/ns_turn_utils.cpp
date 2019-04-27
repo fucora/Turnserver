@@ -33,9 +33,7 @@
 #include "ns_turn_msg_defs.h"
 
  
-#include <time.h>
-
-#include <pthread.h>
+#include <time.h> 
 
 #include <syslog.h>
 #include <stdarg.h>
@@ -67,81 +65,23 @@ static inline turn_time_t log_time(void)
 #define MAGIC_CODE (0xEFCD1983)
 
 int turn_mutex_lock(const turn_mutex *mutex) {
-  if(mutex && mutex->mutex && (mutex->data == MAGIC_CODE)) {
-    int ret = 0;
-    ret = pthread_mutex_lock((pthread_mutex_t*)mutex->mutex);
-    if(ret<0) {
-      perror("Mutex lock");
-    }
-    return ret;
-  } else {
-    printf("Uninitialized mutex\n");
-    return -1;
-  }
+	return 1;
 }
 
 int turn_mutex_unlock(const turn_mutex *mutex) {
-  if(mutex && mutex->mutex && (mutex->data == MAGIC_CODE)) {
-    int ret = 0;
-    ret = pthread_mutex_unlock((pthread_mutex_t*)mutex->mutex);
-    if(ret<0) {
-      perror("Mutex unlock");
-    }
-    return ret;
-  } else {
-    printf("Uninitialized mutex\n");
-    return -1;
-  }
+	return 1;
 }
 
 int turn_mutex_init(turn_mutex* mutex) {
-  if(mutex) {
-    mutex->data=MAGIC_CODE;
-    mutex->mutex=turn_malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init((pthread_mutex_t*)mutex->mutex,NULL);
-    return 0;
-  } else {
-    return -1;
-  }
+	return 1;
 }
 
 int turn_mutex_init_recursive(turn_mutex* mutex) {
-	int ret = -1;
-	if (mutex) {
-		pthread_mutexattr_t attr;
-		if (pthread_mutexattr_init(&attr) < 0) {
-			perror("Cannot init mutex attr");
-		} else {
-			if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) < 0) {
-				perror("Cannot set type on mutex attr");
-			} else {
-				mutex->mutex = turn_malloc(sizeof(pthread_mutex_t));
-				mutex->data = MAGIC_CODE;
-				if ((ret = pthread_mutex_init((pthread_mutex_t*) mutex->mutex,
-						&attr)) < 0) {
-					perror("Cannot init mutex");
-					mutex->data = 0;
-					turn_free(mutex->mutex,sizeof(pthread_mutex_t));
-					mutex->mutex = NULL;
-				}
-			}
-			pthread_mutexattr_destroy(&attr);
-		}
-	}
-  return ret;
+	return 1;
 }
 
 int turn_mutex_destroy(turn_mutex* mutex) {
-  if(mutex && mutex->mutex && mutex->data == MAGIC_CODE) {
-    int ret = 0;
-    ret = pthread_mutex_destroy((pthread_mutex_t*)(mutex->mutex));
-    turn_free(mutex->mutex, sizeof(pthread_mutex_t));
-    mutex->mutex=NULL;
-    mutex->data=0;
-    return ret;
-  } else {
-    return 0;
-  }
+	return 1;
 }
 
 ///////////////////////// LOG ///////////////////////////////////

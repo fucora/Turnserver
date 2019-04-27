@@ -28,9 +28,9 @@
  * SUCH DAMAGE.
  */
 
- 
+
 #include "../common/ns_ioalib_impl.h"
- 
+
 #if !defined(TURN_NO_SCTP) && defined(TURN_SCTP_INCLUDE)
 #include TURN_SCTP_INCLUDE
 #endif
@@ -71,7 +71,7 @@ const int predef_timer_intervals[PREDEF_TIMERS_NUM] = { 30,60,90,120,240,300,360
 
 /************** Forward function declarations ******/
 
-ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname,size_t relays_number, s08bits **relay_addrs, int default_relays,int verbose
+ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname, size_t relays_number, s08bits **relay_addrs, int default_relays, int verbose
 #if !defined(TURN_NO_HIREDIS)
 	, const char* redis_report_connection_string
 #endif
@@ -105,24 +105,17 @@ ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname
 	else {
 		ioa_engine_handle e = (ioa_engine_handle)malloc(sizeof(ioa_engine));
 
-		e->sm = sm;
 		e->default_relays = default_relays;
 		e->verbose = verbose;
 		e->tp = tp;
-		if (eb) {
-			e->event_base = eb;
-			e->deallocate_eb = 0;
-		}
-		else {
-			//e->event_base = turn_event_base_new();
-			TURN_LOG_FUNC(TURN_LOG_LEVEL_INFO, "IO method (engine own thread): %s\n", event_base_get_method(e->event_base));
-			e->deallocate_eb = 1;
-		}
-		 
+
+		e->deallocate_eb = 1;
+
+
 		if (relay_ifname) {
 			STRCPY(e->relay_ifname, relay_ifname);
 		}
-			 
+
 		{
 			size_t i = 0;
 			/*e->relay_addrs = (ioa_addr*)allocate_super_memory_region(sm, relays_number * sizeof(ioa_addr) + 8);*/
@@ -139,17 +132,17 @@ ioa_engine_handle create_ioa_engine(turnipports *tp, const s08bits* relay_ifname
 		return e;
 	}
 }
- 
+
 /************** Utils **************************/
 
 static const int tcp_congestion_control = 1;
- 
+
 
 void ioa_network_buffer_set_size(ioa_network_buffer_handle nbh, size_t len)
 {
 	stun_buffer_list_elem *buf_elem = (stun_buffer_list_elem *)nbh;
 	buf_elem->buf.len = (size_t)len;
 }
- 
+
 
 //////////////////////////////////////////////////
