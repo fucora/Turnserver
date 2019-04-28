@@ -102,6 +102,7 @@
     <ClInclude Include="allocation.h" />
     <ClInclude Include="commonTypes.h" />
     <ClInclude Include="Coturn\common\ns_turn_ioaddr.h" />
+    <ClInclude Include="Coturn\common\ns_turn_ioalib.h" />
     <ClInclude Include="Coturn\common\ns_turn_khash.h" />
     <ClInclude Include="Coturn\common\ns_turn_msg.h" />
     <ClInclude Include="Coturn\common\ns_turn_msg_addr.h" />

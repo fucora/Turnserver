@@ -23,6 +23,7 @@
 #include "list.h"
 /////////////////// 
 #include "Coturn/ns_turn_defs.h" 
+#include "Coturn/common/ns_turn_ioalib.h"
 #include "Coturn/common/ns_turn_msg.h" 
 #include "Coturn/common/ns_turn_khash.h"
 /////////////

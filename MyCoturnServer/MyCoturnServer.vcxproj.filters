@@ -123,6 +123,9 @@
     <ClInclude Include="Coturn\common\ns_turn_openssl.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_ioalib.h">
+      <Filter>Coturn\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

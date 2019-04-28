@@ -97,16 +97,76 @@ void turn_server::onUdpMessage(buffer_type* buf, int lenth, udp_socket* udpsocke
 
 int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_protocol, socket_base* sock)
 {
+	stun_tid tid;
 	size_t blen = lenth;
 	size_t orig_blen = lenth;
+	int error_code = 0;
 	int enforce_fingerprints;
 	u16bits chnum = 0;
-	 
-	if (stun_is_channel_message_str((const u08bits*)buf, &blen, &chnum, 1)) {
-		auto i = 1;
+	const u08bits* in_data = (const u08bits*)buf;
+	u16bits ua_num = 0;//unknow_attribute_number
+	bool no_response = false;//是否需要创建responese，默认需要创建
+	bool resp_constructed = 0;//是否创建了response
+	bool secure_stun = true;
+	bool stun_only = true;
+	ioa_engine_handle io_handle = (ioa_engine_handle)malloc(sizeof(ioa_engine_handle));
+
+	if (stun_is_channel_message_str(in_data, &blen, &chnum, 1)) {
+		//处理channel消息
+		return 1;
 	}
-	else if (stun_is_command_message_full_check_str((const u08bits*)buf, lenth, 0, &enforce_fingerprints)) {
-		auto i = 2;
+	//判断消息是否完整
+	if (!stun_is_command_message_full_check_str(in_data, lenth, 0, &enforce_fingerprints))
+	{
+		return 1;
+	}
+
+	//完整消息处理： 
+	u16bits method = stun_get_method_str(in_data, lenth);
+	stun_tid_from_message_str(in_data, lenth, &tid);
+	if (method != STUN_METHOD_BINDING)
+	{
+		no_response = true;
+	}
+	if (stun_is_request_str(in_data, lenth))
+	{
+		if (method == STUN_METHOD_BINDING)
+		{
+			no_response = true;
+		}
+		else if (method != STUN_METHOD_BINDING && stun_only == true)
+		{
+
+		}
+		else if (method != STUN_METHOD_BINDING || secure_stun == true)
+		{
+
+		}
+
+		if (error_code != 0 && resp_constructed == false && no_response == false) 
+		{
+
+		}
+	}
+	else if (stun_is_indication_str(in_data, lenth))
+	{
+		no_response = true;
+	}
+	else
+	{
+
+	}
+	//存在unknow_attribbute
+	if (ua_num > 0) {
+
+	}
+	//需要创建response
+	if (no_response == false) {
+
+
+	}
+	else {
+		resp_constructed = false;
 	}
 }
 
