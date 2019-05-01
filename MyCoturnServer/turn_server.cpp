@@ -3,7 +3,7 @@
 
 
 unsigned long bandwidth = 1024;//带宽
-list_head _allocation_list;
+ 
 char* listen_address = "127.0.0.1";
 char* nonce_key = "hieKedq";
 int turn_tcp_po = 1;
@@ -12,36 +12,10 @@ bool is_turn_tcp = true;
 int allocation_lifetime = 1800;
 int restricted_bandwidth = 10;
 int bandwidth_per_allocation = 150;
-int max_relay_per_username = 5;
-/**
- * \var g_denied_address_list
- * \brief The denied address list.
- */
-list_head g_denied_address_list;
-/**
- * \var g_tcp_socket_list
- * \brief List which contains remote TCP sockets.
- *
- * This list does not contains TURN-TCP related sockets.
- */
-static struct list_head g_tcp_socket_list;
-/**
- * \var g_token_list
- * \brief List of valid tokens.
- */
-static struct list_head g_token_list;
-/**
- * \var g_supported_even_port_flags
- * \brief EVEN-PORT flags supported.
- *
- * For the moment the following flags are supported:
- * - R: reserve couple of ports (one even, one odd).
- */
-static const uint8_t g_supported_even_port_flags = 0x80;
+int max_relay_per_username = 5; 
 
 #define SOFTWARE_DESCRIPTION "TurnServer 1"  
-
-
+ 
 //*******************Coturn**********************************************
 int can_resume = 1;
 int no_stun = 0;
@@ -51,11 +25,7 @@ int secure_stun = 0;
 //********************************************************************
 socketListener manager(8888);
 turn_server::turn_server()
-{
-	INIT_LIST(_allocation_list);
-	INIT_LIST(g_denied_address_list);
-	INIT_LIST(g_tcp_socket_list);
-	INIT_LIST(g_token_list);
+{ 
 }
 
 turn_server::~turn_server()
@@ -106,10 +76,10 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 	const u08bits* in_data = (const u08bits*)buf;
 	u16bits ua_num = 0;//unknow_attribute_number
 	bool no_response = false;//是否需要创建responese，默认需要创建
-	bool resp_constructed = 0;//是否创建了response
+	bool resp_constructed = false;//是否创建了response
 	bool secure_stun = true;
 	bool stun_only = true;
-	ioa_engine_handle io_handle = (ioa_engine_handle)malloc(sizeof(ioa_engine_handle));
+	ioa_engine_handle out_io_handle = (ioa_engine_handle)malloc(sizeof(ioa_engine_handle));
 
 	if (stun_is_channel_message_str(in_data, &blen, &chnum, 1)) {
 		//处理channel消息
@@ -118,7 +88,7 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 	//判断消息是否完整
 	if (!stun_is_command_message_full_check_str(in_data, lenth, 0, &enforce_fingerprints))
 	{
-		return 1;
+		return -1;
 	}
 
 	//完整消息处理： 
@@ -136,11 +106,14 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, int transport_pro
 		}
 		else if (method != STUN_METHOD_BINDING && stun_only == true)
 		{
-
+			no_response = true;
 		}
 		else if (method != STUN_METHOD_BINDING || secure_stun == true)
 		{
+			if (method == STUN_METHOD_ALLOCATE)
+			{
 
+			}
 		}
 
 		if (error_code != 0 && resp_constructed == false && no_response == false) 

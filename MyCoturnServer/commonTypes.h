@@ -16,11 +16,7 @@
 #include <sys/time.h>
 #include <malloc.h>
 #include <stdint.h>
-#include <sys/types.h>
-//////////// 
-#include "myDeletegate.h"
-#include "dbg.h"
-#include "list.h"
+#include <sys/types.h> 
 /////////////////// 
 #include "Coturn/ns_turn_defs.h" 
 #include "Coturn/common/ns_turn_ioalib.h"
@@ -52,14 +48,10 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/access.hpp> 
 #include <boost/serialization/map.hpp>
-
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/binary_object.hpp>
-
  
-
-
 using namespace boost::asio;
 using namespace std;
 
@@ -69,28 +61,7 @@ typedef ip::udp::endpoint udp_endpoint;
 typedef ip::tcp::socket tcp_socket;
 typedef ip::udp::socket udp_socket;
 typedef ip::address address_type;
-
-
-#ifndef MAX
-#define	MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif // !MAX
-
-
-#ifndef MIN
-#define	MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif // !1
-
-
-
-struct allocation_token
-{
-	uint8_t id[8]; /**< Token ID */
-	int sock; /**< The opened socket */
-	timer_t expire_timer; /**< Expire timer */
-	struct list_head list; /**< For list management */
-	struct list_head list2; /**< For list management (expired list) */
-};
-
+ 
 /**
  * \struct allocation_tuple
  * \brief Allocation tuple.
@@ -112,9 +83,7 @@ struct allocation_permission
 {
 	int family; /**< Address family */
 	uint8_t peer_addr[16]; /**< Peer address */
-	timer_t expire_timer; /**< Expire timer */
-	struct list_head list; /**< For list management */
-	struct list_head list2; /**< For list management (expired list) */
+	timer_t expire_timer; /**< Expire timer */ 
 };
 
 /**
@@ -127,9 +96,7 @@ struct allocation_channel
 	uint8_t peer_addr[16]; /**< Peer address */
 	uint16_t peer_port; /**< Peer port */
 	uint16_t channel_number; /**< Channel bound to this peer */
-	timer_t expire_timer; /**< Expire timer */
-	struct list_head list; /**< For list management */
-	struct list_head list2; /**< For list management (expired list) */
+	timer_t expire_timer; /**< Expire timer */ 
 };
 
 /**
@@ -156,8 +123,7 @@ struct allocation_tcp_relay
 	size_t buf_size; /**< Capacity of internal buffer */
 	uint8_t connect_msg_id[12]; /**< TURN message ID of the connection request
 								  (if any) */
-	struct list_head list; /**< For list management */
-	struct list_head list2; /**< For list management (expired list) */
+ 
 };
 
 /**
@@ -173,9 +139,7 @@ struct allocation_desc
 	int relayed_transport_protocol; /**< Relayed transport protocol used */
 	struct sockaddr_storage relayed_addr; /**< Relayed transport address */
 	struct allocation_tuple tuple; /**< 5-tuple */
-	struct list_head peers_channels; /**< List of channel to peer bindings */
-	struct list_head peers_permissions; /**< List of peers permissions */
-	struct list_head tcp_relays; /**< TCP relays information */
+ 
 	int relayed_sock; /**< Socket for the allocated transport address */
 	int relayed_sock_tcp; /**< Socket for the allocated transport address to
 							contact TCP peer (RFC6062). It is set to -1 if Connect
@@ -194,8 +158,7 @@ struct allocation_desc
 								   upload */
 	struct timeval last_timedown; /**< Last time of bandwidth limit checking for
 									 download */
-	struct list_head list; /**< For list management */
-	struct list_head list2; /**< For list management (expired list) */
+ 
 };
 
 
@@ -257,7 +220,7 @@ struct denied_address
 	uint8_t addr[16]; /**< IPv4 or IPv6 address */
 	uint8_t mask; /**< Network mask of the address */
 	uint16_t port; /**< Port */
-	struct list_head list; /**< For list management */
+ 
 };
 
 /**
@@ -272,7 +235,7 @@ struct account_desc
 	enum account_state state; /**< Access state */
 	size_t allocations; /**< Number of allocations used */
 	int is_tmp; /**< If account is a temporary account */
-	struct list_head list; /**< For list management */
+ 
 };
 
 /**
@@ -294,51 +257,12 @@ struct tls_peer
 	int sock; /**< Server socket descriptor */
 	SSL_CTX* ctx_client; /**< SSL context for client side */
 	SSL_CTX* ctx_server; /**< SSL context for server side */
-	struct list_head remote_peers; /**< Remote peers */
+ 
 	BIO* bio_fake; /**< Fake BIO for read operations */
 	int(*verify_callback)(int, X509_STORE_CTX *); /**< Verification callback */
 };
 
-
-uint32_t crc32_generate(const uint8_t* data, size_t len, uint32_t prev);
-void hex_convert(const unsigned char* bin, size_t bin_len, unsigned char* hex, size_t hex_len);
-void iovec_free_data(struct iovec* iov, uint32_t nb);
-int is_little_endian(void);
-void uint32_convert(const unsigned char* data, size_t data_len, uint32_t* t);
-void uint64_convert(const unsigned char* data, size_t data_len, uint64_t* t);
-/**
- * \brief Print a digest.
- * \param buf buffer
- * \param len length of buffer
- */
-void digest_print(const unsigned char* buf, size_t len);
-/**
- * \brief Find a account with specified username and realm from a list.
- * \param list list of accounts
- * \param username
- * \param realm realm
- * \return pointer on account_desc or NULL if not found
- */
-struct account_desc* account_list_find(struct list_head* list, const char* username, const char* realm);
-
-
-/**
- * \brief Generate random bytes.
- * \param id buffer that will be filled with random value
- * \param len length of id
- * \return 0 if successfull, -1 if the random number is cryptographically weak
- */
-int random_bytes_generate(uint8_t* id, size_t len);
-
-
-/**
- * \brief Remove and free an account from a list.
- * \param list list of accounts
- * \param desc account to remove
- */
-void account_list_remove(struct list_head* list, struct account_desc* desc);
-
-
+ 
 /**
  * \struct socket_desc
  * \brief Descriptor for TCP client connected.
@@ -352,7 +276,7 @@ struct socket_desc
 	size_t buf_pos; /**< Position in the internal buffer */
 	size_t msg_len; /**< Message length that is not complete */
 	int tls; /**< If socket uses TLS */
-	struct list_head list; /**< For list management */
+ 
 };
 
 

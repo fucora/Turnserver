@@ -1,9 +1,6 @@
 ﻿#include "socketListener.h"
 
-
-
-
-
+ 
 socketListener::socketListener(int port)
 {
 	serverport = port;

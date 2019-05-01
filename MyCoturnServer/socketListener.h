@@ -3,7 +3,8 @@
 #define SOCKETLISTENER_H
 
 #include "commonTypes.h"
- 
+#include "myDeletegate.h"
+
 class socketListener
 {
 	typedef boost::shared_ptr<tcp_socket> sock_ptr;
@@ -12,7 +13,6 @@ private:	int serverport = 8888;
 private:	io_service m_io;
 private:	ip::tcp::acceptor* tcp_listener;
 private:	buffer_type tcp_buffer;
-
 private:	udp_socket* udp_listener;
 private:	udp_endpoint udp_remot_endpoint;
 private:	buffer_type udp_buffer;
@@ -56,13 +56,13 @@ private:	void udp_hand_send(boost::shared_ptr<std::string> message, const boost:
 
 public:  	void StartSocketListen();
 
- 
-				int udp_send(char * senddata, size_t datalength, udp_socket * udpsocket);
 
-				int tcp_send(char * senddata, size_t datalength, tcp_socket * tcpsocket);
+			int udp_send(char * senddata, size_t datalength, udp_socket * udpsocket);
 
- 
-  
+			int tcp_send(char * senddata, size_t datalength, tcp_socket * tcpsocket);
+
+
+
 };
- 
+
 #endif

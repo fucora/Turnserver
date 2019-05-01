@@ -3,28 +3,10 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="socketListener.cpp">
-      <Filter>mycommon</Filter>
+      <Filter>myTurn</Filter>
     </ClCompile>
     <ClCompile Include="turn_server.cpp">
-      <Filter>mycommon</Filter>
-    </ClCompile>
-    <ClCompile Include="dbg.c">
-      <Filter>turnserver</Filter>
-    </ClCompile>
-    <ClCompile Include="allocation.cpp">
-      <Filter>turnserver</Filter>
-    </ClCompile>
-    <ClCompile Include="protocol.cpp">
-      <Filter>turnserver</Filter>
-    </ClCompile>
-    <ClCompile Include="commonTypes.cpp">
-      <Filter>mycommon</Filter>
-    </ClCompile>
-    <ClCompile Include="StunProtocol.cpp">
-      <Filter>mycommon</Filter>
-    </ClCompile>
-    <ClCompile Include="SHAmethod.cpp">
-      <Filter>common</Filter>
+      <Filter>myTurn</Filter>
     </ClCompile>
     <ClCompile Include="Coturn\common\ns_turn_msg.cpp">
       <Filter>Coturn\common</Filter>
@@ -35,19 +17,16 @@
     <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
+    <ClCompile Include="allocation.cpp">
+      <Filter>myTurn</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="mycommon">
-      <UniqueIdentifier>{cc7bc922-3a14-4129-ba36-c4812a777848}</UniqueIdentifier>
-    </Filter>
     <Filter Include="common">
       <UniqueIdentifier>{924fefe0-b8d9-478e-b3a3-6f679399f3f3}</UniqueIdentifier>
     </Filter>
     <Filter Include="server">
       <UniqueIdentifier>{a4c74973-0728-43ee-8c6a-6ef4ae30bd4e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="turnserver">
-      <UniqueIdentifier>{8ab2e19a-6291-43a1-8396-3eccb1b01239}</UniqueIdentifier>
     </Filter>
     <Filter Include="Coturn">
       <UniqueIdentifier>{6a356038-e557-4325-a3aa-37c0a58d79c3}</UniqueIdentifier>
@@ -61,39 +40,21 @@
     <Filter Include="Coturn\dbdriver">
       <UniqueIdentifier>{b0de9881-51eb-4df0-8d1d-2b878e292f2c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="myTurn">
+      <UniqueIdentifier>{cc7bc922-3a14-4129-ba36-c4812a777848}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="socketListener.h">
-      <Filter>mycommon</Filter>
+      <Filter>myTurn</Filter>
     </ClInclude>
     <ClInclude Include="commonTypes.h">
-      <Filter>mycommon</Filter>
+      <Filter>myTurn</Filter>
     </ClInclude>
     <ClInclude Include="turn_server.h">
-      <Filter>mycommon</Filter>
+      <Filter>myTurn</Filter>
     </ClInclude>
     <ClInclude Include="myDeletegate.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="turn.h">
-      <Filter>turnserver</Filter>
-    </ClInclude>
-    <ClInclude Include="dbg.h">
-      <Filter>turnserver</Filter>
-    </ClInclude>
-    <ClInclude Include="allocation.h">
-      <Filter>turnserver</Filter>
-    </ClInclude>
-    <ClInclude Include="list.h">
-      <Filter>turnserver</Filter>
-    </ClInclude>
-    <ClInclude Include="protocol.h">
-      <Filter>turnserver</Filter>
-    </ClInclude>
-    <ClInclude Include="StunProtocol.h">
-      <Filter>mycommon</Filter>
-    </ClInclude>
-    <ClInclude Include="SHAmethod.h">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="Coturn\ns_turn_defs.h">
@@ -125,6 +86,9 @@
     </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_ioalib.h">
       <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="allocation.h">
+      <Filter>myTurn</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

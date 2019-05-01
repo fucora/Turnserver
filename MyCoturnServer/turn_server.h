@@ -2,12 +2,10 @@
 #ifndef TURNSERVER_H
 #define TURNSERVER_H
 
-#include "commonTypes.h"   
-#include "allocation.h"  
-#include "turn.h"
+#include "commonTypes.h"    
+
+#include "allocation.h" 
 #include "socketListener.h"
-//#include "protocol.h"
-#include "StunProtocol.h"
 
 class turn_server
 {
