@@ -20,6 +20,12 @@
     <ClCompile Include="allocation.cpp">
       <Filter>myTurn</Filter>
     </ClCompile>
+    <ClCompile Include="commonMethod.cpp">
+      <Filter>myTurn</Filter>
+    </ClCompile>
+    <ClCompile Include="Coturn\common\stun_buffer.cpp">
+      <Filter>Coturn\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="common">
@@ -84,11 +90,17 @@
     <ClInclude Include="Coturn\common\ns_turn_openssl.h">
       <Filter>Coturn\common</Filter>
     </ClInclude>
-    <ClInclude Include="Coturn\common\ns_turn_ioalib.h">
-      <Filter>Coturn\common</Filter>
-    </ClInclude>
     <ClInclude Include="allocation.h">
       <Filter>myTurn</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\ns_turn_ioalib.h">
+      <Filter>Coturn\server</Filter>
+    </ClInclude>
+    <ClInclude Include="commonMethod.h">
+      <Filter>myTurn</Filter>
+    </ClInclude>
+    <ClInclude Include="Coturn\common\stun_buffer.h">
+      <Filter>Coturn\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

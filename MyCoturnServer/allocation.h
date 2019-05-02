@@ -3,13 +3,16 @@
 #define ALLOCATION_H
 
 #include "commonTypes.h"
- 
+
 class allocation
-{ 
+{
 public:
 	allocation();
-	allocation(int transport_protocol, socket_base * sock);
+	allocation(SOCKET_TYPE socket_type, socket_base * sock);
 	~allocation();
+
+public:bool is_valid = false;
+public:stun_tid tid;
 };
 
 #endif // ALLOCATION

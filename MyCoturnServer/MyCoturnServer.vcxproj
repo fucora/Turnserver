@@ -86,15 +86,18 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="allocation.cpp" />
+    <ClCompile Include="commonMethod.cpp" />
     <ClCompile Include="Coturn\common\ns_turn_ioaddr.cpp" />
     <ClCompile Include="Coturn\common\ns_turn_msg.cpp" />
     <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp" />
+    <ClCompile Include="Coturn\common\stun_buffer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="socketListener.cpp" />
     <ClCompile Include="turn_server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="allocation.h" />
+    <ClInclude Include="commonMethod.h" />
     <ClInclude Include="commonTypes.h" />
     <ClInclude Include="Coturn\common\ns_turn_ioaddr.h" />
     <ClInclude Include="Coturn\common\ns_turn_ioalib.h" />
@@ -104,6 +107,7 @@
     <ClInclude Include="Coturn\common\ns_turn_msg_defs.h" />
     <ClInclude Include="Coturn\common\ns_turn_msg_defs_experimental.h" />
     <ClInclude Include="Coturn\common\ns_turn_openssl.h" />
+    <ClInclude Include="Coturn\common\stun_buffer.h" />
     <ClInclude Include="Coturn\mainheader.h" />
     <ClInclude Include="Coturn\ns_turn_defs.h" />
     <ClInclude Include="myDeletegate.h" />
