@@ -122,6 +122,7 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, SOCKET_TYPE socke
 			}
 			if (!error_code&&userSession->origin_set == false && method == STUN_METHOD_ALLOCATE) {
 				stun_attr_ref sar = stun_attr_get_first_str(in_data, lenth);
+				 
 
 			}
 			if (!error_code&&resp_constructed == false && no_response == false) {
