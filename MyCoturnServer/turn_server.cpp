@@ -21,6 +21,8 @@ int can_resume = 1;
 bool secure_stun = true;
 bool stun_only = false;
 bool no_stun = false;
+bool check_origin = false;
+bool mobility = false;
 #define MAX_NUMBER_OF_UNKNOWN_ATTRS (128)
 //********************************************************************
 socketListener manager(8888);
@@ -81,7 +83,7 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, SOCKET_TYPE socke
 	bool no_response = false;//是否需要创建responese，默认需要创建
 	bool resp_constructed = false;//是否创建了response
 
-	ioa_network_buffer_handle out_io_handle = (ioa_network_buffer_handle)malloc(sizeof(ioa_network_buffer_handle));
+	ioa_network_buffer_handle* out_io_handle = (ioa_network_buffer_handle*)malloc(sizeof(ioa_network_buffer_handle));
 	userSessionsManager userSessionsManager;
 	useressionEntity* userSession = userSessionsManager.getClientSession(socket_type, sock);
 	if (stun_is_channel_message_str(in_data, &blen, &chnum, 1)) {
@@ -115,22 +117,31 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, SOCKET_TYPE socke
 		{
 			if (method == STUN_METHOD_ALLOCATE)
 			{
-				dealAllocation(method, &out_io_handle, &resp_constructed, socket_type, sock, &tid, &error_code, reason, &counter);
+				dealAllocation(method, out_io_handle, &resp_constructed, socket_type, sock, userSession, &tid, &error_code, reason, &counter);
 			}
 			if (userSession->origin_set == true) {
-
+				dealOriginSetting(in_data, lenth, userSession, &error_code, reason);
 			}
 			if (!error_code&&userSession->origin_set == false && method == STUN_METHOD_ALLOCATE) {
-				stun_attr_ref sar = stun_attr_get_first_str(in_data, lenth);
-				 
-
+				userSession->origin_set = true;
 			}
 			if (!error_code&&resp_constructed == false && no_response == false) {
+				if (method == STUN_METHOD_CONNECTION_BIND)
+				{
 
+				}
+				else if (mobility == false || (method != STUN_METHOD_REFRESH) || userSession->is_valid == true) 
+				{
+					int postpone_reply = 0;
+					//check_stun_auth(server, ss, &tid, resp_constructed, &err_code, &reason, in_buffer, nbh, method, &message_integrity, &postpone_reply, can_resume);
+					if (postpone_reply){ no_response = true; }
+						
+				}
 			}
 		}
 		if (error_code != 0 && resp_constructed == false && no_response == false)
 		{
+
 		}
 	}
 	else if (stun_is_indication_str(in_data, lenth))
@@ -168,13 +179,13 @@ int turn_server::check_stun_auth(buffer_type buf, int lenth)
 }
 
 bool turn_server::dealAllocation(u16bits method, ioa_network_buffer_handle* out_io_handle, bool* resp_constructed,
-	SOCKET_TYPE socket_type, socket_base * sock,
+	SOCKET_TYPE socket_type, socket_base * sock, useressionEntity* userSession,
 	stun_tid* currentTid, int* errorCode, const u08bits *reason, size_t* counter)
 {
-	allocation alloc(socket_type, sock);
-	if (alloc.is_valid == true)
+
+	if (userSession->is_valid == true)
 	{
-		if (!stun_tid_equals(&(alloc.tid), currentTid))
+		if (!stun_tid_equals(&(userSession->tid), currentTid))
 		{
 			*errorCode = 437;
 			reason = (const u08bits *)"Mismatched allocation: wrong transaction ID";
@@ -201,6 +212,33 @@ bool turn_server::dealAllocation(u16bits method, ioa_network_buffer_handle* out_
 	}
 }
 
+bool turn_server::dealOriginSetting(const u08bits* in_data, int lenth, useressionEntity* userSession,
+	int* errorCode, const u08bits *reason)
+{
+	stun_attr_ref sar = stun_attr_get_first_str(in_data, lenth);
+	int origin_found = 0;
+	int norigins = 0;
+
+	while (sar && !origin_found) {
+		if (stun_attr_get_type(sar) == STUN_ATTRIBUTE_ORIGIN) {
+
+		}
+		sar = stun_attr_get_next_str(in_data, lenth, sar);
+	}
+
+	if (check_origin == true) {
+		if (userSession->origin[0]) {
+			if (!origin_found) {
+				*errorCode = 441;
+				reason = (const u08bits *)"The origin attribute does not match the initial session origin value";
+			}
+		}
+		else if (norigins > 0) {
+			*errorCode = 441;
+			reason = (const u08bits *)"The origin attribute is empty, does not match the initial session origin value";
+		}
+	}
+}
 
 void turn_server::set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter,
 	u16bits method, stun_tid *tid, bool* resp_constructed, int *err_code,
@@ -239,3 +277,4 @@ void turn_server::set_alternate_server(turn_server_addrs_list_t *asl, const ioa_
 		}
 	}
 }
+

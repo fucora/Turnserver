@@ -1,5 +1,6 @@
 #include "userSessionsManager.h"
 
+vector<useressionEntity> userSessionsManager::userSessions;
 
 userSessionsManager::userSessionsManager()
 {
@@ -33,10 +34,10 @@ useressionEntity* userSessionsManager::getClientSession(SOCKET_TYPE socket_type,
 		return NULL;
 	}
 
-	int count = this->serverSessions.size();
+	int count = userSessions.size();
 	for (int i = 0; i < count; i++)
 	{
-		useressionEntity usersessionm = this->serverSessions.at(i);
+		useressionEntity usersessionm = userSessions.at(i);
 		if (usersessionm.client_socket_port == clientPort && strcmp((const char*)usersessionm.client_socket_addr, (const char*)clientAddrStr))
 		{
 			return &usersessionm;
@@ -46,6 +47,6 @@ useressionEntity* userSessionsManager::getClientSession(SOCKET_TYPE socket_type,
 	session->client_socket_port = clientPort;
 	session->client_socket_addr = clientAddrStr;
 
-	this->serverSessions.push_back(*session);
+	userSessions.push_back(*session);
 	return session;
 }

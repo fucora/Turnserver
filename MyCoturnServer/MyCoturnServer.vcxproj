@@ -85,7 +85,6 @@
     <RemoteCppCompileToolExe> g++</RemoteCppCompileToolExe>
   </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="allocation.cpp" />
     <ClCompile Include="commonMethod.cpp" />
     <ClCompile Include="Coturn\common\ns_turn_ioaddr.cpp" />
     <ClCompile Include="Coturn\common\ns_turn_msg.cpp" />
@@ -97,7 +96,6 @@
     <ClCompile Include="turn_server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="allocation.h" />
     <ClInclude Include="commonMethod.h" />
     <ClInclude Include="commonTypes.h" />
     <ClInclude Include="Coturn\common\ns_turn_ioaddr.h" />

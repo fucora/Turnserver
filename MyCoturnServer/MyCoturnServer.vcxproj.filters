@@ -17,9 +17,6 @@
     <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
-    <ClCompile Include="allocation.cpp">
-      <Filter>myTurn</Filter>
-    </ClCompile>
     <ClCompile Include="commonMethod.cpp">
       <Filter>myTurn</Filter>
     </ClCompile>
@@ -92,9 +89,6 @@
     </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_openssl.h">
       <Filter>Coturn\common</Filter>
-    </ClInclude>
-    <ClInclude Include="allocation.h">
-      <Filter>myTurn</Filter>
     </ClInclude>
     <ClInclude Include="Coturn\common\ns_turn_ioalib.h">
       <Filter>Coturn\server</Filter>

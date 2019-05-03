@@ -24,6 +24,8 @@
 #include "Coturn/common/ns_turn_msg.h" 
 #include "Coturn/common/ns_turn_khash.h"
 #include "Coturn/common/stun_buffer.h"
+#include "Coturn/common/ns_turn_msg_defs_experimental.h"
+ 
 /////////////
 #include <openssl/rand.h>
 #include <openssl/sha.h>
