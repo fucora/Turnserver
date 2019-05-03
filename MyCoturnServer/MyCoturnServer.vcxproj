@@ -92,6 +92,7 @@
     <ClCompile Include="Coturn\common\ns_turn_msg_addr.cpp" />
     <ClCompile Include="Coturn\common\stun_buffer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="userSessionsManager.cpp" />
     <ClCompile Include="socketListener.cpp" />
     <ClCompile Include="turn_server.cpp" />
   </ItemGroup>
@@ -111,6 +112,7 @@
     <ClInclude Include="Coturn\mainheader.h" />
     <ClInclude Include="Coturn\ns_turn_defs.h" />
     <ClInclude Include="myDeletegate.h" />
+    <ClInclude Include="userSessionsManager.h" />
     <ClInclude Include="socketListener.h" />
     <ClInclude Include="turn_server.h" />
   </ItemGroup>

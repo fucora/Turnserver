@@ -6,6 +6,7 @@
 #include "commonMethod.h"
 #include "allocation.h" 
 #include "socketListener.h"
+#include "userSessionsManager.h"
 
 class turn_server
 {

@@ -17,6 +17,7 @@
 #include <malloc.h>
 #include <stdint.h>
 #include <sys/types.h> 
+#include <vector>
 /////////////////// 
 #include "Coturn/ns_turn_defs.h" 
 #include "Coturn/common/ns_turn_ioalib.h"

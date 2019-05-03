@@ -26,6 +26,9 @@
     <ClCompile Include="Coturn\common\stun_buffer.cpp">
       <Filter>Coturn\common</Filter>
     </ClCompile>
+    <ClCompile Include="userSessionsManager.cpp">
+      <Filter>myTurn</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="common">
@@ -101,6 +104,9 @@
     </ClInclude>
     <ClInclude Include="Coturn\common\stun_buffer.h">
       <Filter>Coturn\common</Filter>
+    </ClInclude>
+    <ClInclude Include="userSessionsManager.h">
+      <Filter>myTurn</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

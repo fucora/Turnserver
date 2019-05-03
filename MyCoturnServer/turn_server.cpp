@@ -18,9 +18,9 @@ int max_relay_per_username = 5;
 
 //*******************Coturn**********************************************
 int can_resume = 1;
-int no_stun = 0;
-int stun_only = 0;
-int secure_stun = 0;
+bool secure_stun = true;
+bool stun_only = false;
+bool no_stun = false;
 #define MAX_NUMBER_OF_UNKNOWN_ATTRS (128)
 //********************************************************************
 socketListener manager(8888);
@@ -70,26 +70,26 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, SOCKET_TYPE socke
 	stun_tid tid;
 	size_t blen = lenth;
 	size_t orig_blen = lenth;
+
 	int error_code = 0;
 	const u08bits *reason = NULL;
 	size_t counter = 0;
 
-	int enforce_fingerprints;
 	u16bits chnum = 0;
 	const u08bits* in_data = (const u08bits*)buf;
 	u16bits ua_num = 0;//unknow_attribute_number
 	bool no_response = false;//是否需要创建responese，默认需要创建
 	bool resp_constructed = false;//是否创建了response
-	bool secure_stun = true;
-	bool stun_only = true;
-	ioa_network_buffer_handle out_io_handle = (ioa_network_buffer_handle)malloc(sizeof(ioa_network_buffer_handle));
 
+	ioa_network_buffer_handle out_io_handle = (ioa_network_buffer_handle)malloc(sizeof(ioa_network_buffer_handle));
+	userSessionsManager userSessionsManager;
+	useressionEntity* userSession = userSessionsManager.getClientSession(socket_type, sock);
 	if (stun_is_channel_message_str(in_data, &blen, &chnum, 1)) {
 		//处理channel消息
 		return 1;
 	}
 	//判断消息是否完整
-	if (!stun_is_command_message_full_check_str(in_data, lenth, 0, &enforce_fingerprints))
+	if (!stun_is_command_message_full_check_str(in_data, lenth, 0, &userSession->enforce_fingerprints))
 	{
 		return -1;
 	}
@@ -103,7 +103,7 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, SOCKET_TYPE socke
 	}
 	if (stun_is_request_str(in_data, lenth))
 	{
-		if (method == STUN_METHOD_BINDING)
+		if (method == STUN_METHOD_BINDING && no_stun == true)
 		{
 			no_response = true;
 		}
@@ -116,6 +116,16 @@ int turn_server::MessageHandle_new(buffer_type buf, int lenth, SOCKET_TYPE socke
 			if (method == STUN_METHOD_ALLOCATE)
 			{
 				dealAllocation(method, &out_io_handle, &resp_constructed, socket_type, sock, &tid, &error_code, reason, &counter);
+			}
+			if (userSession->origin_set == true) {
+
+			}
+			if (!error_code&&userSession->origin_set == false && method == STUN_METHOD_ALLOCATE) {
+				stun_attr_ref sar = stun_attr_get_first_str(in_data, lenth);
+
+			}
+			if (!error_code&&resp_constructed == false && no_response == false) {
+
 			}
 		}
 		if (error_code != 0 && resp_constructed == false && no_response == false)
@@ -192,8 +202,8 @@ bool turn_server::dealAllocation(u16bits method, ioa_network_buffer_handle* out_
 
 
 void turn_server::set_alternate_server(turn_server_addrs_list_t *asl, const ioa_addr *local_addr, size_t *counter,
-	                                   u16bits method, stun_tid *tid, bool* resp_constructed, int *err_code,
-	                                   const u08bits **reason, ioa_network_buffer_handle nbh)
+	u16bits method, stun_tid *tid, bool* resp_constructed, int *err_code,
+	const u08bits **reason, ioa_network_buffer_handle nbh)
 {
 	commonMethod commonMthod;
 	if (asl && asl->size && local_addr) {
